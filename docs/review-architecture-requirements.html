@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LabelCheck Agent — Architecture & Requirements Review</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --cds-background: #ffffff;
+      --cds-layer-01: #f4f4f4;
+      --cds-layer-02: #e0e0e0;
+      --cds-text-primary: #161616;
+      --cds-text-secondary: #525252;
+      --cds-border-subtle: #c6c6c6;
+      --cds-blue-60: #0f62fe;
+      --cds-blue-70: #0043ce;
+      --cds-green-50: #24a148;
+      --cds-yellow-30: #f1c21b;
+      --cds-red-60: #da1e28;
+      --ink: #161616;
+      --muted: #525252;
+      --line: #c6c6c6;
+      --surface: #f4f4f4;
+      --surface-2: #e0e0e0;
+      --focus: #0f62fe;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: 'IBM Plex Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: var(--ink);
+      background: var(--cds-background);
+    }
+    a { color: var(--cds-blue-60); text-decoration: none; }
+    a:hover { color: var(--cds-blue-70); text-decoration: underline; }
+    code, .mono { font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    .masthead {
+      position: sticky; top: 0; z-index: 20;
+      height: 48px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px;
+      background: #161616; color: #f4f4f4;
+      border-bottom: 1px solid #393939;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 500; letter-spacing: .16px; }
+    .brand-mark { width: 24px; height: 24px; background: var(--cds-blue-60); display: grid; place-items: center; color: white; font-weight: 700; }
+    .nav { display: flex; gap: 4px; align-items: center; }
+    .nav a { color: #c6c6c6; padding: 14px 12px; font-size: 14px; height: 48px; display: inline-flex; align-items: center; }
+    .nav a:hover { color: #fff; background: #262626; text-decoration: none; }
+    .hero {
+      display: grid; grid-template-columns: minmax(0, 1.1fr) 360px; gap: 32px;
+      padding: 56px 32px 40px; max-width: 1440px; margin: 0 auto;
+    }
+    .eyebrow { font-size: 12px; letter-spacing: .32px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+    h1 { font-size: clamp(42px, 6vw, 72px); line-height: 1.08; font-weight: 300; margin: 0 0 20px; letter-spacing: -1px; max-width: 960px; }
+    .lede { font-size: 18px; line-height: 1.55; color: var(--muted); max-width: 860px; margin: 0; }
+    .proof-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); align-self: start; }
+    .proof { background: var(--surface); padding: 16px; min-height: 96px; }
+    .proof strong { display: block; font-size: 28px; font-weight: 300; margin-bottom: 8px; }
+    .proof span { font-size: 12px; color: var(--muted); line-height: 1.35; }
+    .section { max-width: 1440px; margin: 0 auto; padding: 48px 32px; border-top: 1px solid var(--line); }
+    .section.gray { max-width: none; background: var(--surface); }
+    .section.gray > .inner { max-width: 1440px; margin: 0 auto; }
+    h2 { font-size: clamp(30px, 3.2vw, 48px); line-height: 1.16; font-weight: 300; margin: 0 0 14px; }
+    h3 { margin: 0 0 12px; font-size: 20px; line-height: 1.35; }
+    p { line-height: 1.55; }
+    .sub { color: var(--muted); max-width: 880px; margin: 0 0 28px; }
+    .callout { border-left: 4px solid var(--cds-blue-60); background: #edf5ff; padding: 16px 20px; margin: 24px 0; max-width: 980px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+    .card { background: #fff; padding: 20px; min-height: 160px; }
+    .card.gray { background: var(--surface); }
+    .tag { display: inline-block; border-radius: 999px; padding: 4px 10px; background: #edf5ff; color: var(--cds-blue-60); font-size: 12px; margin-bottom: 12px; }
+    .tag.warn { background: #fcf4d6; color: #684e00; }
+    .tag.good { background: #defbe6; color: #0e6027; }
+    .tag.bad { background: #fff1f1; color: var(--cds-red-60); }
+    .list { padding-left: 18px; margin: 10px 0 0; color: var(--muted); line-height: 1.5; }
+    .diagram-card { background: #fff; border: 1px solid var(--line); padding: 16px; overflow: auto; }
+    svg { max-width: 100%; height: auto; }
+    .legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .legend span { font-size: 12px; padding: 4px 8px; background: var(--surface); border: 1px solid var(--line); }
+    .tabs { display: flex; gap: 0; border: 1px solid var(--line); border-bottom: none; margin-top: 20px; overflow-x: auto; }
+    .tab { border: 0; border-right: 1px solid var(--line); background: #fff; height: 48px; padding: 0 16px; cursor: pointer; font: inherit; }
+    .tab.active { background: var(--cds-blue-60); color: white; }
+    .panel { display: none; border: 1px solid var(--line); padding: 24px; background: #fff; }
+    .panel.active { display: block; }
+    .decision-table { display: grid; grid-template-columns: 180px 1fr 1fr; border: 1px solid var(--line); }
+    .decision-table div { padding: 12px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); font-size: 14px; }
+    .decision-table div:nth-child(3n) { border-right: none; }
+    .decision-table .head { background: #161616; color: #f4f4f4; font-weight: 600; }
+    .toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin: 20px 0; }
+    .filter, .copy-btn, .primary-btn { height: 40px; border-radius: 0; border: 1px solid var(--cds-blue-60); background: #fff; color: var(--cds-blue-60); padding: 0 14px; cursor: pointer; font: inherit; }
+    .filter.active, .primary-btn { background: var(--cds-blue-60); color: #fff; }
+    .copy-btn { border-color: #393939; color: #161616; }
+    .requirements { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .req { border: 1px solid var(--line); background: #fff; padding: 16px; }
+    .req[data-track="pilot"] { border-top: 4px solid var(--cds-blue-60); }
+    .req[data-track="tdd"] { border-top: 4px solid var(--cds-green-50); }
+    .req[data-track="security"] { border-top: 4px solid var(--cds-red-60); }
+    .req[data-track="teams"] { border-top: 4px solid var(--cds-yellow-30); }
+    .req.hidden { display: none; }
+    .req h3 { font-size: 18px; }
+    .timeline { display: grid; grid-template-columns: repeat(6, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+    .step { background: #fff; padding: 14px; min-height: 140px; }
+    .step .num { font-family: 'IBM Plex Mono'; color: var(--cds-blue-60); font-size: 12px; margin-bottom: 8px; }
+    .codebox { background: #161616; color: #f4f4f4; padding: 16px; overflow: auto; font-size: 13px; line-height: 1.5; margin: 0; }
+    .footer { padding: 24px 32px; background: #161616; color: #c6c6c6; font-size: 13px; }
+    @media (max-width: 980px) {
+      .hero { grid-template-columns: 1fr; }
+      .grid-3, .grid-2, .requirements, .timeline { grid-template-columns: 1fr; }
+      .decision-table { grid-template-columns: 1fr; }
+      .decision-table .head { display:none; }
+      .nav { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="masthead">
+    <div class="brand"><div class="brand-mark">LC</div><span>LabelCheck Agent</span></div>
+    <nav class="nav">
+      <a href="#presearch">Presearch</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#requirements">Requirements</a>
+      <a href="#options">Options</a>
+      <a href="#tdd">TDD Plan</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div>
+        <div class="eyebrow">Review artifact · architecture + requirements · 2026-05-12</div>
+        <h1>Government label-review assistant, not an auto-approval machine.</h1>
+        <p class="lede">This is the missing HTML review doc: a visual operating surface for the alcohol-label verifier’s presearch, architecture, requirements, Teams/internal workflow, and TDD-first implementation plan.</p>
+        <div class="callout"><strong>Correction:</strong> the markdown presearch existed at <code>docs/PRESEARCH.md</code>, but I had not created this HTML artifact or hosted review URL. That was the gap.</div>
+      </div>
+      <aside class="proof-grid" aria-label="Project facts">
+        <div class="proof"><strong>1</strong><span>Narrow wedge: shadow-mode discrepancy assistant for one review team.</span></div>
+        <div class="proof"><strong>0</strong><span>Auto-approval claims. Human reviewer remains final authority.</span></div>
+        <div class="proof"><strong>25</strong><span>Current synchronous label batch limit in the prototype API.</span></div>
+        <div class="proof"><strong>TDD</strong><span>All next-phase implementation starts with failing tests.</span></div>
+      </aside>
+    </section>
+
+    <section id="presearch" class="section gray">
+      <div class="inner">
+        <h2>Presearch summary</h2>
+        <p class="sub">Source artifact: <code>docs/PRESEARCH.md</code>. Core conclusion: use a multimodal extractor only for evidence extraction, then deterministic rules for compliance checks. Receipts over magic.</p>
+        <div class="grid-3">
+          <article class="card">
+            <span class="tag good">Confirmed requirements</span>
+            <h3>Standalone proof-of-concept</h3>
+            <ul class="list">
+              <li>Upload label artwork and compare visible fields against application data.</li>
+              <li>Core checks: brand, class/type, ABV/proof, net contents, bottler/importer/origin where applicable, Government Health Warning.</li>
+              <li>Keep mixed technical-comfort users from hunting for buttons.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <span class="tag warn">Trust posture</span>
+            <h3>Review assistant, not approver</h3>
+            <ul class="list">
+              <li>Return decision, score, evidence cards, expected vs observed, and rationale.</li>
+              <li>Use visible reasoning to earn reviewer trust.</li>
+              <li>Do not claim layout/font compliance from plain text extraction.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <span class="tag bad">Production caveats</span>
+            <h3>Government deployment is mostly risk surface</h3>
+            <ul class="list">
+              <li>Retention, audit logs, RBAC, approved model path, and threat model are required later.</li>
+              <li>FedRAMP/ATO path matters more than UI polish.</li>
+              <li>False approvals are more damaging than extra needs-review flags.</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="architecture" class="section">
+      <h2>Architecture</h2>
+      <p class="sub">Current architecture is deliberately small: Next.js UI, server route, optional vision extractor, deterministic rules, no persistence by default. Future government/Teams paths sit behind gates.</p>
+      <div class="diagram-card">
+        <svg viewBox="0 0 1180 560" role="img" aria-label="LabelCheck architecture diagram">
+          <defs>
+            <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#525252"/></marker>
+            <marker id="arrowBlue" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#0f62fe"/></marker>
+          </defs>
+          <rect x="0" y="0" width="1180" height="560" fill="#ffffff"/>
+          <rect x="32" y="44" width="250" height="112" fill="#edf5ff" stroke="#0f62fe" stroke-width="2"/>
+          <text x="56" y="78" font-family="IBM Plex Sans" font-size="18" font-weight="600" fill="#161616">Reviewer UI</text>
+          <text x="56" y="106" font-family="IBM Plex Mono" font-size="12" fill="#525252">src/app/page.tsx</text>
+          <text x="56" y="132" font-family="IBM Plex Sans" font-size="13" fill="#525252">Application record + label files/OCR</text>
+
+          <rect x="410" y="44" width="270" height="112" fill="#defbe6" stroke="#24a148" stroke-width="2"/>
+          <text x="434" y="78" font-family="IBM Plex Sans" font-size="18" font-weight="600" fill="#161616">Verify API</text>
+          <text x="434" y="106" font-family="IBM Plex Mono" font-size="12" fill="#525252">POST /api/verify</text>
+          <text x="434" y="132" font-family="IBM Plex Sans" font-size="13" fill="#525252">Zod validation + per-label orchestration</text>
+
+          <rect x="812" y="44" width="286" height="112" fill="#f4f4f4" stroke="#8d8d8d" stroke-width="2"/>
+          <text x="836" y="78" font-family="IBM Plex Sans" font-size="18" font-weight="600" fill="#161616">Model extractor</text>
+          <text x="836" y="106" font-family="IBM Plex Mono" font-size="12" fill="#525252">OpenAI vision optional</text>
+          <text x="836" y="132" font-family="IBM Plex Sans" font-size="13" fill="#525252">Extract fields only; never final authority</text>
+
+          <rect x="410" y="246" width="270" height="112" fill="#fff1f1" stroke="#da1e28" stroke-width="2"/>
+          <text x="434" y="280" font-family="IBM Plex Sans" font-size="18" font-weight="600" fill="#161616">Deterministic rules</text>
+          <text x="434" y="308" font-family="IBM Plex Mono" font-size="12" fill="#525252">src/lib/rules.ts</text>
+          <text x="434" y="334" font-family="IBM Plex Sans" font-size="13" fill="#525252">Expected vs observed, severity, citations</text>
+
+          <rect x="32" y="246" width="250" height="112" fill="#fcf4d6" stroke="#f1c21b" stroke-width="2"/>
+          <text x="56" y="280" font-family="IBM Plex Sans" font-size="18" font-weight="600" fill="#161616">Evidence cards</text>
+          <text x="56" y="308" font-family="IBM Plex Mono" font-size="12" fill="#525252">Decision UI</text>
+          <text x="56" y="334" font-family="IBM Plex Sans" font-size="13" fill="#525252">Pass/warn/fail/needs-review rationale</text>
+
+          <rect x="812" y="246" width="286" height="112" fill="#f4f4f4" stroke="#525252" stroke-width="2" stroke-dasharray="6 6"/>
+          <text x="836" y="280" font-family="IBM Plex Sans" font-size="18" font-weight="600" fill="#161616">Text-only fallback</text>
+          <text x="836" y="308" font-family="IBM Plex Mono" font-size="12" fill="#525252">No API key required</text>
+          <text x="836" y="334" font-family="IBM Plex Sans" font-size="13" fill="#525252">Demo and blocked-network path</text>
+
+          <rect x="32" y="432" width="250" height="84" fill="#f4f4f4" stroke="#c6c6c6"/>
+          <text x="56" y="464" font-family="IBM Plex Sans" font-size="17" font-weight="600">Export packet</text>
+          <text x="56" y="492" font-family="IBM Plex Sans" font-size="13" fill="#525252">JSON/CSV/PDF later; no raw image bytes by default</text>
+
+          <rect x="410" y="432" width="270" height="84" fill="#f4f4f4" stroke="#c6c6c6"/>
+          <text x="434" y="464" font-family="IBM Plex Sans" font-size="17" font-weight="600">Teams summary path</text>
+          <text x="434" y="492" font-family="IBM Plex Sans" font-size="13" fill="#525252">Copy block now; endpoint later behind flags</text>
+
+          <rect x="812" y="432" width="286" height="84" fill="#f4f4f4" stroke="#c6c6c6"/>
+          <text x="836" y="464" font-family="IBM Plex Sans" font-size="17" font-weight="600">Future system integration</text>
+          <text x="836" y="492" font-family="IBM Plex Sans" font-size="13" fill="#525252">Only after pilot: RBAC, audit, ATO, retention</text>
+
+          <path d="M282 100 L410 100" stroke="#525252" stroke-width="2" marker-end="url(#arrow)"/>
+          <path d="M680 100 L812 100" stroke="#525252" stroke-width="2" marker-end="url(#arrow)"/>
+          <path d="M955 156 C955 204 680 198 680 262" stroke="#525252" stroke-width="2" marker-end="url(#arrow)"/>
+          <path d="M812 302 L680 302" stroke="#525252" stroke-width="2" stroke-dasharray="6 6" marker-end="url(#arrow)"/>
+          <path d="M410 302 L282 302" stroke="#0f62fe" stroke-width="2" marker-end="url(#arrowBlue)"/>
+          <path d="M157 358 L157 432" stroke="#525252" stroke-width="2" marker-end="url(#arrow)"/>
+          <path d="M282 474 L410 474" stroke="#525252" stroke-width="2" marker-end="url(#arrow)"/>
+          <path d="M680 474 L812 474" stroke="#525252" stroke-width="2" stroke-dasharray="6 6" marker-end="url(#arrow)"/>
+        </svg>
+      </div>
+      <div class="legend"><span>Blue: reviewer-facing</span><span>Green: API orchestration</span><span>Red: compliance rules</span><span>Dashed: optional/future path</span></div>
+    </section>
+
+    <section class="section gray">
+      <div class="inner">
+        <h2>Reviewer workflow</h2>
+        <p class="sub">The closed loop matters: intake → extraction → deterministic checks → human disposition → export/escalation. If the loop cannot close, don’t build broad public UI yet.</p>
+        <div class="diagram-card">
+          <svg viewBox="0 0 1180 340" role="img" aria-label="Reviewer workflow diagram">
+            <defs><marker id="arrow2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#0f62fe"/></marker></defs>
+            <rect width="1180" height="340" fill="#fff"/>
+            <g font-family="IBM Plex Sans" font-size="15" fill="#161616">
+              <rect x="30" y="80" width="150" height="92" fill="#f4f4f4" stroke="#c6c6c6"/><text x="52" y="116" font-weight="600">1. Intake</text><text x="52" y="144" font-size="12" fill="#525252">Application + labels</text>
+              <rect x="224" y="80" width="150" height="92" fill="#edf5ff" stroke="#0f62fe"/><text x="246" y="116" font-weight="600">2. Extract</text><text x="246" y="144" font-size="12" fill="#525252">Vision or text</text>
+              <rect x="418" y="80" width="150" height="92" fill="#fff1f1" stroke="#da1e28"/><text x="440" y="116" font-weight="600">3. Check</text><text x="440" y="144" font-size="12" fill="#525252">Rules + citations</text>
+              <rect x="612" y="80" width="150" height="92" fill="#fcf4d6" stroke="#f1c21b"/><text x="634" y="116" font-weight="600">4. Review</text><text x="634" y="144" font-size="12" fill="#525252">Human final call</text>
+              <rect x="806" y="80" width="150" height="92" fill="#defbe6" stroke="#24a148"/><text x="828" y="116" font-weight="600">5. Export</text><text x="828" y="144" font-size="12" fill="#525252">Packet / summary</text>
+              <rect x="1000" y="80" width="150" height="92" fill="#f4f4f4" stroke="#525252" stroke-dasharray="5 5"/><text x="1022" y="116" font-weight="600">6. Escalate</text><text x="1022" y="144" font-size="12" fill="#525252">SME / Teams later</text>
+            </g>
+            <path d="M180 126 L224 126 M374 126 L418 126 M568 126 L612 126 M762 126 L806 126 M956 126 L1000 126" stroke="#0f62fe" stroke-width="2" marker-end="url(#arrow2)"/>
+            <path d="M1075 172 C1075 245 650 260 493 172" fill="none" stroke="#525252" stroke-width="2" stroke-dasharray="6 6" marker-end="url(#arrow2)"/>
+            <text x="610" y="250" font-family="IBM Plex Mono" font-size="12" fill="#525252">feedback loop: SME decision becomes new fixture/regression test</text>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <section id="requirements" class="section">
+      <h2>Requirements board</h2>
+      <p class="sub">Filter the next-phase requirements by implementation track. These are pulled from the spec and converted into a buildable board.</p>
+      <div class="toolbar" role="toolbar" aria-label="Requirement filters">
+        <button class="filter active" data-filter="all">All</button>
+        <button class="filter" data-filter="pilot">Pilot</button>
+        <button class="filter" data-filter="tdd">TDD/API</button>
+        <button class="filter" data-filter="security">Security</button>
+        <button class="filter" data-filter="teams">Teams/Internal</button>
+      </div>
+      <div class="requirements">
+        <article class="req" data-track="pilot"><span class="tag good">Pilot</span><h3>Batch review is credible</h3><p>Return one result per label, isolate per-label extraction failures, show progress/result states, and keep 1-label and 25-label cases readable.</p></article>
+        <article class="req" data-track="pilot"><span class="tag good">Pilot</span><h3>Evidence-first trust</h3><p>Every check shows expected value, observed value, rationale, requirement reference, severity, and confidence/evidence where available.</p></article>
+        <article class="req" data-track="tdd"><span class="tag good">TDD/API</span><h3>Pure rule tests first</h3><p>Normalization, commodity required fields, warning exactness, optional vs required fields, low-confidence behavior, and decision aggregation start as failing tests.</p></article>
+        <article class="req" data-track="tdd"><span class="tag good">TDD/API</span><h3>Route contract tests</h3><p>Validate accepted payloads, structured validation failures, max batch limits, bad MIME/type handling, extractor failure, and text-only fallback.</p></article>
+        <article class="req" data-track="security"><span class="tag bad">Security</span><h3>No accidental persistence</h3><p>Raw uploads, model responses, review packets, and data URLs are not stored server-side until retention, encryption, audit, and deletion are designed.</p></article>
+        <article class="req" data-track="security"><span class="tag bad">Security</span><h3>Government deployment assumptions</h3><p>Approved model provider path, FedRAMP/ATO review, sanitized logs/errors, payload limits, rate limiting, and human-final-authority copy.</p></article>
+        <article class="req" data-track="teams"><span class="tag warn">Teams/Internal</span><h3>Copy/export now</h3><p>Reviewers can download a review packet or copy a Teams-ready summary block with batch ID, decision, warnings/fails, disposition, and notes.</p></article>
+        <article class="req" data-track="teams"><span class="tag warn">Teams/Internal</span><h3>Integration later</h3><p><code>/api/integrations/teams/summary</code> stays disabled by default behind tenant-approved credentials and sends summary metadata, not raw images.</p></article>
+      </div>
+    </section>
+
+    <section id="options" class="section gray">
+      <div class="inner">
+        <h2>Office-hours options</h2>
+        <p class="sub">The gstack office-hours conclusion: start with a narrow shadow pilot if agency access exists. If not, learn faster through industry pre-submission checking. Full federal integration is a later gate, not the starting line.</p>
+        <div class="tabs" role="tablist">
+          <button class="tab active" data-panel="agency">1 · Agency shadow pilot</button>
+          <button class="tab" data-panel="industry">2 · Industry pre-submission</button>
+          <button class="tab" data-panel="federal">3 · Federal production later</button>
+        </div>
+        <section class="panel active" id="panel-agency">
+          <h3>Best if we have reviewer/sponsor access</h3>
+          <p>Run a non-authoritative pilot with 50–100 historical/anonymized labels, measure time saved and false-pass rate, and keep the human reviewer in control.</p>
+          <div class="decision-table">
+            <div class="head">Gate</div><div class="head">Pass signal</div><div class="head">Kill signal</div>
+            <div>Demand</div><div>5–10 reviewer/supervisor interviews confirm top-3 pain.</div><div>Nice-to-have only; no team owns the pain.</div>
+            <div>Data</div><div>Historical/anonymized labels available.</div><div>No sample labels or security cannot approve test data.</div>
+            <div>Quality</div><div>≥30% time savings, zero critical false-pass cases.</div><div>False approvals or explanations reviewers do not trust.</div>
+          </div>
+        </section>
+        <section class="panel" id="panel-industry">
+          <h3>Best if government procurement is slow</h3>
+          <p>Build a preflight checker for importers, wineries, breweries, lawyers, and compliance consultants. Faster learning, less direct government wedge.</p>
+          <div class="decision-table"><div class="head">Gate</div><div class="head">Pass signal</div><div class="head">Kill signal</div><div>Buyer pull</div><div>3–5 users agree to test with real labels.</div><div>Users do not pay or do not care about resubmission risk.</div><div>Value</div><div>Tool catches issues humans actually miss.</div><div>Only finds obvious errors they already catch.</div></div>
+        </section>
+        <section class="panel" id="panel-federal">
+          <h3>Do not start here</h3>
+          <p>Full agency production requires RBAC, audit logs, retention, ATO/security architecture, FedRAMP-compatible hosting, model governance, procurement vehicle, and integration funding.</p>
+          <div class="callout"><strong>Verdict:</strong> this path only makes sense after a shadow pilot proves ROI and has a named executive sponsor.</div>
+        </section>
+      </div>
+    </section>
+
+    <section id="tdd" class="section">
+      <h2>TDD-first implementation sequence</h2>
+      <p class="sub">Next implementation should dispatch subagents by track, but every functional change begins with a failing test. No production code first. Boring, reliable, correct.</p>
+      <div class="timeline">
+        <div class="step"><div class="num">01</div><h3>Rules fixtures</h3><p>Add failing tests for spirits/wine/beer text fixtures and low-confidence non-approval.</p></div>
+        <div class="step"><div class="num">02</div><h3>Types + rules</h3><p>Add <code>requirementRef</code>, <code>severity</code>, evidence/confidence behavior.</p></div>
+        <div class="step"><div class="num">03</div><h3>API schemas</h3><p>Route tests for validation errors, MIME/size limits, partial failures, and fallback mode.</p></div>
+        <div class="step"><div class="num">04</div><h3>Extractor isolation</h3><p>Mock model success, malformed JSON, unavailable model, missing fields.</p></div>
+        <div class="step"><div class="num">05</div><h3>Reviewer UI</h3><p>Disposition, reason notes, copy summary/export, batch readability.</p></div>
+        <div class="step"><div class="num">06</div><h3>Security docs</h3><p>Retention, logs, provider path, Teams integration flags, no raw image bytes.</p></div>
+      </div>
+      <div class="toolbar"><button class="copy-btn" data-copy="prompt">Copy subagent handoff prompt</button><button class="copy-btn" data-copy="tests">Copy test command set</button></div>
+      <pre class="codebox" id="copy-prompt">Implement the next task using strict TDD in /Users/maxpetrusenko/Desktop/Projects/alcohol-label-verifier.
+1. Write failing test first.
+2. Run npm run test and confirm target failure.
+3. Implement minimal code.
+4. Run npm run test, npm run lint, npm run build.
+5. Report files changed, red/green proof, and any spec gaps.
+Do not add persistence, Teams posting, or model-provider changes unless explicitly in scope.</pre>
+      <pre class="codebox" id="copy-tests" style="display:none">npm run test
+npm run lint
+npm run build</pre>
+    </section>
+  </main>
+
+  <footer class="footer">
+    Sources: docs/PRESEARCH.md · docs/SPEC.md · docs/NEXT_OPTIONS.md · docs/DESIGN_DIRECTIONS.md · Current repo baseline. Design language: IBM/Carbon core, HashiCorp control-plane posture, Mintlify evidence/guidance clarity.
+  </footer>
+
+  <script>
+    document.querySelectorAll('.filter').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const filter = btn.dataset.filter;
+        document.querySelectorAll('.req').forEach(card => {
+          card.classList.toggle('hidden', filter !== 'all' && card.dataset.track !== filter);
+        });
+      });
+    });
+    document.querySelectorAll('.tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('panel-' + btn.dataset.panel).classList.add('active');
+      });
+    });
+    document.querySelectorAll('[data-copy]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.copy === 'prompt' ? 'copy-prompt' : 'copy-tests';
+        await navigator.clipboard.writeText(document.getElementById(id).textContent.trim());
+        const old = btn.textContent;
+        btn.textContent = 'Copied';
+        setTimeout(() => btn.textContent = old, 1200);
+      });
+    });
+  </script>
+</body>
+</html>
