@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { ChangeEvent, FormEvent, useMemo, useState } from "react";
 import {
   AlertTriangle,
   BadgeCheck,
@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { fixtureCases, type FixtureCase } from "@/lib/fixtureCases";
 import { buildVerificationLabels, type PendingLabel } from "@/lib/labelPayload";
+import { issueTitle, needsReviewerAttention } from "@/lib/reviewPresentation";
 import type { ApplicationData, CheckStatus, VerificationResult } from "@/lib/types";
 
 const demoText = `OLD TOM DISTILLERY
@@ -89,8 +90,8 @@ function decisionCopy(result?: VerificationResult) {
   }
 
   return {
-    title: "Review",
-    body: "Check warnings.",
+    title: "Needs review",
+    body: "Missing or uncertain evidence.",
     tone: "review",
   };
 }
@@ -107,16 +108,17 @@ export default function Home() {
   const activeResult = results[0];
   const resultCopy = decisionCopy(activeResult);
   const nextSteps = activeResult?.nextSteps?.length ? activeResult.nextSteps : activeResult?.workflow?.nextSteps ?? [];
-  const blockingIssues = useMemo(
-    () => activeResult?.checks.filter((check) => check.status === "fail" || check.status === "warning") ?? [],
+  const attentionChecks = useMemo(
+    () => activeResult?.checks.filter((check) => needsReviewerAttention(check.status)) ?? [],
     [activeResult],
   );
 
-  async function onFiles(files: FileList | null) {
-    if (!files?.length) return;
+  async function onFiles(files: FileList | File[] | null) {
+    const selectedFiles = files ? [...files] : [];
+    if (!selectedFiles.length) return;
 
     const next = await Promise.all(
-      [...files].map(
+      selectedFiles.map(
         (file) =>
           new Promise<PendingLabel>((resolve, reject) => {
             const reader = new FileReader();
@@ -134,7 +136,15 @@ export default function Home() {
     );
 
     setLabels(next);
+    setLabelText("");
     setResults([]);
+    setError(null);
+  }
+
+  function handleFileInput(event: ChangeEvent<HTMLInputElement>) {
+    const files = event.currentTarget.files ? [...event.currentTarget.files] : [];
+    event.currentTarget.value = "";
+    void onFiles(files);
   }
 
   function loadDemo() {
@@ -230,7 +240,7 @@ export default function Home() {
               <label className="tool-button">
                 <UploadCloud aria-hidden />
                 <span>Upload</span>
-                <input className="file-input" type="file" accept="image/*" multiple onChange={(event) => onFiles(event.target.files)} />
+                <input className="file-input" type="file" accept="image/*" multiple onChange={handleFileInput} />
               </label>
               <label className="tool-button">
                 <Camera aria-hidden />
@@ -240,7 +250,7 @@ export default function Home() {
                   type="file"
                   accept="image/*"
                   capture="environment"
-                  onChange={(event) => onFiles(event.target.files)}
+                  onChange={handleFileInput}
                 />
               </label>
               <button type="button" className="ghost-button" onClick={loadDemo}>
@@ -359,7 +369,7 @@ export default function Home() {
                 </article>
 
                 <article className="issue-card">
-                  <h3>{blockingIssues.length ? "Issues" : "No issues"}</h3>
+                  <h3>{issueTitle(attentionChecks.length)}</h3>
                   <div className="checks">
                     {activeResult.checks.map((check) => (
                       <div className={statusClass(check.status)} key={check.id}>

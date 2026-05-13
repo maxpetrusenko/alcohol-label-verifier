@@ -77,6 +77,8 @@ describe("label verification rules", () => {
     const result = verifyLabel(application, { labelText: "", confidence: 0.8, notes: [] }, "blank-label");
     const brand = result.checks.find((check) => check.id === "brand-name");
 
+    expect(result.decision).toBe("rejected");
+    expect(result.score).toBe(0);
     expect(brand?.status).toBe("needs_review");
     expect(brand?.guidance).toContain("clearer image");
     expect(result.nextSteps.some((step) => step.includes("Brand name"))).toBe(true);
