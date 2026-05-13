@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LabelCheck V1 Presearch — buildable product direction</title>
+  <style>
+    :root{
+      --bg:#f7f7f4; --paper:#fff; --ink:#171717; --muted:#676b73; --line:#deded8;
+      --navy:#111827; --blue:#2563eb; --blue-ink:#1d4ed8; --red:#b42318; --amber:#b7791f; --green:#047857;
+      --slate:#26313f; --soft:#f0f3f7; --soft-blue:#eef4ff; --soft-red:#fff1f0; --soft-amber:#fff8e6; --soft-green:#ecfdf5;
+      --mono:"SFMono-Regular", ui-monospace, Menlo, Consolas, monospace; --sans:Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --shadow:0 18px 50px rgba(17,24,39,.08); --r:18px;
+    }
+    *{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55}
+    body:before{content:"";position:fixed;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(0,0,0,.025) 1px,transparent 1px),linear-gradient(0deg,rgba(0,0,0,.025) 1px,transparent 1px);background-size:32px 32px;mask-image:linear-gradient(#000,transparent 72%)}
+    .shell{display:grid;grid-template-columns:270px minmax(0,1fr);min-height:100vh}
+    nav{position:sticky;top:0;height:100vh;padding:22px;border-right:1px solid var(--line);background:rgba(247,247,244,.88);backdrop-filter:blur(16px);overflow:auto}
+    nav .brand{font-weight:780;font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--navy);margin-bottom:18px}
+    nav a{display:block;text-decoration:none;color:var(--muted);font-size:13px;padding:9px 10px;border-radius:10px;margin:2px 0}
+    nav a:hover{background:#fff;color:var(--ink)}
+    main{padding:34px clamp(18px,4vw,56px) 90px;max-width:1420px;width:100%;}
+    .hero{background:linear-gradient(135deg,#111827,#1e293b 55%,#0f172a);color:#fff;border-radius:28px;padding:34px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+    .hero:after{content:"";position:absolute;right:-120px;top:-100px;width:420px;height:420px;background:radial-gradient(circle,rgba(37,99,235,.38),transparent 62%)}
+    .eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#bfdbfe;font-weight:720}.hero h1{font-size:clamp(36px,6vw,76px);line-height:.95;margin:16px 0 18px;max-width:980px;letter-spacing:-.055em}.hero p{font-size:18px;color:#dbeafe;max-width:850px;margin:0}
+    .hero-grid{position:relative;z-index:1;display:grid;grid-template-columns:1fr 340px;gap:28px;align-items:end}.verdict{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:18px}.verdict strong{display:block;font-size:26px;margin-bottom:6px}.verdict span{color:#cbd5e1;font-size:13px}
+    .proof{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0 28px}.proof div,.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 1px 0 rgba(0,0,0,.03)}.proof div{padding:14px}.proof b{font-size:22px;display:block}.proof span{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+    section{margin-top:28px}.section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin:0 0 14px}.section-head h2{font-size:30px;letter-spacing:-.03em;margin:0}.section-head p{margin:0;color:var(--muted);max-width:720px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.card{padding:20px}.card h3{margin:0 0 10px;font-size:18px}.card p{color:var(--muted);margin:0 0 12px}.kicker{font:700 11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--blue-ink);margin-bottom:10px}.pill{display:inline-flex;gap:6px;align-items:center;border-radius:999px;padding:5px 9px;font:700 11px/1 var(--mono);background:var(--soft);color:var(--slate);border:1px solid var(--line);margin:3px}.pill.red{background:var(--soft-red);color:var(--red);border-color:#fecaca}.pill.amber{background:var(--soft-amber);color:var(--amber);border-color:#fde68a}.pill.green{background:var(--soft-green);color:var(--green);border-color:#bbf7d0}.pill.blue{background:var(--soft-blue);color:var(--blue-ink);border-color:#bfdbfe}
+    ul{padding-left:20px;margin:10px 0} li{margin:7px 0} code,pre{font-family:var(--mono)} pre{background:#0b1220;color:#e5e7eb;border-radius:16px;padding:16px;overflow:auto;font-size:12px;line-height:1.55;border:1px solid #1e293b}.small{font-size:13px;color:var(--muted)}
+    .flow{background:#fff;border:1px solid var(--line);border-radius:24px;padding:18px;overflow:auto}.flow svg{width:100%;min-width:820px;height:auto}.node{fill:#fff;stroke:#cfd6e3;stroke-width:1.4}.node.dark{fill:#111827;stroke:#334155}.node.blue{fill:#eff6ff;stroke:#60a5fa}.node.green{fill:#ecfdf5;stroke:#34d399}.node.amber{fill:#fff8e1;stroke:#f59e0b}.node.red{fill:#fff1f0;stroke:#f87171}.label{font:700 13px var(--sans);fill:#111827}.sub{font:12px var(--sans);fill:#64748b}.label.white,.sub.white{fill:#e5e7eb}.arrow{stroke:#64748b;stroke-width:1.6;fill:none;marker-end:url(#arrow)}
+    .mock{border:1px solid #cfd6e3;border-radius:22px;overflow:hidden;background:white;box-shadow:var(--shadow)}.mockbar{height:48px;background:#111827;color:#e5e7eb;display:flex;align-items:center;gap:14px;padding:0 16px;font-size:13px}.mockbody{display:grid;grid-template-columns:250px minmax(360px,1fr) 390px;height:650px}.pane{border-right:1px solid #d8dee8;overflow:hidden}.pane:last-child{border-right:0}.pane-h{height:42px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;border-bottom:1px solid #d8dee8;background:#f8fafc;font:700 12px var(--mono);text-transform:uppercase;color:#475569}.casefacts{padding:12px}.fact{display:flex;justify-content:space-between;border-bottom:1px solid #edf0f4;padding:8px 0;font-size:12px}.queueitem{border:1px solid #e2e8f0;border-radius:12px;padding:10px;margin:8px 0;background:#fff}.imagebox{margin:16px;height:430px;border:1px dashed #aeb8c8;border-radius:18px;background:linear-gradient(135deg,#f8fafc,#eef2f7);position:relative;display:flex;align-items:center;justify-content:center;color:#64748b}.label-art{width:230px;height:330px;border-radius:12px;background:#fff;border:1px solid #ccd4df;box-shadow:0 12px 35px rgba(15,23,42,.12);padding:22px;text-align:center}.label-art h4{font-size:24px;line-height:1;margin:0 0 12px}.hl{position:absolute;border:2px solid;border-radius:6px;background:rgba(255,255,255,.25)}.hl.red{border-color:#ef4444;left:calc(50% - 100px);top:322px;width:200px;height:48px}.hl.green{border-color:#10b981;left:calc(50% - 95px);top:178px;width:190px;height:34px}.findings{padding:12px;overflow:auto;height:608px}.finding{border:1px solid #e2e8f0;border-radius:14px;padding:12px;margin-bottom:10px;background:#fff}.finding.block{border-color:#fecaca;background:#fffafa}.finding h4{margin:8px 0 6px;font-size:14px}.compare{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px}.value{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px}.decision{height:54px;border-top:1px solid #d8dee8;display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:0 12px;background:#fff}.btn{border:1px solid #cbd5e1;background:#fff;border-radius:10px;padding:8px 11px;font-weight:700;font-size:12px}.btn.primary{background:#1d4ed8;color:#fff;border-color:#1d4ed8}.btn.danger{background:#b42318;color:#fff;border-color:#b42318}
+    .matrix{display:grid;grid-template-columns:210px repeat(3,1fr);border:1px solid var(--line);border-radius:18px;overflow:hidden;background:#fff}.matrix>div{padding:13px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);font-size:13px}.matrix>div:nth-child(4n){border-right:0}.matrix .head{background:#f1f5f9;font-weight:800}.matrix .rowhead{font-weight:800;background:#fafafa}.steps{counter-reset:step}.step{counter-increment:step;display:grid;grid-template-columns:42px 1fr;gap:12px;padding:16px;border-bottom:1px solid var(--line)}.step:last-child{border-bottom:0}.step:before{content:counter(step);width:32px;height:32px;background:#111827;color:#fff;border-radius:50%;display:grid;place-items:center;font-weight:800}.refs a{color:var(--blue-ink);word-break:break-word}.togglebar{display:flex;gap:8px;flex-wrap:wrap}.togglebar button{cursor:pointer}.hidden{display:none!important}
+    @media(max-width:980px){.shell{display:block}nav{position:relative;height:auto}.hero-grid,.grid2,.grid3{grid-template-columns:1fr}.proof{grid-template-columns:1fr 1fr}.mockbody{grid-template-columns:1fr;height:auto}.pane{border-right:0;border-bottom:1px solid #d8dee8}.imagebox{height:360px}.matrix{grid-template-columns:1fr}.matrix>div{border-right:0}.mock{font-size:13px}}
+  </style>
+</head>
+<body>
+<div class="shell">
+<nav>
+  <div class="brand">LabelCheck V1</div>
+  <a href="#answer">Short answer</a><a href="#loop">Closed loop</a><a href="#look">How it looks</a><a href="#scope">Scope decision</a><a href="#sources">Source spine</a><a href="#architecture">Architecture</a><a href="#data">Data/API contract</a><a href="#plan">Build sequence</a><a href="#risks">Risks</a><a href="#done">Definition of done</a>
+</nav>
+<main>
+  <header class="hero" id="answer">
+    <div class="hero-grid">
+      <div>
+        <div class="eyebrow">Restarted presearch · buildable app direction</div>
+        <h1>Build a reviewer cockpit, not a label-upload toy.</h1>
+        <p>V1 is a stateless spirits-label discrepancy review session: enter application facts, upload/paste 1–25 labels, extract visible evidence, run deterministic rules with citations, then let a human disposition the case and export the packet.</p>
+      </div>
+      <aside class="verdict"><strong>Recommended wedge</strong><span>One commodity, one session, one review loop. Spirits first. No persistence, no Teams API, no COLA integration until the review cockpit is obviously useful.</span></aside>
+    </div>
+  </header>
+
+  <div class="proof">
+    <div><span>What app?</span><b>Case review cockpit</b></div>
+    <div><span>Who uses it?</span><b>Reviewer</b></div>
+    <div><span>V1 scope</span><b>1–25 labels</b></div>
+    <div><span>Authority</span><b>Human final</b></div>
+  </div>
+
+  <section id="loop">
+    <div class="section-head"><h2>The closed loop</h2><p>If this flow is not clear on screen, the app is wrong. Everything else is decoration.</p></div>
+    <div class="flow">
+      <svg viewBox="0 0 1120 270" role="img" aria-label="LabelCheck closed loop">
+        <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#64748b"/></marker></defs>
+        <rect class="node dark" x="20" y="70" width="150" height="86" rx="14"/><text class="label white" x="42" y="104">Application</text><text class="sub white" x="42" y="126">brand, class, ABV</text><text class="sub white" x="42" y="144">net, bottler</text>
+        <path class="arrow" d="M170 113 H226"/><rect class="node blue" x="230" y="70" width="150" height="86" rx="14"/><text class="label" x="257" y="104">Batch input</text><text class="sub" x="257" y="126">1–25 labels</text><text class="sub" x="257" y="144">text/image</text>
+        <path class="arrow" d="M380 113 H436"/><rect class="node amber" x="440" y="70" width="150" height="86" rx="14"/><text class="label" x="471" y="104">Extractor</text><text class="sub" x="471" y="126">vision or OCR</text><text class="sub" x="471" y="144">no invention</text>
+        <path class="arrow" d="M590 113 H646"/><rect class="node green" x="650" y="70" width="150" height="86" rx="14"/><text class="label" x="685" y="104">Rule engine</text><text class="sub" x="685" y="126">deterministic</text><text class="sub" x="685" y="144">CFR refs</text>
+        <path class="arrow" d="M800 113 H856"/><rect class="node red" x="860" y="70" width="150" height="86" rx="14"/><text class="label" x="896" y="104">Reviewer</text><text class="sub" x="896" y="126">accept, reject</text><text class="sub" x="896" y="144">override, SME</text>
+        <path class="arrow" d="M935 156 V206 H95 V160"/><text class="sub" x="322" y="226">Export JSON + copy Teams-style summary. No live Teams post in V1.</text>
+      </svg>
+    </div>
+  </section>
+
+  <section id="look">
+    <div class="section-head"><h2>How the app should look</h2><p>Carbon/HashiCorp internal console + GitHub-style review + Mintlify-style evidence/rule panel. Dense, audit-friendly, not AI sparkle.</p></div>
+    <div class="mock">
+      <div class="mockbar"><b>LabelCheck</b><span class="pill blue">Internal review session</span><span style="margin-left:auto">Export packet · Help · Reviewer</span></div>
+      <div class="mockbody">
+        <aside class="pane"><div class="pane-h">Case facts</div><div class="casefacts">
+          <div class="fact"><b>Commodity</b><span>Spirits</span></div><div class="fact"><b>Brand</b><span>Old Tom</span></div><div class="fact"><b>Class/type</b><span>Bourbon</span></div><div class="fact"><b>ABV</b><span>45%</span></div><div class="fact"><b>Net</b><span>750 mL</span></div>
+          <h4 style="margin:18px 0 8px">Labels</h4><div class="queueitem"><span class="pill red">blocking</span><b> front-label.png</b><br><span class="small">2 findings · confidence 0.84</span></div><div class="queueitem"><span class="pill green">pass</span><b> back-label.png</b><br><span class="small">all core checks pass</span></div><div class="queueitem"><span class="pill amber">review</span><b> neck-label.png</b><br><span class="small">low OCR confidence</span></div>
+        </div></aside>
+        <section class="pane"><div class="pane-h">Label evidence <span>Zoom · OCR boxes · Compare</span></div><div class="imagebox"><div class="label-art"><h4>OLD TOM</h4><p>Kentucky Straight Bourbon Whiskey</p><p>46% Alc./Vol.</p><p>750 mL</p><p style="font-size:10px;margin-top:36px">Government warning text...</p></div><div class="hl green"></div><div class="hl red"></div></div><div class="decision"><button class="btn">Save draft</button><button class="btn">SME review</button><button class="btn danger">Request correction</button><button class="btn primary">Approve override</button></div></section>
+        <aside class="pane"><div class="pane-h">Findings + rules</div><div class="findings"><div class="finding block"><span class="pill red">blocking</span><h4>Alcohol content differs from application</h4><div class="compare"><div class="value"><b>Application</b><br>45% Alc./Vol.</div><div class="value"><b>Label evidence</b><br>46% Alc./Vol.</div></div><p class="small">Ref: 27 CFR §5.63 / §5.65. Human must request correction or override with reason.</p></div><div class="finding"><span class="pill amber">review</span><h4>Government warning layout cannot be fully verified</h4><p class="small">Text appears present, but current extractor cannot prove boldness, contrast, or type size. Ref: 27 CFR §16.21–§16.22.</p></div><div class="finding"><span class="pill green">passed</span><h4>Net contents found</h4><p class="small">750 mL matched after normalization.</p></div></div></aside>
+      </div>
+    </div>
+  </section>
+
+  <section id="scope">
+    <div class="section-head"><h2>Scope decision</h2><p>The old docs tried to describe the whole future product. This is the buildable V1.</p></div>
+    <div class="grid3">
+      <div class="card"><div class="kicker">Build now</div><h3>Stateless spirits review session</h3><ul><li>Application facts form</li><li>1–25 label inputs</li><li>Batch queue state in browser</li><li>Evidence/rule findings</li><li>Human disposition</li><li>JSON + copy summary export</li></ul></div>
+      <div class="card"><div class="kicker">Defer</div><h3>Production platform features</h3><ul><li>Auth/RBAC</li><li>Persistence/audit DB</li><li>Teams live integration</li><li>TTB COLAs Online integration</li><li>PDF reports</li><li>Multi-team assignment</li></ul></div>
+      <div class="card"><div class="kicker">Kill for V1</div><h3>Things that confuse the app</h3><ul><li>Marketing hero page</li><li>Chat-first interface</li><li>Fake 300-label infra</li><li>Generic dashboards</li><li>Auto-approval language</li><li>Claiming layout compliance from OCR only</li></ul></div>
+    </div>
+  </section>
+
+  <section id="sources">
+    <div class="section-head"><h2>Source spine</h2><p>Requirement refs that should appear in rule output. This is the legal/regulatory backbone, not UI copy.</p></div>
+    <div class="matrix refs">
+      <div class="head">Area</div><div class="head">V1 check</div><div class="head">Source anchor</div><div class="head">Prototype caveat</div>
+      <div class="rowhead">Health warning</div><div>Exact required warning text; flag layout verification risk.</div><div><a href="https://www.ecfr.gov/current/title-27/section-16.21">27 CFR §16.21</a>, <a href="https://www.ecfr.gov/current/title-27/section-16.22">§16.22</a></div><div>Can verify text; cannot prove bold/contrast/type size without image-layout analysis.</div>
+      <div class="rowhead">Spirits fields</div><div>Brand, class/type, ABV, net contents, name/address.</div><div><a href="https://www.ecfr.gov/current/title-27/section-5.63">27 CFR §5.63</a>, <a href="https://www.ecfr.gov/current/title-27/section-5.65">§5.65</a></div><div>V1 starts spirits-first; other commodities added by profiles later.</div>
+      <div class="rowhead">Wine fields</div><div>Brand, class/type, alcohol when required, net, name/address, sulfites/etc.</div><div><a href="https://www.ecfr.gov/current/title-27/section-4.32">27 CFR §4.32</a>, <a href="https://www.ecfr.gov/current/title-27/section-4.36">§4.36</a></div><div>Defer until spirits rule profile is stable.</div>
+      <div class="rowhead">Malt fields</div><div>Brand, class/type, conditional alcohol, name/address, net, disclosures.</div><div><a href="https://www.ecfr.gov/current/title-27/section-7.63">27 CFR §7.63</a>, <a href="https://www.ecfr.gov/current/title-27/section-7.65">§7.65</a></div><div>Part 7 scope has state/definition wrinkles; defer.</div>
+      <div class="rowhead">COLA mismatch</div><div>Approved label authorizes identical label or allowable changes.</div><div><a href="https://www.ttb.gov/regulated-commodities/labeling/allowable-revisions/allowable-changes-sample-label-generator">TTB allowable changes</a>, <a href="https://www.ttb.gov/regulated-commodities/labeling/cola-public-registry">Public COLA Registry</a></div><div>V1 compares to entered application data, not live COLA records.</div>
+    </div>
+  </section>
+
+  <section id="architecture">
+    <div class="section-head"><h2>Architecture</h2><p>Keep the good kernel: model extracts, deterministic rules decide, human owns final disposition.</p></div>
+    <div class="grid2">
+      <div class="card"><h3>Runtime modules</h3><ul><li><code>schemas.ts</code>: request/response contracts</li><li><code>extract.ts</code>: text fallback + guarded vision extraction</li><li><code>ruleProfiles.ts</code>: spirits/wine/malt requirement sets</li><li><code>rules.ts</code>: deterministic checks</li><li><code>batch.ts</code>: stable IDs + per-label statuses</li><li><code>exportPacket.ts</code>: JSON + Teams-style summary</li></ul></div>
+      <div class="card"><h3>UI components</h3><ul><li><code>ApplicationPanel</code></li><li><code>LabelBatchQueue</code></li><li><code>EvidenceViewer</code></li><li><code>FindingsPanel</code></li><li><code>DispositionBar</code></li><li><code>ExportDrawer</code></li></ul></div>
+    </div>
+  </section>
+
+  <section id="data">
+    <div class="section-head"><h2>Data/API contract</h2><p>Enough structure to build without guessing; still small enough for a prototype.</p></div>
+    <pre>{
+  "batchId": "batch_20260512_001",
+  "application": {
+    "beverageKind": "spirits",
+    "brandName": "OLD TOM DISTILLERY",
+    "classType": "Kentucky Straight Bourbon Whiskey",
+    "alcoholContent": "45% Alc./Vol. (90 Proof)",
+    "netContents": "750 mL",
+    "bottlerAddress": "Old Tom Distillery, Frankfort, KY"
+  },
+  "labels": [{ "labelId": "front", "fileName": "front.png", "text": "...", "dataUrl": "..." }],
+  "results": [{
+    "labelId": "front",
+    "status": "completed",
+    "decision": "rejected",
+    "checks": [{
+      "id": "alcohol-content",
+      "requirementRef": "27 CFR §5.63; 27 CFR §5.65",
+      "severity": "blocking",
+      "status": "fail",
+      "expected": "45% Alc./Vol.",
+      "observed": "46% Alc./Vol.",
+      "confidence": 0.86,
+      "rationale": "Label alcohol value does not match application value."
+    }]
+  }],
+  "disposition": { "action": "request_correction", "reasonCode": "field_mismatch", "note": "..." }
+}</pre>
+  </section>
+
+  <section id="plan">
+    <div class="section-head"><h2>Build sequence</h2><p>TDD-first. If a step changes behavior and has no failing test first, it is wrong.</p></div>
+    <div class="card steps">
+      <div class="step"><div><h3>Rule contract tests</h3><p>Failing tests for requirement refs, severity, low-confidence gating, exact warning handling, and spirits ABV mismatch.</p></div></div>
+      <div class="step"><div><h3>API contract tests</h3><p>Failing tests for label IDs, per-label failure isolation, malformed model output, validation errors, and response shape.</p></div></div>
+      <div class="step"><div><h3>Refactor kernel</h3><p>Extract schemas/extractor/profiles/export modules without changing behavior; keep tests green.</p></div></div>
+      <div class="step"><div><h3>Add v1 response shape</h3><p>Return batchId, labelId, requirementRef, severity, confidence, and sanitized failures.</p></div></div>
+      <div class="step"><div><h3>Replace page with cockpit layout</h3><p>Split current monolith into panels: application, queue, evidence, findings, disposition/export.</p></div></div>
+      <div class="step"><div><h3>Verify visually and functionally</h3><p>Run tests/lint/build, open browser, submit demo batch, check console, export JSON/copy summary.</p></div></div>
+    </div>
+  </section>
+
+  <section id="risks">
+    <div class="section-head"><h2>Risks and hard rules</h2><p>These prevent the product from lying.</p></div>
+    <div class="grid2">
+      <div class="card"><h3>Hard rules</h3><ul><li>Never call it approval. Call it review recommendation.</li><li>Low confidence cannot become clean pass.</li><li>Every failed/warning check has a source ref.</li><li>Layout compliance is “unverified” unless image analysis proves it.</li><li>Model output is evidence extraction only.</li></ul></div>
+      <div class="card"><h3>Known risks</h3><ul><li>OCR can miss curved/glossy labels.</li><li>Regulatory commodity boundaries are tricky.</li><li>TTB/COLA integration can become procurement swamp.</li><li>Batch scale claims are fake without persistence/queue infra.</li><li>Reviewer trust dies if rationale is vague.</li></ul></div>
+    </div>
+  </section>
+
+  <section id="done">
+    <div class="section-head"><h2>Definition of done for V1</h2><p>The app is “built” only when a reviewer can complete this loop without guessing what to do next.</p></div>
+    <div class="card"><div class="togglebar"><button class="btn primary" onclick="document.querySelectorAll('.dod').forEach(x=>x.classList.toggle('hidden'))">Toggle checklist notes</button></div><ul><li>Enter application record.</li><li>Submit 1–25 labels/texts.</li><li>See queue status per label.</li><li>Select a label and inspect image/OCR evidence.</li><li>See findings with expected/observed/rationale/source refs.</li><li>Make disposition: accept, request correction, override with reason, or SME review.</li><li>Export JSON packet and copy Teams-style summary.</li><li>Tests/lint/build pass.</li></ul><p class="small dod">Non-goal: persistent case management. If you refresh, the session can vanish. That is acceptable for V1.</p></div>
+  </section>
+</main>
+</div>
+<script>
+  document.querySelectorAll('nav a').forEach(a=>a.addEventListener('click',()=>{document.querySelectorAll('nav a').forEach(x=>x.style.background=''); a.style.background='#fff'}));
+</script>
+</body>
+</html>

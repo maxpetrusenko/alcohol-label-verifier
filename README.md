@@ -74,7 +74,9 @@ This avoids the brittle black-box pattern: the model reads; rules decide; humans
 
 Read these in order:
 
-1. [`docs/PRODUCT_BLUEPRINT.md`](docs/PRODUCT_BLUEPRINT.md) — corrective research audit, actual agent architecture, user stories, edge cases, and batch plan.
-2. [`docs/product-blueprint-designs.html`](docs/product-blueprint-designs.html) — visual web UI and architecture artifact.
-3. [`docs/PRESEARCH.md`](docs/PRESEARCH.md) — original requirement extraction and source notes.
-4. [`docs/SPEC.md`](docs/SPEC.md) — implementation spec baseline.
+1. [`docs/presearch-labelcheck-v1-flow.html`](docs/presearch-labelcheck-v1-flow.html) — START HERE: buildable V1 app direction, UI, source spine, API shape, and TDD sequence.
+2. [`docs/TASKS.md`](docs/TASKS.md) — V1 implementation backlog derived from the presearch artifact.
+3. [`docs/PRODUCT_BLUEPRINT.md`](docs/PRODUCT_BLUEPRINT.md) — broader corrective research/background; do not implement wholesale.
+4. [`docs/product-blueprint-designs.html`](docs/product-blueprint-designs.html) — earlier visual artifact/background.
+5. [`docs/PRESEARCH.md`](docs/PRESEARCH.md) — original lightweight source notes.
+6. [`docs/SPEC.md`](docs/SPEC.md) — older implementation baseline; superseded where it conflicts with the V1 flow.
