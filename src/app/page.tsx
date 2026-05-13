@@ -15,6 +15,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { fixtureCases, type FixtureCase } from "@/lib/fixtureCases";
+import { buildVerificationLabels, type PendingLabel } from "@/lib/labelPayload";
 import type { ApplicationData, CheckStatus, VerificationResult } from "@/lib/types";
 
 const demoText = `OLD TOM DISTILLERY
@@ -32,13 +33,6 @@ const demoApplication: ApplicationData = {
   bottlerAddress: "Old Tom Distillery, Frankfort, KY",
   countryOfOrigin: "",
   beverageKind: "spirits",
-};
-
-type LabelInput = {
-  fileName: string;
-  mimeType?: string;
-  dataUrl?: string;
-  text?: string;
 };
 
 const fixtureCategoryLabel: Record<FixtureCase["category"], string> = {
@@ -103,7 +97,7 @@ function decisionCopy(result?: VerificationResult) {
 
 export default function Home() {
   const [application, setApplication] = useState<ApplicationData>(demoApplication);
-  const [labels, setLabels] = useState<LabelInput[]>([{ fileName: "demo-label.txt", text: demoText }]);
+  const [labels, setLabels] = useState<PendingLabel[]>([{ fileName: "demo-label.txt", text: demoText }]);
   const [labelText, setLabelText] = useState(demoText);
   const [results, setResults] = useState<VerificationResult[]>([]);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -124,14 +118,13 @@ export default function Home() {
     const next = await Promise.all(
       [...files].map(
         (file) =>
-          new Promise<LabelInput>((resolve, reject) => {
+          new Promise<PendingLabel>((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = () => {
               resolve({
                 fileName: file.name,
                 mimeType: file.type,
                 dataUrl: String(reader.result),
-                text: labelText,
               });
             };
             reader.onerror = () => reject(new Error(`Could not read ${file.name}`));
@@ -181,9 +174,7 @@ export default function Home() {
     setError(null);
     setResults([]);
 
-    const payloadLabels = labels.length
-      ? labels.map((label) => ({ ...label, text: label.text || labelText }))
-      : [{ fileName: "typed-label", text: labelText }];
+    const payloadLabels = buildVerificationLabels(labels, labelText);
 
     try {
       const response = await fetch("/api/verify", {
