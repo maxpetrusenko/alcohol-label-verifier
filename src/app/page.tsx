@@ -72,31 +72,31 @@ function decisionIcon(decision?: VerificationResult["decision"]) {
 function decisionCopy(result?: VerificationResult) {
   if (!result) {
     return {
-      title: "Ready for label intake",
-      body: "Upload or take a label photo, confirm the application facts, then run extraction and comparison.",
+      title: "Ready",
+      body: "Add label and facts.",
       tone: "idle",
     };
   }
 
   if (result.decision === "approved") {
     return {
-      title: "Label aligns with application facts",
-      body: "Checks passed against extracted label evidence. Keep the review packet and submit when internal signoff is complete.",
+      title: "Approved",
+      body: "Label matches application.",
       tone: "pass",
     };
   }
 
   if (result.decision === "rejected") {
     return {
-      title: "Blocking differences found",
-      body: "Revise the label artwork or correct the application facts before COLA submission.",
+      title: "Blocked",
+      body: "Fix label or facts.",
       tone: "fail",
     };
   }
 
   return {
-    title: "Human review needed",
-    body: "Resolve warnings, inspect low confidence extraction, and rerun the comparison before filing.",
+    title: "Review",
+    body: "Check warnings.",
     tone: "review",
   };
 }
@@ -208,52 +208,16 @@ export default function Home() {
           <div className="topbar">
             <div>
               <p className="eyebrow">TTB COLA Label Verifier</p>
-              <h1>Photo first label review</h1>
+              <h1>LabelCheck</h1>
             </div>
-            <button type="button" className="ghost-button" onClick={loadDemo}>
-              Load demo
-            </button>
-          </div>
-
-          <div className="workflow" aria-label="Review flow">
-            <div className="flow-step active">
-              <Camera aria-hidden />
+            <div className="workflow" aria-label="Review flow">
               <span>Photo</span>
-            </div>
-            <div className="flow-step">
-              <ClipboardList aria-hidden />
               <span>Facts</span>
-            </div>
-            <div className="flow-step">
-              <Bot aria-hidden />
-              <span>Extract</span>
-            </div>
-            <div className="flow-step">
-              <Scale aria-hidden />
               <span>Compare</span>
             </div>
           </div>
 
           <div className="label-stage">
-            <div className="photo-tools">
-              <label className="tool-button">
-                <UploadCloud aria-hidden />
-                <span>Upload label</span>
-                <input className="file-input" type="file" accept="image/*" multiple onChange={(event) => onFiles(event.target.files)} />
-              </label>
-              <label className="tool-button">
-                <Camera aria-hidden />
-                <span>Take photo</span>
-                <input
-                  className="file-input"
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={(event) => onFiles(event.target.files)}
-                />
-              </label>
-            </div>
-
             <div className="label-preview" aria-label="Full label preview">
               {activeLabel?.dataUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -271,12 +235,30 @@ export default function Home() {
               )}
             </div>
 
-            <div className="photo-meta">
-              <FileImage aria-hidden />
-              <div>
-                <strong>{activeLabel?.fileName ?? "No label selected"}</strong>
-                <span>{activeLabel?.dataUrl ? "Image ready for AI extraction" : "Demo text fallback ready"}</span>
-              </div>
+            <div className="photo-dock">
+              <label className="tool-button">
+                <UploadCloud aria-hidden />
+                <span>Upload</span>
+                <input className="file-input" type="file" accept="image/*" multiple onChange={(event) => onFiles(event.target.files)} />
+              </label>
+              <label className="tool-button">
+                <Camera aria-hidden />
+                <span>Camera</span>
+                <input
+                  className="file-input"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={(event) => onFiles(event.target.files)}
+                />
+              </label>
+              <button type="button" className="ghost-button" onClick={loadDemo}>
+                Demo
+              </button>
+              <span className="photo-meta">
+                <FileImage aria-hidden />
+                {activeLabel?.fileName ?? "No label"}
+              </span>
             </div>
           </div>
         </section>
@@ -303,17 +285,8 @@ export default function Home() {
               <ClipboardList aria-hidden />
               <div>
                 <h2>Application facts</h2>
-                <p>Enter current COLA application values or load a generated fixture case.</p>
+                <p>Distilled spirits MVP.</p>
               </div>
-            </div>
-
-            <div className="fixture-strip" aria-label="Generated fixture cases">
-              {fixtureCases.map((fixture) => (
-                <button key={fixture.id} type="button" onClick={() => void loadFixture(fixture)}>
-                  <span>{fixtureCategoryLabel[fixture.category]}</span>
-                  {fixture.title}
-                </button>
-              ))}
             </div>
 
             <div className="fact-grid">
@@ -339,116 +312,107 @@ export default function Home() {
                 </select>
               </label>
             </div>
-          </section>
 
-          <section className="extract-card">
-            <div className="section-title">
-              <Bot aria-hidden />
-              <div>
-                <h2>AI extraction</h2>
-                <p>Vision reads the photo. Text below keeps local demo mode usable.</p>
+            <details className="fixture-drawer">
+              <summary>Fixtures and text fallback</summary>
+              <div className="fixture-strip" aria-label="Generated fixture cases">
+                {fixtureCases.map((fixture) => (
+                  <button key={fixture.id} type="button" onClick={() => void loadFixture(fixture)}>
+                    <span>{fixtureCategoryLabel[fixture.category]}</span>
+                    {fixture.title}
+                  </button>
+                ))}
               </div>
-            </div>
-            <textarea value={labelText} onChange={(event) => setLabelText(event.target.value)} aria-label="Label text fallback" />
+              <textarea value={labelText} onChange={(event) => setLabelText(event.target.value)} aria-label="Label text fallback" />
+            </details>
+
             <button type="submit" className="run-button" disabled={isVerifying}>
               {isVerifying ? <Loader2 aria-hidden className="spin" /> : <Scale aria-hidden />}
-              <span>{isVerifying ? "Extracting and comparing" : "Run extraction and comparison"}</span>
+              <span>{isVerifying ? "Checking" : "Verify label"}</span>
             </button>
             {error ? <p className="error-message">{error}</p> : null}
           </section>
+
+          <section className="guidance-panel" aria-label="Issues and next steps">
+            <div className="section-title">
+              <AlertTriangle aria-hidden />
+              <div>
+                <h2>Review</h2>
+                <p>{activeResult ? `${activeResult.checks.length} checks` : "Run verification."}</p>
+              </div>
+            </div>
+
+            {activeResult ? (
+              <div className="review-stack">
+                <article className="evidence-card">
+                  <h3>Evidence</h3>
+                  <dl>
+                    <div>
+                      <dt>Brand</dt>
+                      <dd>{activeResult.extraction.brandName || "Not found"}</dd>
+                    </div>
+                    <div>
+                      <dt>Class</dt>
+                      <dd>{activeResult.extraction.classType || "Not found"}</dd>
+                    </div>
+                    <div>
+                      <dt>Alcohol</dt>
+                      <dd>{activeResult.extraction.alcoholContent || "Not found"}</dd>
+                    </div>
+                    <div>
+                      <dt>Contents</dt>
+                      <dd>{activeResult.extraction.netContents || "Not found"}</dd>
+                    </div>
+                  </dl>
+                  <p className="confidence">{Math.round(activeResult.extraction.confidence * 100)}% confidence</p>
+                </article>
+
+                <article className="issue-card">
+                  <h3>{blockingIssues.length ? "Issues" : "No issues"}</h3>
+                  <div className="checks">
+                    {activeResult.checks.map((check) => (
+                      <div className={statusClass(check.status)} key={check.id}>
+                        <div>
+                          <strong>{check.label}</strong>
+                          <span>{check.status.replace("_", " ")}</span>
+                        </div>
+                        <p>{check.rationale}</p>
+                      </div>
+                    ))}
+                  </div>
+                </article>
+
+                <article className="next-card">
+                  <h3>Next</h3>
+                  {activeResult.missingApplicationFacts?.length ? (
+                    <div className="missing-facts">
+                      <strong>Missing facts</strong>
+                      {activeResult.missingApplicationFacts.map((fact) => (
+                        <span key={fact.field}>{fact.label}</span>
+                      ))}
+                    </div>
+                  ) : null}
+                  <ul>
+                    {(nextSteps.length ? nextSteps : activeResult.extraction.notes.length ? activeResult.extraction.notes : ["Ready to save."])
+                      .slice(0, 3)
+                      .map((step) => (
+                        <li key={step}>
+                          <CheckCircle2 aria-hidden />
+                          <span>{step}</span>
+                        </li>
+                      ))}
+                  </ul>
+                </article>
+              </div>
+            ) : (
+              <div className="empty-review">
+                <Bot aria-hidden />
+                <p>Photo plus facts becomes evidence, issues, next action.</p>
+              </div>
+            )}
+          </section>
         </aside>
       </form>
-
-      <section className="guidance-panel" aria-label="Issues and next steps">
-        <div className="section-title">
-          <AlertTriangle aria-hidden />
-          <div>
-            <h2>Issues and next steps</h2>
-            <p>Review extracted evidence, compare mismatches, then decide whether to revise artwork or file the COLA package.</p>
-          </div>
-        </div>
-
-        {activeResult ? (
-          <div className="review-grid">
-            <article className="evidence-card">
-              <h3>Extracted label evidence</h3>
-              <dl>
-                <div>
-                  <dt>Brand</dt>
-                  <dd>{activeResult.extraction.brandName || "Not found"}</dd>
-                </div>
-                <div>
-                  <dt>Class or type</dt>
-                  <dd>{activeResult.extraction.classType || "Not found"}</dd>
-                </div>
-                <div>
-                  <dt>Alcohol</dt>
-                  <dd>{activeResult.extraction.alcoholContent || "Not found"}</dd>
-                </div>
-                <div>
-                  <dt>Contents</dt>
-                  <dd>{activeResult.extraction.netContents || "Not found"}</dd>
-                </div>
-              </dl>
-              <p className="confidence">Extraction confidence {Math.round(activeResult.extraction.confidence * 100)}%</p>
-            </article>
-
-            <article className="issue-card">
-              <h3>{blockingIssues.length ? "Review these differences" : "No blocking differences"}</h3>
-              {activeResult.workflow?.comparisonSummary ? <p className="comparison-summary">{activeResult.workflow.comparisonSummary}</p> : null}
-              <div className="checks">
-                {activeResult.checks.map((check) => (
-                  <div className={statusClass(check.status)} key={check.id}>
-                    <div>
-                      <strong>{check.label}</strong>
-                      <span>{check.status.replace("_", " ")}</span>
-                    </div>
-                    <p>{check.rationale}</p>
-                    <small>Expected: {check.expected || "Not required"}</small>
-                    <small>Observed: {check.observed || "Not found"}</small>
-                    <small>Ref: {check.requirementRef?.label || "Internal rule"}</small>
-                    {check.guidance ? <small>Guidance: {check.guidance}</small> : null}
-                  </div>
-                ))}
-              </div>
-            </article>
-
-            <article className="next-card">
-              <h3>Next action</h3>
-              {activeResult.decision === "approved" ? (
-                <p>
-                  Save this review with the application packet. Confirm any internal brand approvals, then proceed with COLA submission.
-                </p>
-              ) : (
-                <p>
-                  Fix failed fields first, rerun extraction on the updated label, then send remaining warnings to a reviewer with the extracted evidence.
-                </p>
-              )}
-              {activeResult.missingApplicationFacts?.length ? (
-                <div className="missing-facts">
-                  <strong>Missing application facts</strong>
-                  {activeResult.missingApplicationFacts.map((fact) => (
-                    <span key={fact.field}>{fact.label}: {fact.nextStep}</span>
-                  ))}
-                </div>
-              ) : null}
-              <ul>
-                {(nextSteps.length ? nextSteps : activeResult.extraction.notes.length ? activeResult.extraction.notes : ["No extraction notes returned."]).map((step) => (
-                  <li key={step}>
-                    <CheckCircle2 aria-hidden />
-                    <span>{step}</span>
-                  </li>
-                ))}
-              </ul>
-            </article>
-          </div>
-        ) : (
-          <div className="empty-review">
-            <FileImage aria-hidden />
-            <p>Results will appear here after the photo extraction and application comparison run.</p>
-          </div>
-        )}
-      </section>
     </main>
   );
 }
