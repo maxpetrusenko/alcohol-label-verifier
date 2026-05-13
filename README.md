@@ -53,6 +53,14 @@ npm run lint
 npm run build
 ```
 
+Run the copied fsyed generated fixture eval report:
+
+```bash
+npm run eval:fixtures
+```
+
+This processes every generated fixture row in `public/evals/fixtures/generated/manifest.json` against the local deterministic rule engine and writes the gap report to `/tmp/labelcheck-fsyed-fixture-eval.json`.
+
 ## Approach
 
 The prototype separates extraction from compliance judgment:

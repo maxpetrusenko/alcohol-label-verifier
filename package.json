@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
+    "eval:fixtures": "vitest run src/lib/generatedFixtureEval.test.ts",
     "test:watch": "vitest"
   },
   "dependencies": {

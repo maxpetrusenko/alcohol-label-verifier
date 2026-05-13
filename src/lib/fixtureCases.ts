@@ -62,6 +62,7 @@ export function applicationFromFsyedFixture(fixture: FsyedGeneratedFixtureJson):
     ...(bottlerAddress ? { bottlerAddress } : {}),
     ...(fixture.country_of_origin ? { countryOfOrigin: fixture.country_of_origin } : {}),
     beverageKind: beverageKindFromClassType(fixture.class_type),
+    imported: fixture.is_import,
   };
 }
 

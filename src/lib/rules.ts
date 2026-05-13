@@ -417,7 +417,10 @@ export function extractionFromPlainText(text: string): LabelExtraction {
     alcoholContent: findLine([/%\s*(alc|abv)|proof/i]),
     netContents: findLine([/\b\d+\s*(ml|l|liter|litre|fl\.?\s*oz)\b/i]),
     governmentWarning: warningMatch,
-    bottlerAddress: findLine([/^(bottled|distilled|produced)\s+by\b/i])?.replace(/^(bottled|distilled|produced)\s+by:?\s*/i, ""),
+    bottlerAddress: findLine([/^(bottled|distilled|produced)(?:\s+and\s+bottled)?\s+by\b/i, /^imported\s+by\b/i, /^made\s+by\b/i])?.replace(
+      /^(bottled|distilled|produced)(?:\s+and\s+bottled)?\s+by:?\s*|^imported\s+by:?\s*|^made\s+by:?\s*/i,
+      "",
+    ),
     countryOfOrigin: findLine([/^country\s+of\s+origin\s*:/i, /^product\s+of\b/i])?.replace(/^country\s+of\s+origin\s*:\s*/i, "").replace(/^product\s+of\s*/i, ""),
     confidence: text.trim() ? 0.72 : 0,
     notes: text.trim() ? ["Parsed from supplied text/OCR paste without calling a vision model."] : ["No label text was supplied."],
