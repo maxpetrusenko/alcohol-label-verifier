@@ -1,14 +1,79 @@
 import type {
   ApplicationData,
+  CheckSeverity,
   CheckStatus,
   LabelExtraction,
+  MissingApplicationFact,
+  RequirementRef,
   VerificationCheck,
   VerificationDecision,
+  VerificationWorkflow,
   VerificationResult,
 } from "./types";
 
 export const GOVERNMENT_WARNING_TEXT =
   "GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.";
+
+const TTB_DISTILLED_SPIRITS_LABELING_URL = "https://www.ttb.gov/regulated-commodities/beverage-alcohol/distilled-spirits/labeling";
+
+const REQUIREMENT_REFS = {
+  brandName: {
+    id: "ttb-spirits-brand-name",
+    label: "Distilled spirits brand name",
+    source: "TTB distilled spirits labeling",
+    url: "https://www.ttb.gov/regulated-commodities/beverage-alcohol/distilled-spirits/ds-labeling-home/ds-brand-name",
+  },
+  classType: {
+    id: "ttb-spirits-class-type",
+    label: "Distilled spirits class/type designation",
+    source: "TTB distilled spirits labeling",
+    url: TTB_DISTILLED_SPIRITS_LABELING_URL,
+  },
+  alcoholContent: {
+    id: "ttb-spirits-alcohol-content",
+    label: "Distilled spirits alcohol content",
+    source: "TTB distilled spirits labeling",
+    url: "https://www.ttb.gov/regulated-commodities/beverage-alcohol/distilled-spirits/ds-labeling-home/ds-alcohol-content",
+  },
+  netContents: {
+    id: "ttb-spirits-net-contents",
+    label: "Distilled spirits net contents",
+    source: "TTB distilled spirits labeling",
+    url: "https://www.ttb.gov/ds-labeling-home/ds-net-contents",
+  },
+  governmentWarning: {
+    id: "ttb-health-warning",
+    label: "Alcohol beverage health warning statement",
+    source: "TTB distilled spirits health warning guidance",
+    url: "https://www.ttb.gov/regulated-commodities/beverage-alcohol/distilled-spirits/ds-labeling-home/ds-health-warning",
+  },
+  bottlerAddress: {
+    id: "ttb-spirits-name-address",
+    label: "Distilled spirits bottler/importer name and address",
+    source: "TTB distilled spirits labeling",
+    url: "https://www.ttb.gov/regulated-commodities/beverage-alcohol/distilled-spirits/ds-labeling-home/ds-name-address",
+  },
+  countryOfOrigin: {
+    id: "ttb-spirits-country-origin",
+    label: "Imported distilled spirits country of origin",
+    source: "TTB distilled spirits labeling",
+    url: TTB_DISTILLED_SPIRITS_LABELING_URL,
+  },
+  extractionConfidence: {
+    id: "labelcheck-extraction-confidence",
+    label: "Extractor confidence gate",
+    source: "LabelCheck review workflow",
+    url: TTB_DISTILLED_SPIRITS_LABELING_URL,
+  },
+} satisfies Record<string, RequirementRef>;
+
+type CheckOptions = {
+  severity: CheckSeverity;
+  requirementRef: RequirementRef;
+  failGuidance: string;
+  reviewGuidance: string;
+  warningGuidance?: string;
+};
 
 export function normalizeForMatch(value: string | undefined | null): string {
   return (value ?? "")
@@ -49,17 +114,31 @@ export function formatStatus(status: CheckStatus): string {
   return status.replace("_", " ");
 }
 
+function isBlank(value: string | undefined | null): boolean {
+  return !normalizeForMatch(value);
+}
+
+function guidanceForStatus(status: CheckStatus, options: CheckOptions): string | undefined {
+  if (status === "fail") return options.failGuidance;
+  if (status === "needs_review") return options.reviewGuidance;
+  if (status === "warning") return options.warningGuidance ?? "Confirm whether the label wording is an acceptable variation before disposition.";
+  return undefined;
+}
+
 function fuzzyCheck(
   id: string,
   label: string,
   expected: string | undefined,
   observed: string | undefined,
+  options: CheckOptions,
   passAt = 0.86,
   warnAt = 0.62,
 ): VerificationCheck {
-  const score = similarity(expected, observed);
+  const missingExpected = isBlank(expected);
+  const score = missingExpected ? 0 : similarity(expected, observed);
   let status: CheckStatus = "fail";
-  if (score >= passAt) status = "pass";
+  if (missingExpected) status = "needs_review";
+  else if (score >= passAt) status = "pass";
   else if (score >= warnAt) status = "warning";
   else if (!observed) status = "needs_review";
 
@@ -67,6 +146,8 @@ function fuzzyCheck(
     id,
     label,
     status,
+    severity: options.severity,
+    requirementRef: options.requirementRef,
     expected,
     observed,
     rationale:
@@ -75,8 +156,11 @@ function fuzzyCheck(
         : status === "warning"
           ? "Close but not exact. Agent should review before accepting."
           : status === "needs_review"
-            ? "The field was not confidently extracted from the label."
+            ? missingExpected
+              ? "The application record is missing this source fact, so the label cannot be compared deterministically."
+              : "The field was not confidently extracted from the label."
             : "Expected application value was not found on the label.",
+    guidance: guidanceForStatus(status, options),
   };
 }
 
@@ -93,6 +177,8 @@ function alcoholCheck(expected: string, observed: string | undefined): Verificat
     id: "alcohol-content",
     label: "Alcohol content / proof",
     status,
+    severity: "blocking",
+    requirementRef: REQUIREMENT_REFS.alcoholContent,
     expected,
     observed,
     rationale:
@@ -101,6 +187,12 @@ function alcoholCheck(expected: string, observed: string | undefined): Verificat
         : status === "needs_review"
           ? "No ABV/proof value was confidently extracted."
           : "The label alcohol value does not match the application value.",
+    guidance:
+      status === "fail"
+        ? "Request a corrected label or corrected application record so the ABV/proof values agree."
+        : status === "needs_review"
+          ? "Re-run extraction with a clearer image or inspect the label panel that contains ABV/proof."
+          : undefined,
   };
 }
 
@@ -128,35 +220,171 @@ function warningCheck(extraction: LabelExtraction): VerificationCheck {
     id: "government-warning",
     label: "Government health warning",
     status,
+    severity: "blocking",
+    requirementRef: REQUIREMENT_REFS.governmentWarning,
     expected: GOVERNMENT_WARNING_TEXT,
     observed: extraction.governmentWarning,
     rationale,
+    guidance:
+      status === "fail"
+        ? "Request corrected artwork with the mandatory Government Health Warning text before approval."
+        : status === "needs_review"
+          ? "Compare the warning text against the required statement and inspect any label panel not captured by extraction."
+          : status === "warning"
+            ? "Confirm exact punctuation, capitalization, and formatting manually; layout is not verified by this text check."
+            : undefined,
+  };
+}
+
+function confidenceCheck(extraction: LabelExtraction): VerificationCheck | undefined {
+  if (extraction.confidence >= 0.55) return undefined;
+
+  return {
+    id: "extraction-confidence",
+    label: "Extraction confidence",
+    status: "needs_review",
+    severity: "review",
+    requirementRef: REQUIREMENT_REFS.extractionConfidence,
+    expected: "Confidence at or above 0.55 for clean automated approval",
+    observed: `${Math.round(extraction.confidence * 100)}%`,
+    rationale: "The extractor reported low confidence, so deterministic matches need human review before disposition.",
+    guidance: "Review the source image/OCR manually or re-run extraction with clearer artwork before approving.",
+  };
+}
+
+function missingApplicationFacts(application: ApplicationData): MissingApplicationFact[] {
+  const facts: MissingApplicationFact[] = [];
+  const addFact = (
+    field: keyof ApplicationData,
+    label: string,
+    severity: CheckSeverity,
+    rationale: string,
+    nextStep: string,
+  ) => {
+    facts.push({ field, label, severity, rationale, nextStep });
+  };
+
+  if (isBlank(application.brandName)) {
+    addFact("brandName", "Brand name", "blocking", "Brand name is required to compare the label to the application.", "Add the application brand name.");
+  }
+  if (isBlank(application.classType)) {
+    addFact("classType", "Class / type designation", "blocking", "Class/type is required for a distilled spirits label comparison.", "Add the application class/type designation.");
+  }
+  if (isBlank(application.alcoholContent)) {
+    addFact("alcoholContent", "Alcohol content / proof", "blocking", "ABV/proof is required to compare alcohol content.", "Add the application ABV/proof statement.");
+  }
+  if (isBlank(application.netContents)) {
+    addFact("netContents", "Net contents", "blocking", "Net contents is required to compare the container volume.", "Add the application net contents.");
+  }
+  if (application.beverageKind === "spirits" && isBlank(application.bottlerAddress)) {
+    addFact(
+      "bottlerAddress",
+      "Bottler / producer address",
+      "review",
+      "Distilled spirits labels need a bottler/importer name and address comparison, but the application fact is absent.",
+      "Add the bottler, producer, or importer name and address from the application record.",
+    );
+  }
+  if (application.imported === true && isBlank(application.countryOfOrigin)) {
+    addFact(
+      "countryOfOrigin",
+      "Country of origin",
+      "blocking",
+      "Imported distilled spirits need country-of-origin comparison, but the application fact is absent.",
+      "Add the country of origin from the application/import record.",
+    );
+  }
+
+  return facts;
+}
+
+function buildWorkflow(checks: VerificationCheck[], facts: MissingApplicationFact[]): VerificationWorkflow {
+  const failCount = checks.filter((check) => check.status === "fail").length;
+  const reviewCount = checks.filter((check) => check.status === "needs_review").length;
+  const warningCount = checks.filter((check) => check.status === "warning").length;
+  const passCount = checks.filter((check) => check.status === "pass").length;
+  const nextSteps: string[] = [];
+
+  for (const check of checks.filter((item) => item.status === "fail")) {
+    nextSteps.push(`Resolve blocking mismatch: ${check.label}. ${check.guidance ?? check.rationale}`);
+  }
+  for (const fact of facts.filter((item) => item.severity !== "info")) {
+    nextSteps.push(`Add application fact: ${fact.label}. ${fact.nextStep}`);
+  }
+  for (const check of checks.filter((item) => item.status === "needs_review")) {
+    nextSteps.push(`Review label evidence: ${check.label}. ${check.guidance ?? check.rationale}`);
+  }
+  for (const check of checks.filter((item) => item.status === "warning")) {
+    nextSteps.push(`Confirm acceptable variation: ${check.label}. ${check.guidance ?? check.rationale}`);
+  }
+
+  if (!nextSteps.length) {
+    nextSteps.push("No deterministic blockers found. Agent may approve if artwork and source record context look complete.");
+  }
+
+  return {
+    comparisonSummary: `${passCount} of ${checks.length} deterministic checks passed; ${failCount} blocking mismatch(es), ${reviewCount} review item(s), ${warningCount} warning(s), ${facts.length} missing application fact(s).`,
+    missingApplicationFacts: facts,
+    nextSteps,
   };
 }
 
 export function verifyLabel(application: ApplicationData, extraction: LabelExtraction, fileName = "label"): VerificationResult {
   const started = Date.now();
   const checks: VerificationCheck[] = [
-    fuzzyCheck("brand-name", "Brand name", application.brandName, extraction.brandName || extraction.labelText),
-    fuzzyCheck("class-type", "Class / type designation", application.classType, extraction.classType || extraction.labelText, 0.72, 0.45),
+    fuzzyCheck("brand-name", "Brand name", application.brandName, extraction.brandName || extraction.labelText, {
+      severity: "blocking",
+      requirementRef: REQUIREMENT_REFS.brandName,
+      failGuidance: "Request a corrected label or corrected application record so the brand names agree.",
+      reviewGuidance: "Re-run extraction with a clearer image or inspect the label panel that contains the brand name.",
+    }),
+    fuzzyCheck("class-type", "Class / type designation", application.classType, extraction.classType || extraction.labelText, {
+      severity: "blocking",
+      requirementRef: REQUIREMENT_REFS.classType,
+      failGuidance: "Request a corrected label or corrected application record so the class/type designation agrees.",
+      reviewGuidance: "Re-run extraction with a clearer image or inspect the label panel that contains the class/type designation.",
+    }, 0.72, 0.45),
     alcoholCheck(application.alcoholContent, extraction.alcoholContent || extraction.labelText),
-    fuzzyCheck("net-contents", "Net contents", application.netContents, extraction.netContents || extraction.labelText, 0.74, 0.45),
+    fuzzyCheck("net-contents", "Net contents", application.netContents, extraction.netContents || extraction.labelText, {
+      severity: "blocking",
+      requirementRef: REQUIREMENT_REFS.netContents,
+      failGuidance: "Request a corrected label or corrected application record so the net contents agree.",
+      reviewGuidance: "Re-run extraction with a clearer image or inspect the label panel that contains net contents.",
+    }, 0.74, 0.45),
     warningCheck(extraction),
   ];
 
   if (application.bottlerAddress) {
-    checks.push(fuzzyCheck("bottler-address", "Bottler / producer address", application.bottlerAddress, extraction.bottlerAddress || extraction.labelText, 0.7, 0.45));
+    checks.push(fuzzyCheck("bottler-address", "Bottler / producer address", application.bottlerAddress, extraction.bottlerAddress || extraction.labelText, {
+      severity: "review",
+      requirementRef: REQUIREMENT_REFS.bottlerAddress,
+      failGuidance: "Request a corrected label or corrected application record so the bottler/importer statement agrees.",
+      reviewGuidance: "Inspect the back/side label or source artwork for the bottler, producer, or importer address.",
+    }, 0.7, 0.45));
   }
   if (application.countryOfOrigin) {
-    checks.push(fuzzyCheck("country-origin", "Country of origin", application.countryOfOrigin, extraction.countryOfOrigin || extraction.labelText, 0.78, 0.5));
+    checks.push(fuzzyCheck("country-origin", "Country of origin", application.countryOfOrigin, extraction.countryOfOrigin || extraction.labelText, {
+      severity: application.imported ? "blocking" : "review",
+      requirementRef: REQUIREMENT_REFS.countryOfOrigin,
+      failGuidance: "Request a corrected label or corrected application record so the country of origin agrees.",
+      reviewGuidance: "Inspect the import/origin statement on all label panels before disposition.",
+    }, 0.78, 0.5));
   }
 
+  const lowConfidenceCheck = confidenceCheck(extraction);
+  if (lowConfidenceCheck) {
+    checks.push(lowConfidenceCheck);
+  }
+
+  const facts = missingApplicationFacts(application);
+  const workflow = buildWorkflow(checks, facts);
   const failCount = checks.filter((check) => check.status === "fail").length;
   const reviewCount = checks.filter((check) => check.status === "needs_review").length;
   const warningCount = checks.filter((check) => check.status === "warning").length;
   const passCount = checks.filter((check) => check.status === "pass").length;
   const score = Math.round((passCount / checks.length) * 100);
-  const decision: VerificationDecision = failCount > 0 ? "rejected" : reviewCount + warningCount > 0 ? "needs_review" : "approved";
+  const factReviewCount = facts.filter((fact) => fact.severity !== "info").length;
+  const decision: VerificationDecision = failCount > 0 ? "rejected" : reviewCount + warningCount + factReviewCount > 0 ? "needs_review" : "approved";
 
   return {
     fileName,
@@ -167,10 +395,13 @@ export function verifyLabel(application: ApplicationData, extraction: LabelExtra
     checks,
     summary:
       decision === "approved"
-        ? "All core label fields matched the application."
+        ? "All focused distilled-spirits label fields matched the application."
         : decision === "needs_review"
-          ? "No hard mismatch was found, but one or more fields needs agent judgment."
+          ? "No hard mismatch was found, but one or more label or application facts needs agent judgment."
           : "One or more required fields conflict with the application or mandatory warning requirements.",
+    missingApplicationFacts: facts,
+    nextSteps: workflow.nextSteps,
+    workflow,
   };
 }
 
@@ -186,6 +417,8 @@ export function extractionFromPlainText(text: string): LabelExtraction {
     alcoholContent: findLine([/%\s*(alc|abv)|proof/i]),
     netContents: findLine([/\b\d+\s*(ml|l|liter|litre|fl\.?\s*oz)\b/i]),
     governmentWarning: warningMatch,
+    bottlerAddress: findLine([/^(bottled|distilled|produced)\s+by\b/i])?.replace(/^(bottled|distilled|produced)\s+by:?\s*/i, ""),
+    countryOfOrigin: findLine([/^country\s+of\s+origin\s*:/i, /^product\s+of\b/i])?.replace(/^country\s+of\s+origin\s*:\s*/i, "").replace(/^product\s+of\s*/i, ""),
     confidence: text.trim() ? 0.72 : 0,
     notes: text.trim() ? ["Parsed from supplied text/OCR paste without calling a vision model."] : ["No label text was supplied."],
   };

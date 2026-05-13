@@ -1,19 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { extractLabel } from "@/lib/extraction";
-import { verifyLabel } from "@/lib/rules";
+import { buildExtractionGuidance, extractLabel } from "@/lib/extraction";
 
 export const runtime = "nodejs";
-
-const applicationSchema = z.object({
-  brandName: z.string().min(1),
-  classType: z.string().min(1),
-  alcoholContent: z.string().min(1),
-  netContents: z.string().min(1),
-  bottlerAddress: z.string().optional(),
-  countryOfOrigin: z.string().optional(),
-  beverageKind: z.enum(["spirits", "wine", "beer", "other"]),
-});
 
 const labelSchema = z.object({
   fileName: z.string().min(1),
@@ -23,8 +12,7 @@ const labelSchema = z.object({
 });
 
 const requestSchema = z.object({
-  application: applicationSchema,
-  labels: z.array(labelSchema).min(1).max(25),
+  labels: z.array(labelSchema).min(1).max(10),
 });
 
 export async function POST(request: Request) {
@@ -34,8 +22,11 @@ export async function POST(request: Request) {
     const results = await Promise.all(
       payload.labels.map(async (label) => {
         const extraction = await extractLabel(label);
-        const result = verifyLabel(payload.application, extraction, label.fileName);
-        return { ...result, elapsedMs: Date.now() - started };
+        return {
+          fileName: label.fileName,
+          extraction,
+          guidance: buildExtractionGuidance(extraction),
+        };
       }),
     );
 
@@ -44,11 +35,11 @@ export async function POST(request: Request) {
       meta: {
         count: results.length,
         elapsedMs: Date.now() - started,
-        mode: process.env.OPENAI_API_KEY ? "vision+rules" : "text-only-demo",
+        mode: process.env.OPENAI_API_KEY ? "vision+guidance" : "text-only-demo",
       },
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown verification error";
+    const message = error instanceof Error ? error.message : "Unknown extraction error";
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }

@@ -1,0 +1,13 @@
+.git
+.next
+node_modules
+npm-debug.log*
+.env
+.env.*
+.doppler
+.codex
+.claude
+.cursor
+agents
+skills
+docs

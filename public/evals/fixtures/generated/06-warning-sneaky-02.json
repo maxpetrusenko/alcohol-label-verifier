@@ -1,0 +1,12 @@
+{
+  "brand_name": "Ironclad",
+  "class_type": "Rye Whiskey",
+  "abv": "45% Alc./Vol.",
+  "net_contents": "750 mL",
+  "bottler_name": "Ironclad Spirits",
+  "bottler_address": "Baltimore, MD",
+  "country_of_origin": "",
+  "is_import": false,
+  "description": "Sneaky warning: missing numbered clause '(1)'",
+  "expected_behavior": "FAIL compliance (Exact warning text mismatch)"
+}

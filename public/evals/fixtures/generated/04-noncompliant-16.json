@@ -1,0 +1,12 @@
+{
+  "brand_name": "Old Cask",
+  "class_type": "Brandy",
+  "abv": "40% Alc./Vol.",
+  "net_contents": "750 mL",
+  "bottler_name": "Cask & Co.",
+  "bottler_address": "Fresno, CA",
+  "country_of_origin": "",
+  "is_import": false,
+  "description": "Non-compliant matching JSON: bad production phrasing 'Vatted by'",
+  "expected_behavior": "FAIL Production statement uses unapproved phrasing 'Vatted by'."
+}

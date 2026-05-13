@@ -4,16 +4,18 @@ import { FormEvent, useMemo, useState } from "react";
 import {
   AlertTriangle,
   BadgeCheck,
-  BottleWine,
+  Bot,
+  Camera,
   CheckCircle2,
   ClipboardList,
   FileImage,
   Loader2,
-  ScanLine,
+  Scale,
   UploadCloud,
   XCircle,
 } from "lucide-react";
-import type { ApplicationData, VerificationResult, CheckStatus } from "@/lib/types";
+import { fixtureCases, type FixtureCase } from "@/lib/fixtureCases";
+import type { ApplicationData, CheckStatus, VerificationResult } from "@/lib/types";
 
 const demoText = `OLD TOM DISTILLERY
 Kentucky Straight Bourbon Whiskey
@@ -22,7 +24,7 @@ Kentucky Straight Bourbon Whiskey
 Bottled by Old Tom Distillery, Frankfort, KY
 GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.`;
 
-const initialApplication: ApplicationData = {
+const demoApplication: ApplicationData = {
   brandName: "OLD TOM DISTILLERY",
   classType: "Kentucky Straight Bourbon Whiskey",
   alcoholContent: "45% Alc./Vol. (90 Proof)",
@@ -39,49 +41,138 @@ type LabelInput = {
   text?: string;
 };
 
-function statusStyles(status: CheckStatus) {
-  switch (status) {
-    case "pass":
-      return "border-emerald-200 bg-emerald-50 text-emerald-800";
-    case "warning":
-      return "border-amber-200 bg-amber-50 text-amber-800";
-    case "needs_review":
-      return "border-sky-200 bg-sky-50 text-sky-800";
-    case "fail":
-      return "border-rose-200 bg-rose-50 text-rose-800";
-  }
+const fixtureCategoryLabel: Record<FixtureCase["category"], string> = {
+  pass: "Pass",
+  mismatch: "Mismatch",
+  label_noncompliant: "Label rule",
+  matching_noncompliant: "Rule gap",
+  warning_bad: "Warning",
+  warning_sneaky: "Warning",
+};
+
+const fields = [
+  ["brandName", "Brand"],
+  ["classType", "Class or type"],
+  ["alcoholContent", "Alcohol"],
+  ["netContents", "Contents"],
+  ["bottlerAddress", "Bottler"],
+  ["countryOfOrigin", "Origin"],
+] as const;
+
+function statusClass(status: CheckStatus) {
+  return `check check-${status}`;
 }
 
-function decisionIcon(decision: VerificationResult["decision"]) {
-  if (decision === "approved") return <BadgeCheck className="h-5 w-5 text-emerald-600" />;
-  if (decision === "needs_review") return <AlertTriangle className="h-5 w-5 text-amber-600" />;
-  return <XCircle className="h-5 w-5 text-rose-600" />;
+function decisionIcon(decision?: VerificationResult["decision"]) {
+  if (decision === "approved") return <BadgeCheck aria-hidden className="decision-icon pass" />;
+  if (decision === "rejected") return <XCircle aria-hidden className="decision-icon fail" />;
+  return <AlertTriangle aria-hidden className="decision-icon review" />;
+}
+
+function decisionCopy(result?: VerificationResult) {
+  if (!result) {
+    return {
+      title: "Ready for label intake",
+      body: "Upload or take a label photo, confirm the application facts, then run extraction and comparison.",
+      tone: "idle",
+    };
+  }
+
+  if (result.decision === "approved") {
+    return {
+      title: "Label aligns with application facts",
+      body: "Checks passed against extracted label evidence. Keep the review packet and submit when internal signoff is complete.",
+      tone: "pass",
+    };
+  }
+
+  if (result.decision === "rejected") {
+    return {
+      title: "Blocking differences found",
+      body: "Revise the label artwork or correct the application facts before COLA submission.",
+      tone: "fail",
+    };
+  }
+
+  return {
+    title: "Human review needed",
+    body: "Resolve warnings, inspect low confidence extraction, and rerun the comparison before filing.",
+    tone: "review",
+  };
 }
 
 export default function Home() {
-  const [application, setApplication] = useState<ApplicationData>(initialApplication);
+  const [application, setApplication] = useState<ApplicationData>(demoApplication);
   const [labels, setLabels] = useState<LabelInput[]>([{ fileName: "demo-label.txt", text: demoText }]);
-  const [ocrText, setOcrText] = useState(demoText);
+  const [labelText, setLabelText] = useState(demoText);
   const [results, setResults] = useState<VerificationResult[]>([]);
   const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const completed = useMemo(() => results.length > 0 && !isVerifying, [results, isVerifying]);
+  const activeLabel = labels[0];
+  const activeResult = results[0];
+  const resultCopy = decisionCopy(activeResult);
+  const nextSteps = activeResult?.nextSteps?.length ? activeResult.nextSteps : activeResult?.workflow?.nextSteps ?? [];
+  const blockingIssues = useMemo(
+    () => activeResult?.checks.filter((check) => check.status === "fail" || check.status === "warning") ?? [],
+    [activeResult],
+  );
 
   async function onFiles(files: FileList | null) {
     if (!files?.length) return;
+
     const next = await Promise.all(
       [...files].map(
         (file) =>
           new Promise<LabelInput>((resolve, reject) => {
             const reader = new FileReader();
-            reader.onload = () => resolve({ fileName: file.name, mimeType: file.type, dataUrl: String(reader.result), text: ocrText });
+            reader.onload = () => {
+              resolve({
+                fileName: file.name,
+                mimeType: file.type,
+                dataUrl: String(reader.result),
+                text: labelText,
+              });
+            };
             reader.onerror = () => reject(new Error(`Could not read ${file.name}`));
             reader.readAsDataURL(file);
           }),
       ),
     );
+
     setLabels(next);
+    setResults([]);
+  }
+
+  function loadDemo() {
+    setApplication(demoApplication);
+    setLabelText(demoText);
+    setLabels([{ fileName: "demo-label.txt", text: demoText }]);
+    setResults([]);
+    setError(null);
+  }
+
+  async function loadFixture(fixture: FixtureCase) {
+    setError(null);
+    setResults([]);
+    setApplication(fixture.application);
+    setLabelText(fixture.labelText ?? "");
+
+    try {
+      const response = await fetch(fixture.publicImagePath);
+      if (!response.ok) throw new Error(`Could not load ${fixture.id} image`);
+      const blob = await response.blob();
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(new Error(`Could not read ${fixture.id} image`));
+        reader.readAsDataURL(blob);
+      });
+      setLabels([{ fileName: `${fixture.id}.png`, mimeType: blob.type || "image/png", dataUrl, text: fixture.labelText }]);
+    } catch (err) {
+      setLabels([{ fileName: `${fixture.id}.png`, text: fixture.labelText }]);
+      setError(err instanceof Error ? err.message : "Fixture image load failed; text fallback is loaded.");
+    }
   }
 
   async function verify(event: FormEvent<HTMLFormElement>) {
@@ -90,7 +181,9 @@ export default function Home() {
     setError(null);
     setResults([]);
 
-    const payloadLabels = labels.length ? labels.map((label) => ({ ...label, text: label.text || ocrText })) : [{ fileName: "pasted-text", text: ocrText }];
+    const payloadLabels = labels.length
+      ? labels.map((label) => ({ ...label, text: label.text || labelText }))
+      : [{ fileName: "typed-label", text: labelText }];
 
     try {
       const response = await fetch("/api/verify", {
@@ -109,82 +202,133 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f6f2ea] text-slate-950">
-      <section className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-5 py-6 sm:px-8 lg:px-10">
-        <header className="overflow-hidden rounded-[2rem] border border-slate-200 bg-slate-950 text-white shadow-2xl shadow-slate-300">
-          <div className="grid gap-8 p-8 lg:grid-cols-[1.1fr_0.9fr] lg:p-12">
-            <div className="space-y-7">
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-sm text-cyan-100">
-                <ScanLine className="h-4 w-4" /> TTB-style label review prototype
-              </div>
-              <div className="space-y-4">
-                <h1 className="max-w-3xl text-4xl font-semibold tracking-tight sm:text-6xl">
-                  LabelCheck Agent for alcohol compliance queues.
-                </h1>
-                <p className="max-w-2xl text-lg leading-8 text-slate-300">
-                  Upload one label or a batch, compare it against application data, and get an agent-readable decision with exact mismatch evidence in seconds.
-                </p>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-3">
-                {["≤5 sec target", "Batch-first", "Human override"].map((item) => (
-                  <div key={item} className="rounded-2xl border border-white/10 bg-white/10 p-4 text-sm text-slate-200">
-                    <CheckCircle2 className="mb-3 h-5 w-5 text-cyan-300" /> {item}
-                  </div>
-                ))}
-              </div>
+    <main className="app-shell">
+      <form onSubmit={verify} className="verifier-screen">
+        <section className="hero-panel" aria-label="Label photo and verification status">
+          <div className="topbar">
+            <div>
+              <p className="eyebrow">TTB COLA Label Verifier</p>
+              <h1>Photo first label review</h1>
             </div>
-            <div className="rounded-3xl border border-white/10 bg-white/10 p-5 backdrop-blur">
-              <div className="mb-4 flex items-center gap-3">
-                <BottleWine className="h-6 w-6 text-cyan-300" />
-                <div>
-                  <p className="font-medium">Core checks</p>
-                  <p className="text-sm text-slate-300">Brand, class/type, ABV, net contents, warning statement</p>
+            <button type="button" className="ghost-button" onClick={loadDemo}>
+              Load demo
+            </button>
+          </div>
+
+          <div className="workflow" aria-label="Review flow">
+            <div className="flow-step active">
+              <Camera aria-hidden />
+              <span>Photo</span>
+            </div>
+            <div className="flow-step">
+              <ClipboardList aria-hidden />
+              <span>Facts</span>
+            </div>
+            <div className="flow-step">
+              <Bot aria-hidden />
+              <span>Extract</span>
+            </div>
+            <div className="flow-step">
+              <Scale aria-hidden />
+              <span>Compare</span>
+            </div>
+          </div>
+
+          <div className="label-stage">
+            <div className="photo-tools">
+              <label className="tool-button">
+                <UploadCloud aria-hidden />
+                <span>Upload label</span>
+                <input className="file-input" type="file" accept="image/*" multiple onChange={(event) => onFiles(event.target.files)} />
+              </label>
+              <label className="tool-button">
+                <Camera aria-hidden />
+                <span>Take photo</span>
+                <input
+                  className="file-input"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={(event) => onFiles(event.target.files)}
+                />
+              </label>
+            </div>
+
+            <div className="label-preview" aria-label="Full label preview">
+              {activeLabel?.dataUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={activeLabel.dataUrl} alt={`Uploaded label preview for ${activeLabel.fileName}`} />
+              ) : (
+                <div className="mock-label">
+                  <span className="seal">COLA</span>
+                  <strong>OLD TOM DISTILLERY</strong>
+                  <p>Kentucky Straight Bourbon Whiskey</p>
+                  <p>45% Alc./Vol.  90 Proof</p>
+                  <p>750 mL</p>
+                  <small>Bottled by Old Tom Distillery, Frankfort, KY</small>
+                  <small className="warning-line">Government warning present</small>
                 </div>
-              </div>
-              <div className="space-y-3 text-sm text-slate-200">
-                {[
-                  "Vision extraction when OPENAI_API_KEY is configured",
-                  "Text-only demo fallback for blocked networks",
-                  "Normalization handles Stone’s Throw vs STONE'S THROW",
-                  "Hard fail for missing or non-exact government warning",
-                ].map((line) => (
-                  <div key={line} className="flex gap-3 rounded-2xl bg-slate-950/40 p-3">
-                    <span className="mt-1 h-2 w-2 rounded-full bg-cyan-300" /> {line}
-                  </div>
-                ))}
+              )}
+            </div>
+
+            <div className="photo-meta">
+              <FileImage aria-hidden />
+              <div>
+                <strong>{activeLabel?.fileName ?? "No label selected"}</strong>
+                <span>{activeLabel?.dataUrl ? "Image ready for AI extraction" : "Demo text fallback ready"}</span>
               </div>
             </div>
           </div>
-        </header>
+        </section>
 
-        <form onSubmit={verify} className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-          <section className="space-y-5 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-3">
-              <ClipboardList className="h-5 w-5 text-slate-500" />
-              <h2 className="text-xl font-semibold">Application record</h2>
+        <aside className="control-panel" aria-label="Application facts and verification controls">
+          <section className="status-card">
+            <div className={`decision ${resultCopy.tone}`}>
+              {decisionIcon(activeResult?.decision)}
+              <div>
+                <h2>{resultCopy.title}</h2>
+                <p>{resultCopy.body}</p>
+              </div>
             </div>
-            <div className="grid gap-4">
-              {([
-                ["brandName", "Brand name"],
-                ["classType", "Class / type"],
-                ["alcoholContent", "Alcohol content"],
-                ["netContents", "Net contents"],
-                ["bottlerAddress", "Bottler / producer"],
-                ["countryOfOrigin", "Country of origin"],
-              ] as const).map(([key, label]) => (
-                <label key={key} className="space-y-1 text-sm font-medium text-slate-700">
-                  {label}
+            {activeResult ? (
+              <div className="score-row">
+                <span>{activeResult.decision.replace("_", " ")}</span>
+                <strong>{activeResult.score}%</strong>
+              </div>
+            ) : null}
+          </section>
+
+          <section className="facts-card">
+            <div className="section-title">
+              <ClipboardList aria-hidden />
+              <div>
+                <h2>Application facts</h2>
+                <p>Enter current COLA application values or load a generated fixture case.</p>
+              </div>
+            </div>
+
+            <div className="fixture-strip" aria-label="Generated fixture cases">
+              {fixtureCases.map((fixture) => (
+                <button key={fixture.id} type="button" onClick={() => void loadFixture(fixture)}>
+                  <span>{fixtureCategoryLabel[fixture.category]}</span>
+                  {fixture.title}
+                </button>
+              ))}
+            </div>
+
+            <div className="fact-grid">
+              {fields.map(([key, label]) => (
+                <label key={key}>
+                  <span>{label}</span>
                   <input
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-slate-950 outline-none ring-cyan-300 transition focus:ring-2"
                     value={application[key] ?? ""}
                     onChange={(event) => setApplication((current) => ({ ...current, [key]: event.target.value }))}
                   />
                 </label>
               ))}
-              <label className="space-y-1 text-sm font-medium text-slate-700">
-                Beverage type
+              <label>
+                <span>Beverage</span>
                 <select
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-slate-950 outline-none ring-cyan-300 transition focus:ring-2"
                   value={application.beverageKind}
                   onChange={(event) => setApplication((current) => ({ ...current, beverageKind: event.target.value as ApplicationData["beverageKind"] }))}
                 >
@@ -197,92 +341,113 @@ export default function Home() {
             </div>
           </section>
 
-          <section className="space-y-5 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-3">
-              <UploadCloud className="h-5 w-5 text-slate-500" />
-              <h2 className="text-xl font-semibold">Labels / OCR text</h2>
+          <section className="extract-card">
+            <div className="section-title">
+              <Bot aria-hidden />
+              <div>
+                <h2>AI extraction</h2>
+                <p>Vision reads the photo. Text below keeps local demo mode usable.</p>
+              </div>
             </div>
-            <label className="flex cursor-pointer flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-300 bg-slate-50 p-8 text-center transition hover:border-cyan-400 hover:bg-cyan-50">
-              <FileImage className="mb-3 h-8 w-8 text-slate-500" />
-              <span className="font-medium">Drop in labels or click to upload batch</span>
-              <span className="text-sm text-slate-500">PNG/JPG/WebP. Text fallback below keeps the demo usable without API keys.</span>
-              <input className="hidden" type="file" accept="image/*" multiple onChange={(event) => onFiles(event.target.files)} />
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {labels.map((label) => (
-                <span key={label.fileName} className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700">
-                  {label.fileName}
-                </span>
-              ))}
-            </div>
-            <label className="space-y-1 text-sm font-medium text-slate-700">
-              OCR / label text fallback
-              <textarea
-                className="min-h-48 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-sm text-slate-950 outline-none ring-cyan-300 transition focus:ring-2"
-                value={ocrText}
-                onChange={(event) => setOcrText(event.target.value)}
-              />
-            </label>
-            <button
-              type="submit"
-              disabled={isVerifying}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isVerifying ? <Loader2 className="h-5 w-5 animate-spin" /> : <ScanLine className="h-5 w-5" />}
-              {isVerifying ? "Checking label evidence..." : "Run verification agent"}
+            <textarea value={labelText} onChange={(event) => setLabelText(event.target.value)} aria-label="Label text fallback" />
+            <button type="submit" className="run-button" disabled={isVerifying}>
+              {isVerifying ? <Loader2 aria-hidden className="spin" /> : <Scale aria-hidden />}
+              <span>{isVerifying ? "Extracting and comparing" : "Run extraction and comparison"}</span>
             </button>
-            {error ? <p className="rounded-2xl bg-rose-50 p-3 text-sm text-rose-700">{error}</p> : null}
+            {error ? <p className="error-message">{error}</p> : null}
           </section>
-        </form>
+        </aside>
+      </form>
 
-        <section className="space-y-4">
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <h2 className="text-2xl font-semibold">Review results</h2>
-              <p className="text-slate-600">Evidence is separated from the final recommendation so an agent can override with judgment.</p>
-            </div>
-            {completed ? <span className="rounded-full bg-white px-3 py-1 text-sm text-slate-600">{results.length} reviewed</span> : null}
+      <section className="guidance-panel" aria-label="Issues and next steps">
+        <div className="section-title">
+          <AlertTriangle aria-hidden />
+          <div>
+            <h2>Issues and next steps</h2>
+            <p>Review extracted evidence, compare mismatches, then decide whether to revise artwork or file the COLA package.</p>
           </div>
+        </div>
 
-          <div className="grid gap-4">
-            {results.map((result) => (
-              <article key={result.fileName} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-center gap-3">
-                    {decisionIcon(result.decision)}
-                    <div>
-                      <h3 className="font-semibold">{result.fileName}</h3>
-                      <p className="text-sm text-slate-500">{result.summary}</p>
-                    </div>
-                  </div>
-                  <div className="rounded-2xl bg-slate-100 px-4 py-2 text-sm font-semibold uppercase tracking-wide text-slate-700">
-                    {result.decision.replace("_", " ")} · {result.score}%
-                  </div>
+        {activeResult ? (
+          <div className="review-grid">
+            <article className="evidence-card">
+              <h3>Extracted label evidence</h3>
+              <dl>
+                <div>
+                  <dt>Brand</dt>
+                  <dd>{activeResult.extraction.brandName || "Not found"}</dd>
                 </div>
-                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                  {result.checks.map((check) => (
-                    <div key={check.id} className={`rounded-2xl border p-4 ${statusStyles(check.status)}`}>
-                      <div className="mb-2 flex items-center justify-between gap-2">
-                        <p className="font-semibold">{check.label}</p>
-                        <span className="rounded-full bg-white/70 px-2 py-0.5 text-xs uppercase">{check.status.replace("_", " ")}</span>
-                      </div>
-                      <p className="text-sm opacity-90">{check.rationale}</p>
-                      <dl className="mt-3 space-y-1 text-xs opacity-80">
-                        <div><dt className="font-semibold">Expected</dt><dd>{check.expected || "—"}</dd></div>
-                        <div><dt className="font-semibold">Observed</dt><dd>{check.observed || "—"}</dd></div>
-                      </dl>
+                <div>
+                  <dt>Class or type</dt>
+                  <dd>{activeResult.extraction.classType || "Not found"}</dd>
+                </div>
+                <div>
+                  <dt>Alcohol</dt>
+                  <dd>{activeResult.extraction.alcoholContent || "Not found"}</dd>
+                </div>
+                <div>
+                  <dt>Contents</dt>
+                  <dd>{activeResult.extraction.netContents || "Not found"}</dd>
+                </div>
+              </dl>
+              <p className="confidence">Extraction confidence {Math.round(activeResult.extraction.confidence * 100)}%</p>
+            </article>
+
+            <article className="issue-card">
+              <h3>{blockingIssues.length ? "Review these differences" : "No blocking differences"}</h3>
+              {activeResult.workflow?.comparisonSummary ? <p className="comparison-summary">{activeResult.workflow.comparisonSummary}</p> : null}
+              <div className="checks">
+                {activeResult.checks.map((check) => (
+                  <div className={statusClass(check.status)} key={check.id}>
+                    <div>
+                      <strong>{check.label}</strong>
+                      <span>{check.status.replace("_", " ")}</span>
                     </div>
+                    <p>{check.rationale}</p>
+                    <small>Expected: {check.expected || "Not required"}</small>
+                    <small>Observed: {check.observed || "Not found"}</small>
+                    <small>Ref: {check.requirementRef?.label || "Internal rule"}</small>
+                    {check.guidance ? <small>Guidance: {check.guidance}</small> : null}
+                  </div>
+                ))}
+              </div>
+            </article>
+
+            <article className="next-card">
+              <h3>Next action</h3>
+              {activeResult.decision === "approved" ? (
+                <p>
+                  Save this review with the application packet. Confirm any internal brand approvals, then proceed with COLA submission.
+                </p>
+              ) : (
+                <p>
+                  Fix failed fields first, rerun extraction on the updated label, then send remaining warnings to a reviewer with the extracted evidence.
+                </p>
+              )}
+              {activeResult.missingApplicationFacts?.length ? (
+                <div className="missing-facts">
+                  <strong>Missing application facts</strong>
+                  {activeResult.missingApplicationFacts.map((fact) => (
+                    <span key={fact.field}>{fact.label}: {fact.nextStep}</span>
                   ))}
                 </div>
-              </article>
-            ))}
-            {!results.length && !isVerifying ? (
-              <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center text-slate-500">
-                Run the demo label or upload a batch to see pass/warn/fail evidence cards.
-              </div>
-            ) : null}
+              ) : null}
+              <ul>
+                {(nextSteps.length ? nextSteps : activeResult.extraction.notes.length ? activeResult.extraction.notes : ["No extraction notes returned."]).map((step) => (
+                  <li key={step}>
+                    <CheckCircle2 aria-hidden />
+                    <span>{step}</span>
+                  </li>
+                ))}
+              </ul>
+            </article>
           </div>
-        </section>
+        ) : (
+          <div className="empty-review">
+            <FileImage aria-hidden />
+            <p>Results will appear here after the photo extraction and application comparison run.</p>
+          </div>
+        )}
       </section>
     </main>
   );

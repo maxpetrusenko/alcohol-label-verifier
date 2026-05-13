@@ -1,0 +1,12 @@
+{
+  "brand_name": "Iron Horse",
+  "class_type": "Straight Bourbon Whiskey",
+  "abv": "45% Alc./Vol.",
+  "net_contents": "750 mL",
+  "bottler_name": "Iron Horse Distillers",
+  "bottler_address": "Chicago, IL",
+  "country_of_origin": "",
+  "is_import": false,
+  "description": "Non-compliant matching JSON: missing state of distillation on Straight Bourbon",
+  "expected_behavior": "FAIL Straight whiskies require a state of distillation on the label."
+}

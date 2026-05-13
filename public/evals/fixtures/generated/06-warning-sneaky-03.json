@@ -1,0 +1,12 @@
+{
+  "brand_name": "Velvet Sky",
+  "class_type": "Vodka",
+  "abv": "40% Alc./Vol.",
+  "net_contents": "750 mL",
+  "bottler_name": "Sky Spirits",
+  "bottler_address": "Los Angeles, CA",
+  "country_of_origin": "",
+  "is_import": false,
+  "description": "Sneaky warning: 'a Surgeon General' instead of 'the Surgeon General'",
+  "expected_behavior": "FAIL compliance (Exact warning text mismatch)"
+}
