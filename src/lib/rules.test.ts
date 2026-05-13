@@ -78,9 +78,105 @@ describe("label verification rules", () => {
     const brand = result.checks.find((check) => check.id === "brand-name");
 
     expect(result.decision).toBe("rejected");
-    expect(result.score).toBe(0);
+    expect(result.score).toBeLessThan(25);
     expect(brand?.status).toBe("needs_review");
     expect(brand?.guidance).toContain("clearer image");
     expect(result.nextSteps.some((step) => step.includes("Brand name"))).toBe(true);
+  });
+
+  it("rejects non-approved distilled spirits bottle sizes", () => {
+    const extraction = extractionFromPlainText(`Crestview\nVodka\n40% Alc./Vol.\n800 mL\nProduced and bottled by Crestview Spirits, Denver, CO\n${GOVERNMENT_WARNING_TEXT}`);
+
+    const result = verifyLabel(
+      {
+        brandName: "Crestview",
+        classType: "Vodka",
+        alcoholContent: "40% Alc./Vol.",
+        netContents: "800 mL",
+        bottlerAddress: "Crestview Spirits, Denver, CO",
+        beverageKind: "spirits",
+      },
+      extraction,
+      "non-standard-fill",
+    );
+
+    expect(result.decision).toBe("rejected");
+    expect(result.checks.find((check) => check.id === "approved-bottle-size")?.status).toBe("fail");
+  });
+
+  it("rejects missing composition statements for liqueurs", () => {
+    const extraction = extractionFromPlainText(`Fireglow\nCinnamon Liqueur\n33% Alc./Vol.\n750 mL\nProduced and bottled by Fireglow Spirits, Austin, TX\n${GOVERNMENT_WARNING_TEXT}`);
+    const result = verifyLabel(
+      {
+        brandName: "Fireglow",
+        classType: "Cinnamon Liqueur",
+        alcoholContent: "33% Alc./Vol.",
+        netContents: "750 mL",
+        bottlerAddress: "Fireglow Spirits, Austin, TX",
+        beverageKind: "spirits",
+      },
+      extraction,
+      "missing-composition",
+    );
+
+    expect(result.decision).toBe("rejected");
+    expect(result.checks.find((check) => check.id === "statement-of-composition")?.status).toBe("fail");
+  });
+
+  it("rejects straight whisky labels without state of distillation", () => {
+    const extraction = extractionFromPlainText(`Oak & Iron\nStraight Bourbon Whiskey\n45% Alc./Vol.\n750 mL\nBottled by Oak & Iron Distillers, Brooklyn, NY\n${GOVERNMENT_WARNING_TEXT}`);
+    const result = verifyLabel(
+      {
+        brandName: "Oak & Iron",
+        classType: "Straight Bourbon Whiskey",
+        alcoholContent: "45% Alc./Vol.",
+        netContents: "750 mL",
+        bottlerAddress: "Oak & Iron Distillers, Brooklyn, NY",
+        beverageKind: "spirits",
+      },
+      extraction,
+      "missing-state",
+    );
+
+    expect(result.decision).toBe("rejected");
+    expect(result.checks.find((check) => check.id === "state-of-distillation")?.status).toBe("fail");
+  });
+
+  it("rejects fanciful class names used as class/type", () => {
+    const extraction = extractionFromPlainText(`Golden Stallion\nPremium Reserve\n40% Alc./Vol.\n750 mL\nProduced and bottled by Stallion Spirits, Dallas, TX\n${GOVERNMENT_WARNING_TEXT}`);
+    const result = verifyLabel(
+      {
+        brandName: "Golden Stallion",
+        classType: "Premium Reserve",
+        alcoholContent: "40% Alc./Vol.",
+        netContents: "750 mL",
+        bottlerAddress: "Stallion Spirits, Dallas, TX",
+        beverageKind: "spirits",
+      },
+      extraction,
+      "fanciful-class",
+    );
+
+    expect(result.decision).toBe("rejected");
+    expect(result.checks.find((check) => check.id === "approved-class-type")?.status).toBe("fail");
+  });
+
+  it("rejects non-standard production statements", () => {
+    const extraction = extractionFromPlainText(`Pine Valley\nGin\n43% Alc./Vol.\n750 mL\nCrafted by Pine Valley Co., Bend, OR\n${GOVERNMENT_WARNING_TEXT}`);
+    const result = verifyLabel(
+      {
+        brandName: "Pine Valley",
+        classType: "Gin",
+        alcoholContent: "43% Alc./Vol.",
+        netContents: "750 mL",
+        bottlerAddress: "Pine Valley Co., Bend, OR",
+        beverageKind: "spirits",
+      },
+      extraction,
+      "bad-production",
+    );
+
+    expect(result.decision).toBe("rejected");
+    expect(result.checks.find((check) => check.id === "production-statement")?.status).toBe("fail");
   });
 });

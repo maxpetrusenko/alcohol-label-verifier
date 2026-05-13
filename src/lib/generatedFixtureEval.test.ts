@@ -23,13 +23,17 @@ function loadGeneratedFixtureCases(): GeneratedFixtureEvalCase[] {
   return manifest.map((item) => ({
     id: item.id,
     manifest: item,
-    formData: readJson<FsyedGeneratedFixtureJson>(join(generatedDir, `${item.id}.json`)),
+    formData: item.form_data,
   }));
 }
 
 describe("fsyed generated fixture eval runner", () => {
   it("runs every copied generated fixture and writes a gap report", () => {
     const cases = loadGeneratedFixtureCases();
+    for (const testCase of cases) {
+      expect(readJson<FsyedGeneratedFixtureJson>(join(generatedDir, `${testCase.id}.json`))).toBeDefined();
+    }
+
     const report = evaluateGeneratedFixtures(cases);
 
     mkdirSync(dirname(reportPath), { recursive: true });

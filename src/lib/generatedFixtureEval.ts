@@ -53,7 +53,15 @@ export function labelTextFromImagePrompt(prompt: string): string {
     if (value) quoted.push(value);
   }
 
-  return quoted.join("\n");
+  const visualNotes: string[] = [];
+  const notePattern = /\((Note:[^)]+)\)/giu;
+  for (const match of prompt.matchAll(notePattern)) {
+    if (match[1]) visualNotes.push(match[1].trim());
+  }
+  const tinyWarning = prompt.match(/ridiculously tiny[^:]+/iu)?.[0];
+  if (tinyWarning) visualNotes.push(tinyWarning.trim());
+
+  return [...quoted, ...visualNotes].join("\n");
 }
 
 export function evaluateGeneratedFixture(testCase: GeneratedFixtureEvalCase): GeneratedFixtureEvalResult {

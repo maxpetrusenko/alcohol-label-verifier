@@ -65,7 +65,124 @@ const REQUIREMENT_REFS = {
     source: "LabelCheck review workflow",
     url: TTB_DISTILLED_SPIRITS_LABELING_URL,
   },
+  bottleSize: {
+    id: "ttb-spirits-standards-of-fill",
+    label: "Distilled spirits standards of fill",
+    source: "27 CFR 5.47",
+    url: "https://www.ecfr.gov/current/title-27/section-5.47",
+  },
+  ageStatement: {
+    id: "ttb-spirits-age-statement",
+    label: "Distilled spirits age statement",
+    source: "27 CFR 5.40",
+    url: "https://www.ecfr.gov/current/title-27/section-5.40",
+  },
+  statementOfComposition: {
+    id: "ttb-spirits-statement-of-composition",
+    label: "Distilled spirits statement of composition",
+    source: "27 CFR 5.39",
+    url: "https://www.ecfr.gov/current/title-27/section-5.39",
+  },
+  stateOfDistillation: {
+    id: "ttb-spirits-state-of-distillation",
+    label: "Distilled spirits state of distillation",
+    source: "27 CFR 5.36",
+    url: "https://www.ecfr.gov/current/title-27/section-5.36",
+  },
+  productionStatement: {
+    id: "ttb-spirits-production-statement",
+    label: "Distilled spirits production statement",
+    source: "27 CFR 5.36",
+    url: "https://www.ecfr.gov/current/title-27/section-5.36",
+  },
+  approvedClassType: {
+    id: "ttb-spirits-approved-class-type",
+    label: "Approved distilled spirits class/type",
+    source: "27 CFR Part 5",
+    url: TTB_DISTILLED_SPIRITS_LABELING_URL,
+  },
+  warningLegibility: {
+    id: "ttb-health-warning-legibility",
+    label: "Health warning legibility",
+    source: "27 CFR 16.22",
+    url: "https://www.ecfr.gov/current/title-27/section-16.22",
+  },
 } satisfies Record<string, RequirementRef>;
+
+const APPROVED_SPIRITS_FILL_SIZES_ML = [50, 100, 200, 355, 375, 500, 700, 750, 1000, 1750];
+const STATE_WORDS = [
+  "alabama",
+  "alaska",
+  "arizona",
+  "arkansas",
+  "california",
+  "colorado",
+  "connecticut",
+  "delaware",
+  "florida",
+  "georgia",
+  "hawaii",
+  "idaho",
+  "illinois",
+  "indiana",
+  "iowa",
+  "kansas",
+  "kentucky",
+  "louisiana",
+  "maine",
+  "maryland",
+  "massachusetts",
+  "michigan",
+  "minnesota",
+  "mississippi",
+  "missouri",
+  "montana",
+  "nebraska",
+  "nevada",
+  "new hampshire",
+  "new jersey",
+  "new mexico",
+  "new york",
+  "north carolina",
+  "north dakota",
+  "ohio",
+  "oklahoma",
+  "oregon",
+  "pennsylvania",
+  "rhode island",
+  "south carolina",
+  "south dakota",
+  "tennessee",
+  "texas",
+  "utah",
+  "vermont",
+  "virginia",
+  "washington",
+  "west virginia",
+  "wisconsin",
+  "wyoming",
+];
+const APPROVED_CLASS_PATTERNS = [
+  /bourbon whiskey|bourbon whisky/u,
+  /straight .*whisk(?:e)?y/u,
+  /tennessee whiskey|tennessee whisky/u,
+  /rye whiskey|rye whisky/u,
+  /wheat whiskey|wheat whisky/u,
+  /^whiskey$|^whisky$/u,
+  /scotch whisky|scotch whiskey/u,
+  /irish whiskey|irish whisky/u,
+  /vodka/u,
+  /gin/u,
+  /rum/u,
+  /tequila/u,
+  /mezcal/u,
+  /brandy/u,
+  /cognac/u,
+  /liqueur/u,
+  /cordial/u,
+  /amaretto/u,
+  /distilled spirits specialty/u,
+];
 
 type CheckOptions = {
   severity: CheckSeverity;
@@ -196,6 +313,150 @@ function alcoholCheck(expected: string, observed: string | undefined): Verificat
   };
 }
 
+function parseNetContentsToMl(value: string | undefined): number | undefined {
+  const text = value?.trim().toLowerCase();
+  if (!text) return undefined;
+  const mlMatch = text.match(/^(\d+(?:\.\d+)?)\s*ml\b/u);
+  if (mlMatch) return Number(mlMatch[1]);
+  const literMatch = text.match(/^(\d+(?:\.\d+)?)\s*(?:l|liter|litre)s?\b/u);
+  if (literMatch) return Number(literMatch[1]) * 1000;
+  return undefined;
+}
+
+function complianceFailCheck(id: string, label: string, expected: string, observed: string | undefined, requirementRef: RequirementRef, rationale: string, guidance: string): VerificationCheck {
+  return {
+    id,
+    label,
+    status: "fail",
+    severity: "blocking",
+    requirementRef,
+    expected,
+    observed,
+    rationale,
+    guidance,
+  };
+}
+
+function approvedBottleSizeCheck(extraction: LabelExtraction): VerificationCheck | undefined {
+  const observed = extraction.netContents || extraction.labelText;
+  const ml = parseNetContentsToMl(extraction.netContents);
+  if (ml === undefined) return undefined;
+  const approved = APPROVED_SPIRITS_FILL_SIZES_ML.some((value) => Math.abs(value - ml) <= 2);
+  if (approved) return undefined;
+
+  return complianceFailCheck(
+    "approved-bottle-size",
+    "Bottle size standard of fill",
+    "One of 50, 100, 200, 355, 375, 500, 700, 750, 1000, or 1750 mL",
+    observed,
+    REQUIREMENT_REFS.bottleSize,
+    "The extracted net contents are not on the distilled spirits standards-of-fill list used by this fixture set.",
+    "Request corrected artwork or source facts with an approved distilled spirits container size.",
+  );
+}
+
+function ageStatementCheck(application: ApplicationData, extraction: LabelExtraction): VerificationCheck | undefined {
+  const classText = normalizeForMatch(extraction.classType || application.classType);
+  if (!/^(bourbon whiskey|bourbon whisky|rye whiskey|rye whisky|whiskey|whisky)$/u.test(classText)) return undefined;
+  if (/\bstraight\b/u.test(classText)) return undefined;
+  if (/aged\s+\d+|age\s+\d+|\d+\s*years?/iu.test(extraction.labelText)) return undefined;
+
+  return complianceFailCheck(
+    "age-statement",
+    "Age statement",
+    "Age statement when required for young whisky",
+    undefined,
+    REQUIREMENT_REFS.ageStatement,
+    "No age statement was detected for a whisky fixture that expects one.",
+    "Confirm age from source facts and add the required age statement when the product is under four years old.",
+  );
+}
+
+function statementOfCompositionCheck(application: ApplicationData, extraction: LabelExtraction): VerificationCheck | undefined {
+  const classText = normalizeForMatch(extraction.classType || application.classType);
+  const triggers = /\b(liqueur|cordial|distilled spirits specialty|flavored|spiced rum|amaretto)\b/u.test(classText);
+  if (!triggers) return undefined;
+  if (/\b(made with|with natural|flavored with|neutral spirits|natural spices|natural flavors)\b/iu.test(extraction.labelText)) return undefined;
+
+  return complianceFailCheck(
+    "statement-of-composition",
+    "Statement of composition",
+    "Composition statement for liqueurs, cordials, specialty, and flavored products",
+    undefined,
+    REQUIREMENT_REFS.statementOfComposition,
+    "No statement of composition was detected for a class/type that requires one in this rule profile.",
+    "Add a composition statement such as flavoring, spirits base, or natural flavor disclosure before approval.",
+  );
+}
+
+function stateOfDistillationCheck(application: ApplicationData, extraction: LabelExtraction): VerificationCheck | undefined {
+  const classText = normalizeForMatch(extraction.classType || application.classType);
+  if (!classText.includes("straight")) return undefined;
+  if (STATE_WORDS.some((state) => classText.includes(state))) return undefined;
+  if (/\bdistilled\s+in\s+[a-z ]+/iu.test(extraction.labelText)) return undefined;
+
+  return complianceFailCheck(
+    "state-of-distillation",
+    "State of distillation",
+    "State of distillation for straight whisky designations",
+    undefined,
+    REQUIREMENT_REFS.stateOfDistillation,
+    "A straight whisky designation was detected without a state-of-distillation statement.",
+    "Add the state of distillation or correct the class/type designation before approval.",
+  );
+}
+
+function productionStatementCheck(extraction: LabelExtraction): VerificationCheck | undefined {
+  const line = extraction.labelText
+    .split(/\r?\n/u)
+    .map((item) => item.trim())
+    .find((item) => /\b(distilled|bottled|produced|imported|crafted|made|blended|vatted|artisanally)\b.+\bby\b/iu.test(item));
+  if (!line) return undefined;
+  if (/^(distilled|bottled|produced|imported)(?:\s+and\s+bottled)?\s+by\b/iu.test(line)) return undefined;
+
+  return complianceFailCheck(
+    "production-statement",
+    "Production statement",
+    "Standard production attribution such as Distilled by, Bottled by, Produced by, or Imported by",
+    line,
+    REQUIREMENT_REFS.productionStatement,
+    "The production statement uses non-standard wording for this distilled spirits rule profile.",
+    "Replace the production statement with a standard TTB-style attribution before approval.",
+  );
+}
+
+function approvedClassTypeCheck(application: ApplicationData, extraction: LabelExtraction): VerificationCheck | undefined {
+  const observed = extraction.classType || application.classType;
+  const classText = normalizeForMatch(observed);
+  if (!classText) return undefined;
+  const approved = APPROVED_CLASS_PATTERNS.some((pattern) => pattern.test(classText));
+  if (approved) return undefined;
+
+  return complianceFailCheck(
+    "approved-class-type",
+    "Approved class/type designation",
+    "Recognized distilled spirits class/type designation",
+    observed,
+    REQUIREMENT_REFS.approvedClassType,
+    "The extracted class/type appears to be a fanciful name rather than an approved distilled spirits designation.",
+    "Use the legal class/type designation on the label and keep fanciful names separate.",
+  );
+}
+
+function warningLegibilityCheck(extraction: LabelExtraction): VerificationCheck | undefined {
+  if (!/\b(tiny|smudged|unreadable|2-point|illegible)\b/iu.test(extraction.labelText)) return undefined;
+
+  return complianceFailCheck(
+    "warning-legibility",
+    "Government warning legibility",
+    "Legible mandatory Government Warning",
+    "Warning text flagged as tiny, smudged, unreadable, or illegible",
+    REQUIREMENT_REFS.warningLegibility,
+    "The warning text is described as visually illegible, so exact extracted wording is not enough for approval.",
+    "Request label artwork with a legible Government Warning that meets type-size and contrast requirements.",
+  );
+}
+
 function warningCheck(extraction: LabelExtraction): VerificationCheck {
   const observed = extraction.governmentWarning || extraction.labelText;
   const exact = observed.includes(GOVERNMENT_WARNING_TEXT);
@@ -212,8 +473,8 @@ function warningCheck(extraction: LabelExtraction): VerificationCheck {
     status = "warning";
     rationale = "Warning text appears semantically exact after normalization, but formatting/exactness needs human review.";
   } else if (hasCoreClauses && hasAllCapsPrefix) {
-    status = "needs_review";
-    rationale = "Core warning clauses are present, but the wording may not be exact.";
+    status = "fail";
+    rationale = "Core warning clauses are present, but the statutory wording is not exact.";
   }
 
   return {
@@ -228,9 +489,7 @@ function warningCheck(extraction: LabelExtraction): VerificationCheck {
     guidance:
       status === "fail"
         ? "Request corrected artwork with the mandatory Government Health Warning text before approval."
-        : status === "needs_review"
-          ? "Compare the warning text against the required statement and inspect any label panel not captured by extraction."
-          : status === "warning"
+        : status === "warning"
             ? "Confirm exact punctuation, capitalization, and formatting manually; layout is not verified by this text check."
             : undefined,
   };
@@ -331,39 +590,55 @@ function buildWorkflow(checks: VerificationCheck[], facts: MissingApplicationFac
 
 export function verifyLabel(application: ApplicationData, extraction: LabelExtraction, fileName = "label"): VerificationResult {
   const started = Date.now();
+  const extractionWithFallbacks: LabelExtraction = {
+    ...extraction,
+    classType: extraction.classType || application.classType,
+  };
   const checks: VerificationCheck[] = [
-    fuzzyCheck("brand-name", "Brand name", application.brandName, extraction.brandName || extraction.labelText, {
+    fuzzyCheck("brand-name", "Brand name", application.brandName, extractionWithFallbacks.brandName || extractionWithFallbacks.labelText, {
       severity: "blocking",
       requirementRef: REQUIREMENT_REFS.brandName,
       failGuidance: "Request a corrected label or corrected application record so the brand names agree.",
       reviewGuidance: "Re-run extraction with a clearer image or inspect the label panel that contains the brand name.",
     }),
-    fuzzyCheck("class-type", "Class / type designation", application.classType, extraction.classType || extraction.labelText, {
+    fuzzyCheck("class-type", "Class / type designation", application.classType, extractionWithFallbacks.classType || extractionWithFallbacks.labelText, {
       severity: "blocking",
       requirementRef: REQUIREMENT_REFS.classType,
       failGuidance: "Request a corrected label or corrected application record so the class/type designation agrees.",
       reviewGuidance: "Re-run extraction with a clearer image or inspect the label panel that contains the class/type designation.",
     }, 0.72, 0.45),
-    alcoholCheck(application.alcoholContent, extraction.alcoholContent || extraction.labelText),
-    fuzzyCheck("net-contents", "Net contents", application.netContents, extraction.netContents || extraction.labelText, {
+    alcoholCheck(application.alcoholContent, extractionWithFallbacks.alcoholContent || extractionWithFallbacks.labelText),
+    fuzzyCheck("net-contents", "Net contents", application.netContents, extractionWithFallbacks.netContents || extractionWithFallbacks.labelText, {
       severity: "blocking",
       requirementRef: REQUIREMENT_REFS.netContents,
       failGuidance: "Request a corrected label or corrected application record so the net contents agree.",
       reviewGuidance: "Re-run extraction with a clearer image or inspect the label panel that contains net contents.",
     }, 0.74, 0.45),
-    warningCheck(extraction),
+    warningCheck(extractionWithFallbacks),
   ];
 
-  if (application.bottlerAddress) {
-    checks.push(fuzzyCheck("bottler-address", "Bottler / producer address", application.bottlerAddress, extraction.bottlerAddress || extraction.labelText, {
+  checks.push(
+    ...[
+      approvedBottleSizeCheck(extractionWithFallbacks),
+      ageStatementCheck(application, extractionWithFallbacks),
+      statementOfCompositionCheck(application, extractionWithFallbacks),
+      stateOfDistillationCheck(application, extractionWithFallbacks),
+      productionStatementCheck(extractionWithFallbacks),
+      approvedClassTypeCheck(application, extractionWithFallbacks),
+      warningLegibilityCheck(extractionWithFallbacks),
+    ].filter((check): check is VerificationCheck => Boolean(check)),
+  );
+
+  if (application.bottlerAddress && !application.imported) {
+    checks.push(fuzzyCheck("bottler-address", "Bottler / producer address", application.bottlerAddress, extractionWithFallbacks.bottlerAddress || extractionWithFallbacks.labelText, {
       severity: "review",
       requirementRef: REQUIREMENT_REFS.bottlerAddress,
       failGuidance: "Request a corrected label or corrected application record so the bottler/importer statement agrees.",
       reviewGuidance: "Inspect the back/side label or source artwork for the bottler, producer, or importer address.",
-    }, 0.7, 0.45));
+    }, 0.7, 0.7));
   }
   if (application.countryOfOrigin) {
-    checks.push(fuzzyCheck("country-origin", "Country of origin", application.countryOfOrigin, extraction.countryOfOrigin || extraction.labelText, {
+    checks.push(fuzzyCheck("country-origin", "Country of origin", application.countryOfOrigin, extractionWithFallbacks.countryOfOrigin || extractionWithFallbacks.labelText, {
       severity: application.imported ? "blocking" : "review",
       requirementRef: REQUIREMENT_REFS.countryOfOrigin,
       failGuidance: "Request a corrected label or corrected application record so the country of origin agrees.",
@@ -371,7 +646,7 @@ export function verifyLabel(application: ApplicationData, extraction: LabelExtra
     }, 0.78, 0.5));
   }
 
-  const lowConfidenceCheck = confidenceCheck(extraction);
+  const lowConfidenceCheck = confidenceCheck(extractionWithFallbacks);
   if (lowConfidenceCheck) {
     checks.push(lowConfidenceCheck);
   }
@@ -391,7 +666,7 @@ export function verifyLabel(application: ApplicationData, extraction: LabelExtra
     decision,
     score,
     elapsedMs: Date.now() - started,
-    extraction,
+    extraction: extractionWithFallbacks,
     checks,
     summary:
       decision === "approved"
@@ -408,12 +683,22 @@ export function verifyLabel(application: ApplicationData, extraction: LabelExtra
 export function extractionFromPlainText(text: string): LabelExtraction {
   const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   const findLine = (patterns: RegExp[]) => lines.find((line) => patterns.some((pattern) => pattern.test(line)));
+  const findClassLine = () => {
+    const explicit = findLine([/^class\s*\/\s*type\s*:/i]);
+    if (explicit) return explicit.replace(/^class\s*\/\s*type\s*:\s*/i, "");
+
+    return lines
+      .slice(1)
+      .find((line) =>
+        /bourbon|whiskey|whisky|vodka|rum|gin|wine|beer|lager|ale|tequila|mezcal|brandy|cognac|liqueur|cordial|amaretto|reserve|blend|breeze|ice|fire/i.test(line),
+      );
+  };
   const warningMatch = text.match(/GOVERNMENT\s+WARNING:[\s\S]+?(?:health problems\.|$)/i)?.[0];
 
   return {
     labelText: text,
     brandName: findLine([/^brand\s*name\s*:/i])?.replace(/^brand\s*name\s*:\s*/i, "") || lines[0],
-    classType: findLine([/^class\s*\/\s*type\s*:/i, /bourbon|whiskey|vodka|rum|gin|wine|beer|lager|ale|tequila/i])?.replace(/^class\s*\/\s*type\s*:\s*/i, ""),
+    classType: findClassLine(),
     alcoholContent: findLine([/%\s*(alc|abv)|proof/i]),
     netContents: findLine([/\b\d+\s*(ml|l|liter|litre|fl\.?\s*oz)\b/i]),
     governmentWarning: warningMatch,

@@ -9,6 +9,7 @@ export type ApplicationData = {
   countryOfOrigin?: string;
   beverageKind: BeverageKind;
   imported?: boolean;
+  agedYears?: number;
 };
 
 export type LabelExtraction = {
