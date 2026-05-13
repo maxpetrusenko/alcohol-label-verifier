@@ -98,32 +98,44 @@ function decisionCopy(result?: VerificationResult) {
 
 export default function Home() {
   const [application, setApplication] = useState<ApplicationData>(demoApplication);
-  const [labels, setLabels] = useState<PendingLabel[]>([{ fileName: "demo-label.txt", text: demoText }]);
+  const [labels, setLabels] = useState<PendingLabel[]>([{ labelId: "demo-label", fileName: "demo-label.txt", text: demoText }]);
   const [labelText, setLabelText] = useState(demoText);
   const [results, setResults] = useState<VerificationResult[]>([]);
+  const [activeIndex, setActiveIndex] = useState(0);
   const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const activeLabel = labels[0];
-  const activeResult = results[0];
+  const activeLabel = labels[activeIndex] ?? labels[0];
+  const activeResult = results[activeIndex] ?? results[0];
   const resultCopy = decisionCopy(activeResult);
+  const batchCount = Math.max(labels.length, results.length);
+  const hasBatch = batchCount > 1;
   const nextSteps = activeResult?.nextSteps?.length ? activeResult.nextSteps : activeResult?.workflow?.nextSteps ?? [];
   const attentionChecks = useMemo(
     () => activeResult?.checks.filter((check) => needsReviewerAttention(check.status)) ?? [],
     [activeResult],
   );
 
+  function makeLabelId(fileName: string, index: number) {
+    return `${Date.now()}-${index}-${fileName.replace(/[^a-z0-9._-]+/gi, "-")}`;
+  }
+
   async function onFiles(files: FileList | File[] | null) {
     const selectedFiles = files ? [...files] : [];
     if (!selectedFiles.length) return;
+    if (selectedFiles.length > 25) {
+      setError("Batch limit is 25 labels. Select 25 or fewer files.");
+      return;
+    }
 
     const next = await Promise.all(
       selectedFiles.map(
-        (file) =>
+        (file, index) =>
           new Promise<PendingLabel>((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = () => {
               resolve({
+                labelId: makeLabelId(file.name, index),
                 fileName: file.name,
                 mimeType: file.type,
                 dataUrl: String(reader.result),
@@ -136,6 +148,7 @@ export default function Home() {
     );
 
     setLabels(next);
+    setActiveIndex(0);
     setLabelText("");
     setResults([]);
     setError(null);
@@ -150,14 +163,16 @@ export default function Home() {
   function loadDemo() {
     setApplication(demoApplication);
     setLabelText(demoText);
-    setLabels([{ fileName: "demo-label.txt", text: demoText }]);
+    setLabels([{ labelId: "demo-label", fileName: "demo-label.txt", text: demoText }]);
     setResults([]);
+    setActiveIndex(0);
     setError(null);
   }
 
   async function loadFixture(fixture: FixtureCase) {
     setError(null);
     setResults([]);
+    setActiveIndex(0);
     setApplication(fixture.application);
     setLabelText(fixture.labelText ?? "");
 
@@ -171,9 +186,9 @@ export default function Home() {
         reader.onerror = () => reject(new Error(`Could not read ${fixture.id} image`));
         reader.readAsDataURL(blob);
       });
-      setLabels([{ fileName: `${fixture.id}.png`, mimeType: blob.type || "image/png", dataUrl, text: fixture.labelText }]);
+      setLabels([{ labelId: fixture.id, fileName: `${fixture.id}.png`, mimeType: blob.type || "image/png", dataUrl, text: fixture.labelText }]);
     } catch (err) {
-      setLabels([{ fileName: `${fixture.id}.png`, text: fixture.labelText }]);
+      setLabels([{ labelId: fixture.id, fileName: `${fixture.id}.png`, text: fixture.labelText }]);
       setError(err instanceof Error ? err.message : "Fixture image load failed; text fallback is loaded.");
     }
   }
@@ -195,6 +210,7 @@ export default function Home() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Verification failed");
       setResults(data.results);
+      setActiveIndex(0);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unexpected error");
     } finally {
@@ -236,6 +252,26 @@ export default function Home() {
               )}
             </div>
 
+            {hasBatch ? (
+              <div className="batch-rail" aria-label="Batch labels">
+                {labels.map((label, index) => {
+                  const result = results[index];
+                  return (
+                    <button
+                      key={label.labelId ?? `${label.fileName}-${index}`}
+                      type="button"
+                      className={index === activeIndex ? "active" : ""}
+                      onClick={() => setActiveIndex(index)}
+                    >
+                      <span>{index + 1}</span>
+                      <strong>{label.fileName}</strong>
+                      <em>{result ? result.decision.replace("_", " ") : isVerifying ? "checking" : "queued"}</em>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
+
             <div className="photo-dock">
               <label className="tool-button">
                 <UploadCloud aria-hidden />
@@ -258,7 +294,7 @@ export default function Home() {
               </button>
               <span className="photo-meta">
                 <FileImage aria-hidden />
-                {activeLabel?.fileName ?? "No label"}
+                {activeLabel ? `${activeIndex + 1}/${batchCount} ${activeLabel.fileName}` : "No label"}
               </span>
             </div>
           </div>
@@ -277,6 +313,12 @@ export default function Home() {
               <div className="score-row">
                 <span>{activeResult.decision.replace("_", " ")}</span>
                 <strong>{activeResult.score}%</strong>
+              </div>
+            ) : null}
+            {results.length > 1 ? (
+              <div className="batch-summary">
+                <strong>{results.length}</strong>
+                <span>{results.filter((result) => result.decision === "rejected").length} blocked</span>
               </div>
             ) : null}
           </section>
@@ -329,7 +371,7 @@ export default function Home() {
 
             <button type="submit" className="run-button" disabled={isVerifying}>
               {isVerifying ? <Loader2 aria-hidden className="spin" /> : <Scale aria-hidden />}
-              <span>{isVerifying ? "Checking" : "Verify label"}</span>
+              <span>{isVerifying ? "Checking" : labels.length > 1 ? `Verify ${labels.length} labels` : "Verify label"}</span>
             </button>
             {error ? <p className="error-message">{error}</p> : null}
           </section>

@@ -1,4 +1,5 @@
 export type PendingLabel = {
+  labelId?: string;
   fileName: string;
   mimeType?: string;
   dataUrl?: string;

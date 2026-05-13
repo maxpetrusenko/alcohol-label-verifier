@@ -11,6 +11,21 @@ describe("buildVerificationLabels", () => {
     expect(labels).toEqual([{ fileName: "portal-screenshot.png", mimeType: "image/png", dataUrl: "data:image/png;base64,abc" }]);
   });
 
+  it("keeps every uploaded batch item distinct", () => {
+    const labels = buildVerificationLabels(
+      [
+        { labelId: "a", fileName: "front.png", mimeType: "image/png", dataUrl: "data:image/png;base64,front" },
+        { labelId: "b", fileName: "back.png", mimeType: "image/png", dataUrl: "data:image/png;base64,back" },
+      ],
+      "OLD TOM DISTILLERY",
+    );
+
+    expect(labels).toEqual([
+      { labelId: "a", fileName: "front.png", mimeType: "image/png", dataUrl: "data:image/png;base64,front" },
+      { labelId: "b", fileName: "back.png", mimeType: "image/png", dataUrl: "data:image/png;base64,back" },
+    ]);
+  });
+
   it("keeps explicit fixture text when an image intentionally supplies it", () => {
     const labels = buildVerificationLabels(
       [{ fileName: "fixture.png", mimeType: "image/png", dataUrl: "data:image/png;base64,abc", text: "Fixture label text" }],

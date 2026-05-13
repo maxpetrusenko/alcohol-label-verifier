@@ -65,6 +65,7 @@ export type VerificationWorkflow = {
 };
 
 export type VerificationResult = {
+  labelId?: string;
   fileName: string;
   decision: VerificationDecision;
   score: number;
