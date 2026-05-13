@@ -70,6 +70,11 @@ This avoids the brittle black-box pattern: the model reads; rules decide; humans
 - Exact bold/font-size verification for the health warning is documented as a production limitation; the prototype checks exact text and all-caps prefix.
 - For government production use, model hosting, audit logs, retention, RBAC, and FedRAMP/security review would be required.
 
-## Presearch
+## Product definition and research
 
-See [`docs/PRESEARCH.md`](docs/PRESEARCH.md) for requirement extraction, research notes, and architecture rationale.
+Read these in order:
+
+1. [`docs/PRODUCT_BLUEPRINT.md`](docs/PRODUCT_BLUEPRINT.md) — corrective research audit, actual agent architecture, user stories, edge cases, and batch plan.
+2. [`docs/product-blueprint-designs.html`](docs/product-blueprint-designs.html) — visual web UI and architecture artifact.
+3. [`docs/PRESEARCH.md`](docs/PRESEARCH.md) — original requirement extraction and source notes.
+4. [`docs/SPEC.md`](docs/SPEC.md) — implementation spec baseline.

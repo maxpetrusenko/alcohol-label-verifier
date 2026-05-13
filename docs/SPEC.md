@@ -1,5 +1,7 @@
 # SPEC: LabelCheck Agent Next Phase
 
+> Corrective note: read `docs/PRODUCT_BLUEPRINT.md` first. It clarifies the product as a controlled discrepancy agent, adds the missing batch/edge-case/design requirements, and supersedes any vague app-like framing in this first spec.
+
 ## 1. Purpose
 
 Advance the existing alcohol label verification proof-of-concept into a more reliable review-assistant workflow that supports batch-oriented TTB-style label checks, deterministic rule expansion, traceable evidence, and collaboration handoff without pretending to be an autonomous approval system.
