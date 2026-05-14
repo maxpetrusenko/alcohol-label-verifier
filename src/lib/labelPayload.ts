@@ -6,7 +6,8 @@ export type PendingLabel = {
   text?: string;
 };
 
-export const MAX_LABEL_BATCH = 25;
+export const MAX_LABEL_BATCH = 300;
+export const VERIFY_REQUEST_LABEL_LIMIT = 25;
 
 export function batchLimitError(count: number) {
   return count > MAX_LABEL_BATCH ? `Batch limit is ${MAX_LABEL_BATCH} labels. Select ${MAX_LABEL_BATCH} or fewer files.` : null;
@@ -14,6 +15,14 @@ export function batchLimitError(count: number) {
 
 export function isImageLikeUpload(file: { name: string; type: string }) {
   return file.type.startsWith("image/") || /\.(avif|gif|heic|jpe?g|png|webp)$/iu.test(file.name);
+}
+
+export function chunkVerificationLabels(labels: PendingLabel[], chunkSize = VERIFY_REQUEST_LABEL_LIMIT): PendingLabel[][] {
+  const chunks: PendingLabel[][] = [];
+  for (let start = 0; start < labels.length; start += chunkSize) {
+    chunks.push(labels.slice(start, start + chunkSize));
+  }
+  return chunks;
 }
 
 function withOptionalText(label: PendingLabel, text?: string): PendingLabel {

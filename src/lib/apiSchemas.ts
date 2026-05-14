@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { VERIFY_REQUEST_LABEL_LIMIT } from "./labelPayload";
 
 export const beverageKindSchema = z.enum(["spirits", "wine", "beer", "other"]);
 
@@ -35,7 +36,7 @@ export const extractRequestSchema = z.object({
 
 export const verifyRequestSchema = z.object({
   application: applicationSchema,
-  labels: z.array(labelInputSchema).min(1).max(25),
+  labels: z.array(labelInputSchema).min(1).max(VERIFY_REQUEST_LABEL_LIMIT),
   options: apiOptionsSchema.optional(),
 });
 

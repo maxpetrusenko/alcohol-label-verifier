@@ -5,9 +5,9 @@ AI-powered alcohol label verification prototype for TTB-style compliance review.
 ## What it does
 
 - Upload one alcohol label or a batch of label images.
-- Drag image files or a folder onto the label area, or use `Upload` to select up to 25 images at once; each image becomes its own review row.
+- Drag image files or a folder onto the label area, or use `Bulk upload` to select up to 300 images at once; each image becomes its own review row.
 - Use `Camera` on localhost or HTTPS to capture one label image from the browser camera.
-- Verify batch images with bounded server concurrency: default 3 labels in flight, configurable up to 10 through the API options.
+- Verify large browser batches in 25-label API chunks with bounded server concurrency: default 3 labels in flight, configurable up to 10 through the API options.
 - Enter the application record fields agents normally compare by eye.
 - Extract visible label data with a vision model when configured.
 - Fall back to pasted OCR/text so the prototype is testable without API credentials.
@@ -53,6 +53,7 @@ OPENAI_VISION_MODEL=gpt-4.1-mini
 ```
 
 If `OPENAI_API_KEY` is missing, the app runs in text-only demo mode using the OCR/text fallback box.
+Check `/api/health` to confirm whether the running local or production server sees the key; it reports `vision.configured` without exposing the secret.
 
 ## Test and build
 
@@ -129,7 +130,7 @@ Current local API routes:
 
 - `GET /api/health` returns a basic service health response.
 - `POST /api/extract` extracts visible label evidence from image data or fallback text.
-- `POST /api/verify` verifies one or more labels against application facts and returns structured decisions, evidence, checks, and next steps.
+- `POST /api/verify` verifies one or more labels against application facts and returns structured decisions, evidence, checks, and next steps. The API accepts up to 25 labels per request; the browser chunks larger batches automatically.
 - New integrations should use the versioned aliases: `/api/v1/health`, `/api/v1/extract`, `/api/v1/verify`, and `/api/v1/export`.
 
 Example `POST /api/verify` call:

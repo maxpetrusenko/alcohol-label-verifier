@@ -59,7 +59,7 @@ describe("POST /api/verify", () => {
     expect(data.results[1].decision).toBe("rejected");
   });
 
-  it("rejects batches over the configured 25 label limit", async () => {
+  it("rejects batches over the configured per-request label limit", async () => {
     const labels = Array.from({ length: 26 }, (_, index) => ({
       labelId: `label-${index}`,
       fileName: `label-${index}.txt`,

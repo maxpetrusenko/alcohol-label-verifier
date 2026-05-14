@@ -15,7 +15,13 @@ import {
   XCircle,
 } from "lucide-react";
 import { fixtureCases, type FixtureCase } from "@/lib/fixtureCases";
-import { batchLimitError, buildVerificationLabels, isImageLikeUpload, type PendingLabel } from "@/lib/labelPayload";
+import {
+  batchLimitError,
+  buildVerificationLabels,
+  chunkVerificationLabels,
+  isImageLikeUpload,
+  type PendingLabel,
+} from "@/lib/labelPayload";
 import { batchSummary, decisionCounts, issueTitle, needsReviewerAttention } from "@/lib/reviewPresentation";
 import type { ApplicationData, CheckStatus, VerificationResult } from "@/lib/types";
 
@@ -171,6 +177,7 @@ export default function Home() {
   const [labelText, setLabelText] = useState(demoText);
   const [results, setResults] = useState<VerificationResult[]>([]);
   const [verifyMode, setVerifyMode] = useState<string | null>(null);
+  const [verifiedCount, setVerifiedCount] = useState(0);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -279,6 +286,7 @@ export default function Home() {
     setLabelText("");
     setResults([]);
     setVerifyMode(null);
+    setVerifiedCount(0);
     setError(null);
   }
 
@@ -312,6 +320,7 @@ export default function Home() {
     setLabelText("");
     setResults([]);
     setVerifyMode(null);
+    setVerifiedCount(0);
     setError(null);
     setIsCameraOpen(false);
   }
@@ -349,6 +358,7 @@ export default function Home() {
     setLabels([{ labelId: "demo-label", fileName: "demo-label.txt", text: demoText }]);
     setResults([]);
     setVerifyMode(null);
+    setVerifiedCount(0);
     setActiveIndex(0);
     setError(null);
   }
@@ -357,6 +367,7 @@ export default function Home() {
     setError(null);
     setResults([]);
     setVerifyMode(null);
+    setVerifiedCount(0);
     setActiveIndex(0);
     setApplication(fixture.application);
     setLabelText(fixture.labelText ?? "");
@@ -384,22 +395,28 @@ export default function Home() {
     setError(null);
     setResults([]);
     setVerifyMode(null);
+    setVerifiedCount(0);
 
     const payloadLabels = buildVerificationLabels(labels, labelText);
 
     try {
-      const response = await fetch("/api/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ application, labels: payloadLabels }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        const message = typeof data.error === "string" ? data.error : data.error?.message;
-        throw new Error(message || "Verification failed");
+      let nextResults: VerificationResult[] = [];
+      for (const chunk of chunkVerificationLabels(payloadLabels)) {
+        const response = await fetch("/api/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ application, labels: chunk }),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          const message = typeof data.error === "string" ? data.error : data.error?.message;
+          throw new Error(message || `Verification failed after ${nextResults.length} labels`);
+        }
+        nextResults = [...nextResults, ...data.results];
+        setResults(nextResults);
+        setVerifiedCount(nextResults.length);
+        setVerifyMode(typeof data.meta?.mode === "string" ? data.meta.mode : null);
       }
-      setResults(data.results);
-      setVerifyMode(typeof data.meta?.mode === "string" ? data.meta.mode : null);
       setActiveIndex(0);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unexpected error");
@@ -448,7 +465,7 @@ export default function Home() {
               )}
               <div className="drop-copy">
                 <strong>Bulk drop zone</strong>
-                <span>Drop 1-25 images or a folder.</span>
+                <span>Drop up to 300 images or a folder.</span>
               </div>
             </div>
 
@@ -481,7 +498,7 @@ export default function Home() {
                   type="file"
                   accept="image/*"
                   multiple
-                  title="Select 1 to 25 label images"
+                  title="Select up to 300 label images"
                   onChange={handleFileInput}
                 />
               </label>
@@ -498,7 +515,8 @@ export default function Home() {
               </span>
             </div>
             <p className="upload-hint">
-              Drop or bulk upload 1-25 images. Batch verification runs with bounded parallel model calls; images are not stored by default.
+              Drop or bulk upload up to 300 images. Verification runs in 25-label chunks with bounded model calls; images are not stored by
+              default.
             </p>
             {isCameraOpen ? (
               <div className="camera-panel" aria-label="Camera capture">
@@ -589,7 +607,15 @@ export default function Home() {
 
             <button type="submit" className="run-button" disabled={isVerifying}>
               {isVerifying ? <Loader2 aria-hidden className="spin" /> : <Scale aria-hidden />}
-              <span>{isVerifying ? "Checking" : labels.length > 1 ? `Verify ${labels.length} labels` : "Verify label"}</span>
+              <span>
+                {isVerifying
+                  ? labels.length > 1
+                    ? `Checking ${verifiedCount}/${labels.length}`
+                    : "Checking"
+                  : labels.length > 1
+                    ? `Verify ${labels.length} labels`
+                    : "Verify label"}
+              </span>
             </button>
             {error ? <p className="error-message">{error}</p> : null}
           </section>

@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { batchLimitError, buildVerificationLabels, isImageLikeUpload, MAX_LABEL_BATCH } from "./labelPayload";
+import {
+  batchLimitError,
+  buildVerificationLabels,
+  chunkVerificationLabels,
+  isImageLikeUpload,
+  MAX_LABEL_BATCH,
+  VERIFY_REQUEST_LABEL_LIMIT,
+} from "./labelPayload";
 
 describe("buildVerificationLabels", () => {
   it("does not attach stale text fallback to uploaded images", () => {
@@ -53,10 +60,20 @@ describe("buildVerificationLabels", () => {
     expect(labels).toEqual([{ fileName: "blank.txt" }]);
   });
 
-  it("documents the same 25 label batch limit used by the UI and API", () => {
-    expect(MAX_LABEL_BATCH).toBe(25);
-    expect(batchLimitError(25)).toBeNull();
-    expect(batchLimitError(26)).toBe("Batch limit is 25 labels. Select 25 or fewer files.");
+  it("documents the UI batch limit and per-request API chunk size", () => {
+    expect(MAX_LABEL_BATCH).toBe(300);
+    expect(VERIFY_REQUEST_LABEL_LIMIT).toBe(25);
+    expect(batchLimitError(300)).toBeNull();
+    expect(batchLimitError(301)).toBe("Batch limit is 300 labels. Select 300 or fewer files.");
+  });
+
+  it("chunks large browser batches into API-sized verify requests", () => {
+    const labels = Array.from({ length: 60 }, (_, index) => ({ fileName: `label-${index}.png` }));
+    const chunks = chunkVerificationLabels(labels);
+
+    expect(chunks).toHaveLength(3);
+    expect(chunks.map((chunk) => chunk.length)).toEqual([25, 25, 10]);
+    expect(chunks[2][9]).toEqual({ fileName: "label-59.png" });
   });
 
   it("keeps drag and drop folder imports scoped to image files", () => {

@@ -42,9 +42,16 @@ Returns:
 ```json
 {
   "ok": true,
-  "service": "alcohol-label-verifier"
+  "service": "alcohol-label-verifier",
+  "vision": {
+    "configured": false,
+    "mode": "text-only-demo",
+    "model": "gpt-4.1-mini"
+  }
 }
 ```
+
+Use `vision.configured` to verify local or production secret wiring without exposing `OPENAI_API_KEY`.
 
 ### `POST /api/v1/extract`
 
@@ -70,7 +77,7 @@ Request:
 
 ### `POST /api/v1/verify`
 
-Main tool endpoint. Verifies 1 to 25 labels against application facts.
+Main tool endpoint. Verifies 1 to 25 labels per request against application facts. For 200+ label batches, chunk calls at 25 labels; the browser UI does this automatically and preserves per-label result order.
 
 Request:
 
