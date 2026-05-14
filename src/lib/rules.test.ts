@@ -115,6 +115,28 @@ describe("label verification rules", () => {
     expect(result.checks.find((check) => check.id === "class-type")?.observed).toBe("");
   });
 
+  it("does not flag label absence when vision extracted label facts with missing origin notes", () => {
+    const result = verifyLabel(
+      application,
+      {
+        ...extractionFromPlainText(`STONE'S THROW
+Kentucky Straight Bourbon Whiskey
+45% Alc./Vol. (90 Proof)
+750 mL
+Distilled and Bottled by Stone's Throw Distilling, Frankfort, KY
+Government Warning: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects.
+(2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery and may cause health problems.`),
+        confidence: 0.99,
+        notes: ["Country of Origin not explicitly stated on label."],
+      },
+      "vision-good-label",
+    );
+
+    expect(result.checks.find((check) => check.id === "label-presence")).toBeUndefined();
+    expect(result.checks.find((check) => check.id === "production-statement")).toBeUndefined();
+    expect(result.checks.find((check) => check.id === "government-warning")?.status).toBe("fail");
+  });
+
   it("rejects non-approved distilled spirits bottle sizes", () => {
     const extraction = extractionFromPlainText(`Crestview\nVodka\n40% Alc./Vol.\n800 mL\nProduced and bottled by Crestview Spirits, Denver, CO\n${GOVERNMENT_WARNING_TEXT}`);
 

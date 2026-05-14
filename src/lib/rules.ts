@@ -413,7 +413,10 @@ function stateOfDistillationCheck(application: ApplicationData, extraction: Labe
 }
 
 function productionStatementCheck(extraction: LabelExtraction): VerificationCheck | undefined {
-  const line = extraction.labelText
+  const text = extraction.labelText;
+  if (/\b(?:distilled|bottled|produced|imported)(?:\s+and\s+bottled)?\s+by\b/iu.test(text)) return undefined;
+
+  const line = text
     .split(/\r?\n/u)
     .map((item) => item.trim())
     .find((item) => /\b(distilled|bottled|produced|imported|crafted|made|blended|vatted|artisanally)\b.+\bby\b/iu.test(item));
@@ -485,16 +488,22 @@ function imageQualityCheck(extraction: LabelExtraction): VerificationCheck | und
 
 function labelPresenceCheck(extraction: LabelExtraction): VerificationCheck | undefined {
   const evidence = normalizeForMatch(`${extraction.labelText}\n${extraction.notes.join("\n")}`);
+  const extractedFactCount = [
+    extraction.brandName,
+    extraction.classType,
+    extraction.alcoholContent,
+    extraction.netContents,
+    extraction.governmentWarning,
+    extraction.bottlerAddress,
+    extraction.countryOfOrigin,
+  ].filter((value) => !isBlank(value)).length;
   const noLabelEvidence =
-    /\b(no|not|cannot|could not)\b.{0,32}\b(label|bottle|alcohol|beverage|product|container)\b/u.test(evidence) ||
-    /\b(label|bottle|alcohol|beverage|product|container)\b.{0,32}\b(no|not|missing|visible|detected|present)\b/u.test(evidence);
+    extractedFactCount === 0 &&
+    (/\b(no|not|cannot|could not)\b.{0,48}\b(?:alcohol\s+)?(?:label|bottle|beverage|product|container)\b/u.test(evidence) ||
+      /\b(?:alcohol\s+)?(?:label|bottle|beverage|product|container)\b.{0,48}\b(no|not|missing|detected|present)\b/u.test(evidence));
   const noExtractedFacts =
     extraction.confidence === 0 &&
-    !extraction.brandName &&
-    !extraction.classType &&
-    !extraction.alcoholContent &&
-    !extraction.netContents &&
-    !extraction.governmentWarning;
+    extractedFactCount === 0;
 
   if (!noLabelEvidence && !noExtractedFacts) return undefined;
   const status: CheckStatus = noLabelEvidence ? "fail" : "needs_review";
