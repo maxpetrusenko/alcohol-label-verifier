@@ -463,10 +463,12 @@ export default function Home() {
                   <small className="warning-line">Government warning present</small>
                 </div>
               )}
-              <div className="drop-copy">
-                <strong>Bulk drop zone</strong>
-                <span>Drop up to 300 images or a folder.</span>
-              </div>
+              {!activeLabel?.dataUrl || isDropActive ? (
+                <div className="drop-copy">
+                  <strong>Bulk drop zone</strong>
+                  <span>Drop up to 300 images or a folder.</span>
+                </div>
+              ) : null}
             </div>
 
             {hasBatch ? (
