@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "field-mismatch-brand",
+  "title": "Field mismatch: brand",
+  "kind": "field-mismatch",
+  "variant": "clean",
+  "expectedDecision": "rejected",
+  "expectedProblemChecks": [
+    "brand-name"
+  ],
+  "extractionConfidence": 0.72,
+  "application": {
+    "brandName": "Copper Ridge",
+    "classType": "Kentucky Straight Bourbon Whiskey",
+    "alcoholContent": "45% Alc./Vol. (90 Proof)",
+    "netContents": "750 mL",
+    "bottlerAddress": "Frontier Glass Distilling, Louisville, KY",
+    "beverageKind": "spirits",
+    "imported": false
+  },
+  "labelVisibleText": "Frontier Glass\nKentucky Straight Bourbon Whiskey\nDistilled in Kentucky\n45% Alc./Vol. (90 Proof)\n750 mL\nBottled by Frontier Glass Distilling, Louisville, KY\nGOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.",
+  "visualObservation": "",
+  "artifacts": {
+    "svg": "field-mismatch-brand.svg",
+    "html": "field-mismatch-brand.html"
+  },
+  "contentHash": "9444f55daf706c0d"
+}

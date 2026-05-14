@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildVerificationLabels } from "./labelPayload";
+import { batchLimitError, buildVerificationLabels, MAX_LABEL_BATCH } from "./labelPayload";
 
 describe("buildVerificationLabels", () => {
   it("does not attach stale text fallback to uploaded images", () => {
@@ -39,5 +39,23 @@ describe("buildVerificationLabels", () => {
     const labels = buildVerificationLabels([{ fileName: "typed-label" }], "Typed label text");
 
     expect(labels).toEqual([{ fileName: "typed-label", text: "Typed label text" }]);
+  });
+
+  it("creates a typed label when no uploaded labels exist", () => {
+    const labels = buildVerificationLabels([], "Typed label text");
+
+    expect(labels).toEqual([{ fileName: "typed-label", text: "Typed label text" }]);
+  });
+
+  it("does not preserve blank fallback text on text-only labels", () => {
+    const labels = buildVerificationLabels([{ fileName: "blank.txt" }], "   ");
+
+    expect(labels).toEqual([{ fileName: "blank.txt" }]);
+  });
+
+  it("documents the same 25 label batch limit used by the UI and API", () => {
+    expect(MAX_LABEL_BATCH).toBe(25);
+    expect(batchLimitError(25)).toBeNull();
+    expect(batchLimitError(26)).toBe("Batch limit is 25 labels. Select 25 or fewer files.");
   });
 });

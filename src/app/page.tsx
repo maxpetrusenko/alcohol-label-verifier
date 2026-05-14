@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useMemo, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   BadgeCheck,
@@ -15,8 +15,8 @@ import {
   XCircle,
 } from "lucide-react";
 import { fixtureCases, type FixtureCase } from "@/lib/fixtureCases";
-import { buildVerificationLabels, type PendingLabel } from "@/lib/labelPayload";
-import { issueTitle, needsReviewerAttention } from "@/lib/reviewPresentation";
+import { batchLimitError, buildVerificationLabels, type PendingLabel } from "@/lib/labelPayload";
+import { batchSummary, decisionCounts, issueTitle, needsReviewerAttention } from "@/lib/reviewPresentation";
 import type { ApplicationData, CheckStatus, VerificationResult } from "@/lib/types";
 
 const demoText = `OLD TOM DISTILLERY
@@ -96,35 +96,96 @@ function decisionCopy(result?: VerificationResult) {
   };
 }
 
+function stopMediaStream(stream: MediaStream | null) {
+  stream?.getTracks().forEach((track) => track.stop());
+}
+
 export default function Home() {
   const [application, setApplication] = useState<ApplicationData>(demoApplication);
   const [labels, setLabels] = useState<PendingLabel[]>([{ labelId: "demo-label", fileName: "demo-label.txt", text: demoText }]);
   const [labelText, setLabelText] = useState(demoText);
   const [results, setResults] = useState<VerificationResult[]>([]);
+  const [verifyMode, setVerifyMode] = useState<string | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const cameraStreamRef = useRef<MediaStream | null>(null);
 
   const activeLabel = labels[activeIndex] ?? labels[0];
   const activeResult = results[activeIndex] ?? results[0];
   const resultCopy = decisionCopy(activeResult);
   const batchCount = Math.max(labels.length, results.length);
   const hasBatch = batchCount > 1;
+  const counts = decisionCounts(results);
   const nextSteps = activeResult?.nextSteps?.length ? activeResult.nextSteps : activeResult?.workflow?.nextSteps ?? [];
   const attentionChecks = useMemo(
     () => activeResult?.checks.filter((check) => needsReviewerAttention(check.status)) ?? [],
     [activeResult],
   );
 
+  useEffect(() => {
+    if (!isCameraOpen) {
+      stopMediaStream(cameraStreamRef.current);
+      cameraStreamRef.current = null;
+      return;
+    }
+
+    let cancelled = false;
+
+    async function startCamera() {
+      setCameraError(null);
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setCameraError("Camera capture needs a browser with camera access on localhost or HTTPS. Use Upload instead.");
+        return;
+      }
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: { facingMode: { ideal: "environment" } },
+        });
+
+        if (cancelled) {
+          stopMediaStream(stream);
+          return;
+        }
+
+        cameraStreamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+        }
+      } catch {
+        setCameraError("Camera blocked or unavailable. Use Upload, or allow camera permission in the browser.");
+      }
+    }
+
+    void startCamera();
+
+    return () => {
+      cancelled = true;
+      stopMediaStream(cameraStreamRef.current);
+      cameraStreamRef.current = null;
+    };
+  }, [isCameraOpen]);
+
   function makeLabelId(fileName: string, index: number) {
     return `${Date.now()}-${index}-${fileName.replace(/[^a-z0-9._-]+/gi, "-")}`;
+  }
+
+  function batchItemClass(index: number, result?: VerificationResult) {
+    return ["batch-item", index === activeIndex ? "active" : "", result ? `decision-${result.decision}` : ""].filter(Boolean).join(" ");
   }
 
   async function onFiles(files: FileList | File[] | null) {
     const selectedFiles = files ? [...files] : [];
     if (!selectedFiles.length) return;
-    if (selectedFiles.length > 25) {
-      setError("Batch limit is 25 labels. Select 25 or fewer files.");
+    const limitError = batchLimitError(selectedFiles.length);
+    if (limitError) {
+      setError(limitError);
       return;
     }
 
@@ -151,7 +212,42 @@ export default function Home() {
     setActiveIndex(0);
     setLabelText("");
     setResults([]);
+    setVerifyMode(null);
     setError(null);
+  }
+
+  function captureCameraFrame() {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth || !video.videoHeight) {
+      setCameraError("Camera is still starting. Try again in a moment.");
+      return;
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const context = canvas.getContext("2d");
+    if (!context) {
+      setCameraError("Could not capture a camera frame. Use Upload instead.");
+      return;
+    }
+
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const fileName = `camera-capture-${new Date().toISOString().replace(/[:.]/gu, "-")}.jpg`;
+    setLabels([
+      {
+        labelId: makeLabelId(fileName, 0),
+        fileName,
+        mimeType: "image/jpeg",
+        dataUrl: canvas.toDataURL("image/jpeg", 0.92),
+      },
+    ]);
+    setActiveIndex(0);
+    setLabelText("");
+    setResults([]);
+    setVerifyMode(null);
+    setError(null);
+    setIsCameraOpen(false);
   }
 
   function handleFileInput(event: ChangeEvent<HTMLInputElement>) {
@@ -165,6 +261,7 @@ export default function Home() {
     setLabelText(demoText);
     setLabels([{ labelId: "demo-label", fileName: "demo-label.txt", text: demoText }]);
     setResults([]);
+    setVerifyMode(null);
     setActiveIndex(0);
     setError(null);
   }
@@ -172,6 +269,7 @@ export default function Home() {
   async function loadFixture(fixture: FixtureCase) {
     setError(null);
     setResults([]);
+    setVerifyMode(null);
     setActiveIndex(0);
     setApplication(fixture.application);
     setLabelText(fixture.labelText ?? "");
@@ -198,6 +296,7 @@ export default function Home() {
     setIsVerifying(true);
     setError(null);
     setResults([]);
+    setVerifyMode(null);
 
     const payloadLabels = buildVerificationLabels(labels, labelText);
 
@@ -208,8 +307,12 @@ export default function Home() {
         body: JSON.stringify({ application, labels: payloadLabels }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Verification failed");
+      if (!response.ok) {
+        const message = typeof data.error === "string" ? data.error : data.error?.message;
+        throw new Error(message || "Verification failed");
+      }
       setResults(data.results);
+      setVerifyMode(typeof data.meta?.mode === "string" ? data.meta.mode : null);
       setActiveIndex(0);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unexpected error");
@@ -260,7 +363,7 @@ export default function Home() {
                     <button
                       key={label.labelId ?? `${label.fileName}-${index}`}
                       type="button"
-                      className={index === activeIndex ? "active" : ""}
+                      className={batchItemClass(index, result)}
                       onClick={() => setActiveIndex(index)}
                     >
                       <span>{index + 1}</span>
@@ -278,17 +381,10 @@ export default function Home() {
                 <span>Upload</span>
                 <input className="file-input" type="file" accept="image/*" multiple onChange={handleFileInput} />
               </label>
-              <label className="tool-button">
+              <button type="button" className="tool-button" onClick={() => setIsCameraOpen((open) => !open)}>
                 <Camera aria-hidden />
-                <span>Camera</span>
-                <input
-                  className="file-input"
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={handleFileInput}
-                />
-              </label>
+                <span>{isCameraOpen ? "Close camera" : "Camera"}</span>
+              </button>
               <button type="button" className="ghost-button" onClick={loadDemo}>
                 Demo
               </button>
@@ -297,6 +393,18 @@ export default function Home() {
                 {activeLabel ? `${activeIndex + 1}/${batchCount} ${activeLabel.fileName}` : "No label"}
               </span>
             </div>
+            <p className="upload-hint">Upload accepts up to 25 images at once. Camera captures one label at a time.</p>
+            {isCameraOpen ? (
+              <div className="camera-panel" aria-label="Camera capture">
+                <video ref={videoRef} playsInline muted />
+                <div>
+                  <button type="button" className="ghost-button" onClick={captureCameraFrame}>
+                    Capture label
+                  </button>
+                  {cameraError ? <p>{cameraError}</p> : <p>Allow camera permission, center the label, then capture.</p>}
+                </div>
+              </div>
+            ) : null}
           </div>
         </section>
 
@@ -317,8 +425,9 @@ export default function Home() {
             ) : null}
             {results.length > 1 ? (
               <div className="batch-summary">
-                <strong>{results.length}</strong>
-                <span>{results.filter((result) => result.decision === "rejected").length} blocked</span>
+                <strong>{results.length}/{labels.length}</strong>
+                <span>{batchSummary(results)}</span>
+                <small>{counts.rejected ? "Start with blocked labels." : counts.needs_review ? "Review uncertain labels." : "Batch ready."}</small>
               </div>
             ) : null}
           </section>
@@ -328,7 +437,7 @@ export default function Home() {
               <ClipboardList aria-hidden />
               <div>
                 <h2>Application facts</h2>
-                <p>Distilled spirits MVP.</p>
+                <p>Typed or imported source record. The photo must independently show the label.</p>
               </div>
             </div>
 
@@ -368,6 +477,9 @@ export default function Home() {
               </div>
               <textarea value={labelText} onChange={(event) => setLabelText(event.target.value)} aria-label="Label text fallback" />
             </details>
+            {verifyMode === "text-only-demo" ? (
+              <p className="mode-message">Vision extraction is not configured here. Uploaded photos need OCR text fallback or an OpenAI API key.</p>
+            ) : null}
 
             <button type="submit" className="run-button" disabled={isVerifying}>
               {isVerifying ? <Loader2 aria-hidden className="spin" /> : <Scale aria-hidden />}

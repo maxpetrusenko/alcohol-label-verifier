@@ -73,15 +73,46 @@ describe("label verification rules", () => {
     expect(result.checks.find((check) => check.id === "extraction-confidence")?.status).toBe("needs_review");
   });
 
+  it("keeps degraded photos out of clean approval", () => {
+    const extraction = {
+      ...extractionFromPlainText(`STONE'S THROW\nKentucky Straight Bourbon Whiskey\n45% Alc./Vol. (90 Proof)\n750 mL\nBottled by Stone's Throw Distilling, Frankfort, KY\nProduct of United States\n${GOVERNMENT_WARNING_TEXT}`),
+      notes: ["Image has glare across the warning panel."],
+    };
+
+    const result = verifyLabel(application, extraction, "glare-photo");
+
+    expect(result.decision).toBe("needs_review");
+    expect(result.checks.find((check) => check.id === "image-quality")?.status).toBe("needs_review");
+  });
+
   it("adds needs-review guidance when label evidence is missing", () => {
-    const result = verifyLabel(application, { labelText: "", confidence: 0.8, notes: [] }, "blank-label");
+    const result = verifyLabel(application, { labelText: "", confidence: 0, notes: [] }, "blank-label");
     const brand = result.checks.find((check) => check.id === "brand-name");
+    const labelPresence = result.checks.find((check) => check.id === "label-presence");
 
     expect(result.decision).toBe("rejected");
     expect(result.score).toBeLessThan(25);
     expect(brand?.status).toBe("needs_review");
+    expect(labelPresence?.status).toBe("needs_review");
     expect(brand?.guidance).toContain("clearer image");
     expect(result.nextSteps.some((step) => step.includes("Brand name"))).toBe(true);
+  });
+
+  it("does not pass typed application fields when the photo has no label", () => {
+    const result = verifyLabel(
+      application,
+      {
+        labelText: "",
+        confidence: 0,
+        notes: ["Photo shows a person in a room. No alcohol bottle or label is visible."],
+      },
+      "webcam-person",
+    );
+
+    expect(result.decision).toBe("rejected");
+    expect(result.checks.find((check) => check.id === "label-presence")?.status).toBe("fail");
+    expect(result.checks.find((check) => check.id === "class-type")?.status).toBe("needs_review");
+    expect(result.checks.find((check) => check.id === "class-type")?.observed).toBe("");
   });
 
   it("rejects non-approved distilled spirits bottle sizes", () => {

@@ -2,13 +2,22 @@
   "name": "alcohol-label-verifier",
   "version": "0.1.0",
   "private": true,
+  "bin": {
+    "labelcheck": "bin/labelcheck.mjs"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
+    "fixtures:generate": "node scripts/generate-html-fixtures.mjs",
+    "fixtures:degrade": "node scripts/generate-degraded-fixtures.mjs",
+    "fixtures:benchmark": "vitest run src/lib/htmlFixtureBenchmark.test.ts",
     "eval:fixtures": "vitest run src/lib/generatedFixtureEval.test.ts",
+    "eval:html-fixtures": "vitest run src/lib/htmlFixtureBenchmark.test.ts",
+    "eval:degraded-fixtures": "vitest run src/lib/degradedFixtureBenchmark.test.ts",
+    "eval:vision": "node scripts/eval-vision-model.mjs",
     "test:watch": "vitest"
   },
   "dependencies": {

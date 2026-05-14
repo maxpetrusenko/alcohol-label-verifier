@@ -1,0 +1,480 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "LabelCheck API",
+    "version": "1.0.0",
+    "description": "Machine-readable API for alcohol label evidence extraction, deterministic verification, and review packet export."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000"
+    }
+  ],
+  "paths": {
+    "/api/v1/health": {
+      "get": {
+        "summary": "Health check",
+        "responses": {
+          "200": {
+            "description": "Service status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/extract": {
+      "post": {
+        "summary": "Extract visible label evidence",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtractRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Extraction results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtractResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/StructuredError"
+          }
+        }
+      }
+    },
+    "/api/v1/verify": {
+      "post": {
+        "summary": "Verify labels against application facts",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Verification results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerifyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/StructuredError"
+          }
+        }
+      }
+    },
+    "/api/v1/export": {
+      "post": {
+        "summary": "Export a client-held review packet",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "JSON review packet or CSV summary"
+          },
+          "400": {
+            "$ref": "#/components/responses/StructuredError"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "responses": {
+      "StructuredError": {
+        "description": "Structured API error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ApiError"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "HealthResponse": {
+        "type": "object",
+        "required": ["ok", "service"],
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "service": {
+            "type": "string"
+          }
+        }
+      },
+      "Application": {
+        "type": "object",
+        "required": ["brandName", "classType", "alcoholContent", "netContents", "beverageKind"],
+        "properties": {
+          "brandName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "classType": {
+            "type": "string",
+            "minLength": 1
+          },
+          "alcoholContent": {
+            "type": "string",
+            "minLength": 1
+          },
+          "netContents": {
+            "type": "string",
+            "minLength": 1
+          },
+          "bottlerAddress": {
+            "type": "string"
+          },
+          "countryOfOrigin": {
+            "type": "string"
+          },
+          "beverageKind": {
+            "type": "string",
+            "enum": ["spirits", "wine", "beer", "other"]
+          },
+          "imported": {
+            "type": "boolean"
+          },
+          "agedYears": {
+            "type": "number",
+            "minimum": 0
+          },
+          "ruleProfile": {
+            "type": "string"
+          }
+        }
+      },
+      "LabelInput": {
+        "type": "object",
+        "required": ["fileName"],
+        "properties": {
+          "labelId": {
+            "type": "string"
+          },
+          "fileName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "mimeType": {
+            "type": "string"
+          },
+          "dataUrl": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      },
+      "Options": {
+        "type": "object",
+        "properties": {
+          "includeRawExtraction": {
+            "type": "boolean"
+          },
+          "maxConcurrency": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          }
+        }
+      },
+      "ExtractRequest": {
+        "type": "object",
+        "required": ["labels"],
+        "properties": {
+          "labels": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 10,
+            "items": {
+              "$ref": "#/components/schemas/LabelInput"
+            }
+          },
+          "options": {
+            "$ref": "#/components/schemas/Options"
+          }
+        }
+      },
+      "VerifyRequest": {
+        "type": "object",
+        "required": ["application", "labels"],
+        "properties": {
+          "application": {
+            "$ref": "#/components/schemas/Application"
+          },
+          "labels": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 25,
+            "items": {
+              "$ref": "#/components/schemas/LabelInput"
+            }
+          },
+          "options": {
+            "$ref": "#/components/schemas/Options"
+          }
+        }
+      },
+      "LabelExtraction": {
+        "type": "object",
+        "required": ["labelText", "confidence", "notes"],
+        "properties": {
+          "labelText": {
+            "type": "string"
+          },
+          "brandName": {
+            "type": "string"
+          },
+          "classType": {
+            "type": "string"
+          },
+          "alcoholContent": {
+            "type": "string"
+          },
+          "netContents": {
+            "type": "string"
+          },
+          "governmentWarning": {
+            "type": "string"
+          },
+          "bottlerAddress": {
+            "type": "string"
+          },
+          "countryOfOrigin": {
+            "type": "string"
+          },
+          "confidence": {
+            "type": "number"
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "VerificationCheck": {
+        "type": "object",
+        "required": ["id", "label", "status", "severity", "rationale"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pass", "warning", "fail", "needs_review"]
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["blocking", "review", "info"]
+          },
+          "expected": {
+            "type": "string"
+          },
+          "observed": {
+            "type": "string"
+          },
+          "rationale": {
+            "type": "string"
+          },
+          "guidance": {
+            "type": "string"
+          }
+        }
+      },
+      "VerificationResult": {
+        "type": "object",
+        "required": ["fileName", "decision", "score", "elapsedMs", "extraction", "checks", "summary", "nextSteps"],
+        "properties": {
+          "labelId": {
+            "type": "string"
+          },
+          "fileName": {
+            "type": "string"
+          },
+          "decision": {
+            "type": "string",
+            "enum": ["approved", "needs_review", "rejected"]
+          },
+          "score": {
+            "type": "number"
+          },
+          "elapsedMs": {
+            "type": "number"
+          },
+          "extraction": {
+            "$ref": "#/components/schemas/LabelExtraction"
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VerificationCheck"
+            }
+          },
+          "summary": {
+            "type": "string"
+          },
+          "missingApplicationFacts": {
+            "type": "array"
+          },
+          "nextSteps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "workflow": {
+            "type": "object"
+          }
+        }
+      },
+      "ExtractResponse": {
+        "type": "object",
+        "required": ["results", "meta"],
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "VerifyResponse": {
+        "type": "object",
+        "required": ["results", "meta"],
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VerificationResult"
+            }
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "ExportRequest": {
+        "type": "object",
+        "required": ["batch"],
+        "properties": {
+          "batch": {
+            "type": "object",
+            "required": ["results"],
+            "properties": {
+              "batchId": {
+                "type": "string"
+              },
+              "application": {
+                "type": "object"
+              },
+              "results": {
+                "type": "array",
+                "minItems": 1
+              },
+              "meta": {
+                "type": "object"
+              }
+            }
+          },
+          "format": {
+            "type": "string",
+            "enum": ["json", "csv"],
+            "default": "json"
+          }
+        }
+      },
+      "ApiError": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "requestId": {
+                "type": "string"
+              },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["path", "message"],
+                  "properties": {
+                    "path": {
+                      "type": "array",
+                      "items": {
+                        "oneOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ]
+                      }
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

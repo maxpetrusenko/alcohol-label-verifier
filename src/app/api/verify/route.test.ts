@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { POST } from "./route";
+import { POST as V1POST } from "../v1/verify/route";
 import { GOVERNMENT_WARNING_TEXT } from "../../../lib/rules";
 
 const application = {
@@ -51,6 +52,7 @@ describe("POST /api/verify", () => {
 
     expect(response.status).toBe(200);
     expect(data.meta.count).toBe(2);
+    expect(data.meta.requestId).toBeTruthy();
     expect(data.results).toHaveLength(2);
     expect(data.results.map((result: { labelId: string }) => result.labelId)).toEqual(["front", "back"]);
     expect(data.results[0].decision).toBe("approved");
@@ -67,5 +69,26 @@ describe("POST /api/verify", () => {
     const response = await POST(requestWithLabels(labels));
 
     expect(response.status).toBe(400);
+    const data = await response.json();
+    expect(data.error.code).toBe("VALIDATION_ERROR");
+    expect(data.error.requestId).toBeTruthy();
+    expect(data.error.issues[0].path).toEqual(["labels"]);
+  });
+
+  it("serves the same contract through the v1 route", async () => {
+    const response = await V1POST(
+      requestWithLabels([
+        {
+          labelId: "front",
+          fileName: "front.txt",
+          text: `Old Cypress Distillery\nKentucky Straight Bourbon Whiskey\n45% Alc./Vol.\n750 mL\nDistilled and bottled by Old Cypress Distillery, Louisville, KY\n${GOVERNMENT_WARNING_TEXT}`,
+        },
+      ]),
+    );
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.meta.count).toBe(1);
+    expect(data.results[0].labelId).toBe("front");
   });
 });

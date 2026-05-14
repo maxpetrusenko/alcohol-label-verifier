@@ -10,6 +10,7 @@ export type ApplicationData = {
   beverageKind: BeverageKind;
   imported?: boolean;
   agedYears?: number;
+  ruleProfile?: string;
 };
 
 export type LabelExtraction = {

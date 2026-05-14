@@ -107,6 +107,12 @@ const REQUIREMENT_REFS = {
     source: "27 CFR 16.22",
     url: "https://www.ecfr.gov/current/title-27/section-16.22",
   },
+  imageQuality: {
+    id: "labelcheck-image-quality",
+    label: "Image quality gate",
+    source: "LabelCheck review workflow",
+    url: TTB_DISTILLED_SPIRITS_LABELING_URL,
+  },
 } satisfies Record<string, RequirementRef>;
 
 const APPROVED_SPIRITS_FILL_SIZES_ML = [50, 100, 200, 355, 375, 500, 700, 750, 1000, 1750];
@@ -457,6 +463,61 @@ function warningLegibilityCheck(extraction: LabelExtraction): VerificationCheck 
   );
 }
 
+function imageQualityCheck(extraction: LabelExtraction): VerificationCheck | undefined {
+  const evidence = `${extraction.labelText}\n${extraction.notes.join("\n")}`;
+  const qualityIssue = evidence.match(
+    /\b(blurry|blurred|defocus blur|motion blur|glare|flash glare|low light|underexposed|overexposed|washed out|dim|dark photo|cropped|cut off|occlusion|skewed|angled|perspective|sideways|upside down|compression artifacts|sensor noise|downsampling|unreadable|poor quality)\b/iu,
+  )?.[0];
+  if (!qualityIssue) return undefined;
+
+  return {
+    id: "image-quality",
+    label: "Image quality",
+    status: "needs_review",
+    severity: "review",
+    requirementRef: REQUIREMENT_REFS.imageQuality,
+    expected: "Readable label artwork",
+    observed: qualityIssue,
+    rationale: "The label image appears degraded, so a clean automated approval would be unsafe even if extracted text matches.",
+    guidance: "Ask for clearer artwork or manually inspect the affected label panel before final disposition.",
+  };
+}
+
+function labelPresenceCheck(extraction: LabelExtraction): VerificationCheck | undefined {
+  const evidence = normalizeForMatch(`${extraction.labelText}\n${extraction.notes.join("\n")}`);
+  const noLabelEvidence =
+    /\b(no|not|cannot|could not)\b.{0,32}\b(label|bottle|alcohol|beverage|product|container)\b/u.test(evidence) ||
+    /\b(label|bottle|alcohol|beverage|product|container)\b.{0,32}\b(no|not|missing|visible|detected|present)\b/u.test(evidence);
+  const noExtractedFacts =
+    extraction.confidence === 0 &&
+    !extraction.brandName &&
+    !extraction.classType &&
+    !extraction.alcoholContent &&
+    !extraction.netContents &&
+    !extraction.governmentWarning;
+
+  if (!noLabelEvidence && !noExtractedFacts) return undefined;
+  const status: CheckStatus = noLabelEvidence ? "fail" : "needs_review";
+
+  return {
+    id: "label-presence",
+    label: "Alcohol label present",
+    status,
+    severity: status === "fail" ? "blocking" : "review",
+    requirementRef: REQUIREMENT_REFS.imageQuality,
+    expected: "Visible alcohol bottle or label artwork",
+    observed: noLabelEvidence ? "No alcohol label or bottle detected" : "No readable label facts extracted",
+    rationale:
+      status === "fail"
+        ? "The submitted image does not provide visible alcohol label evidence, so the system cannot verify the application facts."
+        : "No label facts were extracted. This can happen when vision extraction is disabled or the photo is unreadable.",
+    guidance:
+      status === "fail"
+        ? "Upload a photo or artwork file that clearly shows the bottle label panels before running the comparison."
+        : "Enable vision extraction, paste OCR text, or upload a clearer label image before final disposition.",
+  };
+}
+
 function warningCheck(extraction: LabelExtraction): VerificationCheck {
   const observed = extraction.governmentWarning || extraction.labelText;
   const exact = observed.includes(GOVERNMENT_WARNING_TEXT);
@@ -590,47 +651,46 @@ function buildWorkflow(checks: VerificationCheck[], facts: MissingApplicationFac
 
 export function verifyLabel(application: ApplicationData, extraction: LabelExtraction, fileName = "label"): VerificationResult {
   const started = Date.now();
-  const extractionWithFallbacks: LabelExtraction = {
-    ...extraction,
-    classType: extraction.classType || application.classType,
-  };
+  const extractionForComparison = extraction;
   const checks: VerificationCheck[] = [
-    fuzzyCheck("brand-name", "Brand name", application.brandName, extractionWithFallbacks.brandName || extractionWithFallbacks.labelText, {
+    fuzzyCheck("brand-name", "Brand name", application.brandName, extractionForComparison.brandName || extractionForComparison.labelText, {
       severity: "blocking",
       requirementRef: REQUIREMENT_REFS.brandName,
       failGuidance: "Request a corrected label or corrected application record so the brand names agree.",
       reviewGuidance: "Re-run extraction with a clearer image or inspect the label panel that contains the brand name.",
     }),
-    fuzzyCheck("class-type", "Class / type designation", application.classType, extractionWithFallbacks.classType || extractionWithFallbacks.labelText, {
+    fuzzyCheck("class-type", "Class / type designation", application.classType, extractionForComparison.classType || extractionForComparison.labelText, {
       severity: "blocking",
       requirementRef: REQUIREMENT_REFS.classType,
       failGuidance: "Request a corrected label or corrected application record so the class/type designation agrees.",
       reviewGuidance: "Re-run extraction with a clearer image or inspect the label panel that contains the class/type designation.",
     }, 0.72, 0.45),
-    alcoholCheck(application.alcoholContent, extractionWithFallbacks.alcoholContent || extractionWithFallbacks.labelText),
-    fuzzyCheck("net-contents", "Net contents", application.netContents, extractionWithFallbacks.netContents || extractionWithFallbacks.labelText, {
+    alcoholCheck(application.alcoholContent, extractionForComparison.alcoholContent || extractionForComparison.labelText),
+    fuzzyCheck("net-contents", "Net contents", application.netContents, extractionForComparison.netContents || extractionForComparison.labelText, {
       severity: "blocking",
       requirementRef: REQUIREMENT_REFS.netContents,
       failGuidance: "Request a corrected label or corrected application record so the net contents agree.",
       reviewGuidance: "Re-run extraction with a clearer image or inspect the label panel that contains net contents.",
     }, 0.74, 0.45),
-    warningCheck(extractionWithFallbacks),
+    warningCheck(extractionForComparison),
   ];
 
   checks.push(
     ...[
-      approvedBottleSizeCheck(extractionWithFallbacks),
-      ageStatementCheck(application, extractionWithFallbacks),
-      statementOfCompositionCheck(application, extractionWithFallbacks),
-      stateOfDistillationCheck(application, extractionWithFallbacks),
-      productionStatementCheck(extractionWithFallbacks),
-      approvedClassTypeCheck(application, extractionWithFallbacks),
-      warningLegibilityCheck(extractionWithFallbacks),
+      labelPresenceCheck(extractionForComparison),
+      approvedBottleSizeCheck(extractionForComparison),
+      ageStatementCheck(application, extractionForComparison),
+      statementOfCompositionCheck(application, extractionForComparison),
+      stateOfDistillationCheck(application, extractionForComparison),
+      productionStatementCheck(extractionForComparison),
+      approvedClassTypeCheck(application, extractionForComparison),
+      warningLegibilityCheck(extractionForComparison),
+      imageQualityCheck(extractionForComparison),
     ].filter((check): check is VerificationCheck => Boolean(check)),
   );
 
   if (application.bottlerAddress && !application.imported) {
-    checks.push(fuzzyCheck("bottler-address", "Bottler / producer address", application.bottlerAddress, extractionWithFallbacks.bottlerAddress || extractionWithFallbacks.labelText, {
+    checks.push(fuzzyCheck("bottler-address", "Bottler / producer address", application.bottlerAddress, extractionForComparison.bottlerAddress || extractionForComparison.labelText, {
       severity: "review",
       requirementRef: REQUIREMENT_REFS.bottlerAddress,
       failGuidance: "Request a corrected label or corrected application record so the bottler/importer statement agrees.",
@@ -638,7 +698,7 @@ export function verifyLabel(application: ApplicationData, extraction: LabelExtra
     }, 0.7, 0.7));
   }
   if (application.countryOfOrigin) {
-    checks.push(fuzzyCheck("country-origin", "Country of origin", application.countryOfOrigin, extractionWithFallbacks.countryOfOrigin || extractionWithFallbacks.labelText, {
+    checks.push(fuzzyCheck("country-origin", "Country of origin", application.countryOfOrigin, extractionForComparison.countryOfOrigin || extractionForComparison.labelText, {
       severity: application.imported ? "blocking" : "review",
       requirementRef: REQUIREMENT_REFS.countryOfOrigin,
       failGuidance: "Request a corrected label or corrected application record so the country of origin agrees.",
@@ -646,7 +706,7 @@ export function verifyLabel(application: ApplicationData, extraction: LabelExtra
     }, 0.78, 0.5));
   }
 
-  const lowConfidenceCheck = confidenceCheck(extractionWithFallbacks);
+  const lowConfidenceCheck = confidenceCheck(extractionForComparison);
   if (lowConfidenceCheck) {
     checks.push(lowConfidenceCheck);
   }
@@ -666,7 +726,7 @@ export function verifyLabel(application: ApplicationData, extraction: LabelExtra
     decision,
     score,
     elapsedMs: Date.now() - started,
-    extraction: extractionWithFallbacks,
+    extraction: extractionForComparison,
     checks,
     summary:
       decision === "approved"

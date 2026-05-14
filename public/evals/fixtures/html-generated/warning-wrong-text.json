@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "warning-wrong-text",
+  "title": "Wrong government warning text",
+  "kind": "warning-wrong",
+  "variant": "clean",
+  "expectedDecision": "rejected",
+  "expectedProblemChecks": [
+    "government-warning"
+  ],
+  "extractionConfidence": 0.72,
+  "application": {
+    "brandName": "Frontier Glass",
+    "classType": "Kentucky Straight Bourbon Whiskey",
+    "alcoholContent": "45% Alc./Vol. (90 Proof)",
+    "netContents": "750 mL",
+    "bottlerAddress": "Frontier Glass Distilling, Louisville, KY",
+    "beverageKind": "spirits",
+    "imported": false
+  },
+  "labelVisibleText": "Frontier Glass\nKentucky Straight Bourbon Whiskey\nDistilled in Kentucky\n45% Alc./Vol. (90 Proof)\n750 mL\nBottled by Frontier Glass Distilling, Louisville, KY\nGOVERNMENT WARNING: Alcohol may impair judgment. Please drink responsibly.",
+  "visualObservation": "",
+  "artifacts": {
+    "svg": "warning-wrong-text.svg",
+    "html": "warning-wrong-text.html"
+  },
+  "contentHash": "626a743941aacbc9"
+}

@@ -1,42 +1,19 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
+import { apiError, makeRequestId } from "../../../lib/apiResponses";
+import { verifyRequestSchema, type LabelInputPayload } from "../../../lib/apiSchemas";
+import { mapWithConcurrency } from "../../../lib/concurrency";
 import { extractLabel } from "../../../lib/extraction";
 import { extractionFromPlainText, verifyLabel } from "../../../lib/rules";
 import type { ApplicationData } from "../../../lib/types";
 
 export const runtime = "nodejs";
 
-const applicationSchema = z.object({
-  brandName: z.string().min(1),
-  classType: z.string().min(1),
-  alcoholContent: z.string().min(1),
-  netContents: z.string().min(1),
-  bottlerAddress: z.string().optional(),
-  countryOfOrigin: z.string().optional(),
-  beverageKind: z.enum(["spirits", "wine", "beer", "other"]),
-});
-
-const labelSchema = z.object({
-  labelId: z.string().optional(),
-  fileName: z.string().min(1),
-  mimeType: z.string().optional(),
-  dataUrl: z.string().optional(),
-  text: z.string().optional(),
-});
-
-const requestSchema = z.object({
-  application: applicationSchema,
-  labels: z.array(labelSchema).min(1).max(25),
-});
-
-type VerifiedLabelInput = z.infer<typeof labelSchema>;
-
 function cleanError(error: unknown): string {
   const message = error instanceof Error ? error.message : "Unknown extraction error";
   return message.replace(/\s+/g, " ").trim().slice(0, 180);
 }
 
-async function verifyOneLabel(application: ApplicationData, label: VerifiedLabelInput, index: number, batchStarted: number) {
+async function verifyOneLabel(application: ApplicationData, label: LabelInputPayload, index: number, batchStarted: number) {
   const labelId = label.labelId ?? `${index + 1}-${label.fileName}`;
 
   try {
@@ -60,22 +37,23 @@ async function verifyOneLabel(application: ApplicationData, label: VerifiedLabel
 
 export async function POST(request: Request) {
   const started = Date.now();
+  const requestId = makeRequestId();
   try {
-    const payload = requestSchema.parse(await request.json());
-    const results = await Promise.all(
-      payload.labels.map((label, index) => verifyOneLabel(payload.application, label, index, started)),
+    const payload = verifyRequestSchema.parse(await request.json());
+    const results = await mapWithConcurrency(payload.labels, payload.options?.maxConcurrency ?? 3, (label, index) =>
+      verifyOneLabel(payload.application, label, index, started),
     );
 
     return NextResponse.json({
       results,
       meta: {
+        requestId,
         count: results.length,
         elapsedMs: Date.now() - started,
         mode: process.env.OPENAI_API_KEY ? "vision+rules" : "text-only-demo",
       },
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown verification error";
-    return NextResponse.json({ error: message }, { status: 400 });
+    return apiError(error, "Unknown verification error");
   }
 }

@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "bad-photo-low-light",
+  "title": "Bad photo: low light",
+  "kind": "bad-photo",
+  "variant": "low-light",
+  "expectedDecision": "needs_review",
+  "expectedProblemChecks": [
+    "extraction-confidence"
+  ],
+  "extractionConfidence": 0.39,
+  "application": {
+    "brandName": "Frontier Glass",
+    "classType": "Kentucky Straight Bourbon Whiskey",
+    "alcoholContent": "45% Alc./Vol. (90 Proof)",
+    "netContents": "750 mL",
+    "bottlerAddress": "Frontier Glass Distilling, Louisville, KY",
+    "beverageKind": "spirits",
+    "imported": false
+  },
+  "labelVisibleText": "Frontier Glass\nKentucky Straight Bourbon Whiskey\nDistilled in Kentucky\n45% Alc./Vol. (90 Proof)\n750 mL\nBottled by Frontier Glass Distilling, Louisville, KY\nGOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.",
+  "visualObservation": "Visual note: label photo is underexposed; automated OCR confidence is low.",
+  "artifacts": {
+    "svg": "bad-photo-low-light.svg",
+    "html": "bad-photo-low-light.html"
+  },
+  "contentHash": "935b0c8da847639b"
+}

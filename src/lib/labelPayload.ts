@@ -6,6 +6,12 @@ export type PendingLabel = {
   text?: string;
 };
 
+export const MAX_LABEL_BATCH = 25;
+
+export function batchLimitError(count: number) {
+  return count > MAX_LABEL_BATCH ? `Batch limit is ${MAX_LABEL_BATCH} labels. Select ${MAX_LABEL_BATCH} or fewer files.` : null;
+}
+
 function withOptionalText(label: PendingLabel, text?: string): PendingLabel {
   if (!text) {
     const rest = { ...label };
