@@ -498,7 +498,7 @@ export default function Home() {
               </span>
             </div>
             <p className="upload-hint">
-              Bulk upload accepts 1-25 images and keeps them in this review session only. Images are not saved to the server.
+              Drop or bulk upload 1-25 images. Batch verification runs with bounded parallel model calls; images are not stored by default.
             </p>
             {isCameraOpen ? (
               <div className="camera-panel" aria-label="Camera capture">
