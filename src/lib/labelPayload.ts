@@ -12,6 +12,10 @@ export function batchLimitError(count: number) {
   return count > MAX_LABEL_BATCH ? `Batch limit is ${MAX_LABEL_BATCH} labels. Select ${MAX_LABEL_BATCH} or fewer files.` : null;
 }
 
+export function isImageLikeUpload(file: { name: string; type: string }) {
+  return file.type.startsWith("image/") || /\.(avif|gif|heic|jpe?g|png|webp)$/iu.test(file.name);
+}
+
 function withOptionalText(label: PendingLabel, text?: string): PendingLabel {
   if (!text) {
     const rest = { ...label };

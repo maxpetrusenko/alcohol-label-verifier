@@ -5,8 +5,9 @@ AI-powered alcohol label verification prototype for TTB-style compliance review.
 ## What it does
 
 - Upload one alcohol label or a batch of label images.
-- Use `Upload` to select up to 25 image files at once; each file becomes its own review row.
+- Drag image files or a folder onto the label area, or use `Upload` to select up to 25 images at once; each image becomes its own review row.
 - Use `Camera` on localhost or HTTPS to capture one label image from the browser camera.
+- Verify batch images with bounded server concurrency: default 3 labels in flight, configurable up to 10 through the API options.
 - Enter the application record fields agents normally compare by eye.
 - Extract visible label data with a vision model when configured.
 - Fall back to pasted OCR/text so the prototype is testable without API credentials.

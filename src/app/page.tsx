@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, DragEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   BadgeCheck,
@@ -15,7 +15,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { fixtureCases, type FixtureCase } from "@/lib/fixtureCases";
-import { batchLimitError, buildVerificationLabels, type PendingLabel } from "@/lib/labelPayload";
+import { batchLimitError, buildVerificationLabels, isImageLikeUpload, type PendingLabel } from "@/lib/labelPayload";
 import { batchSummary, decisionCounts, issueTitle, needsReviewerAttention } from "@/lib/reviewPresentation";
 import type { ApplicationData, CheckStatus, VerificationResult } from "@/lib/types";
 
@@ -100,6 +100,71 @@ function stopMediaStream(stream: MediaStream | null) {
   stream?.getTracks().forEach((track) => track.stop());
 }
 
+type DroppedEntry = {
+  isFile: boolean;
+  isDirectory: boolean;
+  name: string;
+  file?: (success: (file: File) => void, failure?: (error: DOMException) => void) => void;
+  createReader?: () => {
+    readEntries: (success: (entries: DroppedEntry[]) => void, failure?: (error: DOMException) => void) => void;
+  };
+};
+
+type DroppedDataTransferItem = DataTransferItem & {
+  webkitGetAsEntry?: () => DroppedEntry | null;
+};
+
+function fileFromEntry(entry: DroppedEntry) {
+  return new Promise<File | null>((resolve) => {
+    if (!entry.file) {
+      resolve(null);
+      return;
+    }
+
+    entry.file((file) => resolve(isImageLikeUpload(file) ? file : null), () => resolve(null));
+  });
+}
+
+async function filesFromEntry(entry: DroppedEntry): Promise<File[]> {
+  if (entry.isFile) {
+    const file = await fileFromEntry(entry);
+    return file ? [file] : [];
+  }
+
+  if (!entry.isDirectory || !entry.createReader) return [];
+
+  const reader = entry.createReader();
+  const files: File[] = [];
+
+  async function readAllEntries(): Promise<void> {
+    const entries = await new Promise<DroppedEntry[]>((resolve) => {
+      reader.readEntries(resolve, () => resolve([]));
+    });
+    if (!entries.length) return;
+    const nested = await Promise.all(entries.map(filesFromEntry));
+    files.push(...nested.flat());
+    await readAllEntries();
+  }
+
+  await readAllEntries();
+  return files;
+}
+
+async function imageFilesFromDrop(dataTransfer: DataTransfer) {
+  const entries: DroppedEntry[] = [];
+  for (const item of [...dataTransfer.items]) {
+    const entry = (item as DroppedDataTransferItem).webkitGetAsEntry?.();
+    if (entry) entries.push(entry);
+  }
+
+  if (entries.length) {
+    const files = await Promise.all(entries.map(filesFromEntry));
+    return files.flat();
+  }
+
+  return [...dataTransfer.files].filter(isImageLikeUpload);
+}
+
 export default function Home() {
   const [application, setApplication] = useState<ApplicationData>(demoApplication);
   const [labels, setLabels] = useState<PendingLabel[]>([{ labelId: "demo-label", fileName: "demo-label.txt", text: demoText }]);
@@ -111,6 +176,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [isDropActive, setIsDropActive] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const cameraStreamRef = useRef<MediaStream | null>(null);
 
@@ -256,6 +322,27 @@ export default function Home() {
     void onFiles(files);
   }
 
+  function handleDragOver(event: DragEvent<HTMLElement>) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+    setIsDropActive(true);
+  }
+
+  function handleDragLeave(event: DragEvent<HTMLElement>) {
+    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setIsDropActive(false);
+  }
+
+  async function handleDrop(event: DragEvent<HTMLElement>) {
+    event.preventDefault();
+    setIsDropActive(false);
+    const files = await imageFilesFromDrop(event.dataTransfer);
+    if (!files.length) {
+      setError("Drop image files or a folder containing images.");
+      return;
+    }
+    await onFiles(files);
+  }
+
   function loadDemo() {
     setApplication(demoApplication);
     setLabelText(demoText);
@@ -337,7 +424,13 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="label-stage">
+          <div
+            className={`label-stage${isDropActive ? " drop-active" : ""}`}
+            onDragOver={handleDragOver}
+            onDragEnter={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
             <div className="label-preview" aria-label="Full label preview">
               {activeLabel?.dataUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -353,6 +446,10 @@ export default function Home() {
                   <small className="warning-line">Government warning present</small>
                 </div>
               )}
+              <div className="drop-copy">
+                <strong>Bulk drop zone</strong>
+                <span>Drop 1-25 images or a folder.</span>
+              </div>
             </div>
 
             {hasBatch ? (
@@ -378,8 +475,15 @@ export default function Home() {
             <div className="photo-dock">
               <label className="tool-button">
                 <UploadCloud aria-hidden />
-                <span>Upload</span>
-                <input className="file-input" type="file" accept="image/*" multiple onChange={handleFileInput} />
+                <span>Bulk upload</span>
+                <input
+                  className="file-input"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  title="Select 1 to 25 label images"
+                  onChange={handleFileInput}
+                />
               </label>
               <button type="button" className="tool-button" onClick={() => setIsCameraOpen((open) => !open)}>
                 <Camera aria-hidden />
@@ -390,10 +494,12 @@ export default function Home() {
               </button>
               <span className="photo-meta">
                 <FileImage aria-hidden />
-                {activeLabel ? `${activeIndex + 1}/${batchCount} ${activeLabel.fileName}` : "No label"}
+                {activeLabel ? `${activeIndex + 1}/${batchCount} ${activeLabel.fileName}` : "No label selected"}
               </span>
             </div>
-            <p className="upload-hint">Upload accepts up to 25 images at once. Camera captures one label at a time.</p>
+            <p className="upload-hint">
+              Bulk upload accepts 1-25 images and keeps them in this review session only. Images are not saved to the server.
+            </p>
             {isCameraOpen ? (
               <div className="camera-panel" aria-label="Camera capture">
                 <video ref={videoRef} playsInline muted />
