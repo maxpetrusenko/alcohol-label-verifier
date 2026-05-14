@@ -463,12 +463,12 @@ export default function Home() {
                   <small className="warning-line">Government warning present</small>
                 </div>
               )}
-              {!activeLabel?.dataUrl || isDropActive ? (
-                <div className="drop-copy">
-                  <strong>Bulk drop zone</strong>
-                  <span>Drop up to 300 images or a folder.</span>
-                </div>
-              ) : null}
+            </div>
+
+            <div className="drop-strip" aria-live="polite">
+              <UploadCloud aria-hidden />
+              <strong>{isDropActive ? "Release to load this batch" : "Drop images or a folder here"}</strong>
+              <span>Up to 300 images. Large batches verify in 25-label chunks.</span>
             </div>
 
             {hasBatch ? (

@@ -198,42 +198,44 @@ h3 {
   padding: 8px;
 }
 
-.drop-copy {
-  position: absolute;
-  right: 12px;
-  bottom: 12px;
-  left: 12px;
-  display: flex;
+.drop-strip {
+  min-width: 0;
+  min-height: 36px;
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  border: 1px solid rgb(59 36 23 / 0.14);
+  gap: 8px;
+  border: 1px dashed rgb(59 36 23 / 0.22);
   border-radius: 12px;
-  padding: 8px 10px;
-  background: rgb(255 250 240 / 0.9);
+  padding: 7px 10px;
+  background: rgb(255 250 240 / 0.64);
   color: var(--ink);
-  box-shadow: 0 12px 34px rgb(40 24 15 / 0.14);
-  pointer-events: none;
 }
 
-.drop-copy strong,
-.drop-copy span {
+.drop-strip svg {
+  width: 17px;
+  height: 17px;
+  color: var(--accent);
+}
+
+.drop-strip strong,
+.drop-strip span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.drop-copy strong {
-  font-size: 0.84rem;
+.drop-strip strong {
+  font-size: 0.78rem;
 }
 
-.drop-copy span {
+.drop-strip span {
   color: var(--muted);
-  font-size: 0.76rem;
+  font-size: 0.74rem;
   font-weight: 700;
 }
 
-.label-stage.drop-active .drop-copy {
+.label-stage.drop-active .drop-strip {
   border-color: rgb(182 66 49 / 0.32);
   background: #fff3d4;
 }
@@ -951,9 +953,11 @@ dd {
     height: auto;
   }
 
-  .drop-copy {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 2px;
+  .drop-strip {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .drop-strip span {
+    grid-column: 2;
   }
 }
