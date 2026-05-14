@@ -37,15 +37,17 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Patch Coolify image and deploy
+      - name: Trigger Coolify deploy over SSH
         env:
-          COOLIFY_URL: ${{ secrets.COOLIFY_URL }}
           COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
           COOLIFY_APP_UUID: ${{ secrets.COOLIFY_APP_UUID }}
+          COOLIFY_SSH_HOST: ${{ secrets.COOLIFY_SSH_HOST }}
+          COOLIFY_SSH_USER: ${{ secrets.COOLIFY_SSH_USER }}
+          COOLIFY_SSH_PRIVATE_KEY: ${{ secrets.COOLIFY_SSH_PRIVATE_KEY }}
         run: |
-          curl -fsS -X PATCH "$COOLIFY_URL/api/v1/applications/$COOLIFY_APP_UUID" \
-            -H "Authorization: Bearer $COOLIFY_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d "{\"build_pack\":\"dockerimage\",\"docker_registry_image_name\":\"$IMAGE_NAME\",\"docker_registry_image_tag\":\"$IMAGE_TAG\",\"ports_exposes\":\"3000\",\"health_check_enabled\":true,\"health_check_path\":\"/api/health\"}"
-          curl -fsS -X POST "$COOLIFY_URL/api/v1/deploy?uuid=$COOLIFY_APP_UUID&force=false" \
-            -H "Authorization: Bearer $COOLIFY_TOKEN"
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$COOLIFY_SSH_PRIVATE_KEY" > ~/.ssh/coolify_deploy
+          chmod 600 ~/.ssh/coolify_deploy
+          ssh-keyscan -H "$COOLIFY_SSH_HOST" >> ~/.ssh/known_hosts
+          ssh -i ~/.ssh/coolify_deploy "$COOLIFY_SSH_USER@$COOLIFY_SSH_HOST" \
+            "curl -fsS -X POST 'http://127.0.0.1:8000/api/v1/deploy?uuid=$COOLIFY_APP_UUID&force=false' -H 'Authorization: Bearer $COOLIFY_TOKEN'"
