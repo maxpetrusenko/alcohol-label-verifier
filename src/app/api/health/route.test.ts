@@ -14,6 +14,9 @@ describe("GET /api/health", () => {
   const originalLangSmithKey = process.env.LANGSMITH_API_KEY;
   const originalLangSmithProject = process.env.LANGSMITH_PROJECT;
   const originalLangSmithTracing = process.env.LANGSMITH_TRACING;
+  const originalAppLangSmithKey = process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_API_KEY;
+  const originalAppLangSmithProject = process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_PROJECT;
+  const originalAppLangSmithTracing = process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_TRACING;
 
   beforeEach(() => {
     delete process.env.OPENAI_API_KEY;
@@ -28,6 +31,9 @@ describe("GET /api/health", () => {
     delete process.env.LANGSMITH_API_KEY;
     delete process.env.LANGSMITH_PROJECT;
     delete process.env.LANGSMITH_TRACING;
+    delete process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_API_KEY;
+    delete process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_PROJECT;
+    delete process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_TRACING;
   });
 
   afterEach(() => {
@@ -66,6 +72,15 @@ describe("GET /api/health", () => {
 
     if (originalLangSmithTracing) process.env.LANGSMITH_TRACING = originalLangSmithTracing;
     else delete process.env.LANGSMITH_TRACING;
+
+    if (originalAppLangSmithKey) process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_API_KEY = originalAppLangSmithKey;
+    else delete process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_API_KEY;
+
+    if (originalAppLangSmithProject) process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_PROJECT = originalAppLangSmithProject;
+    else delete process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_PROJECT;
+
+    if (originalAppLangSmithTracing) process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_TRACING = originalAppLangSmithTracing;
+    else delete process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_TRACING;
   });
 
   it("reports text-only mode when no default provider key is configured", async () => {
@@ -136,9 +151,12 @@ describe("GET /api/health", () => {
   });
 
   it("reports LangSmith configuration without exposing the key", async () => {
-    process.env.LANGSMITH_API_KEY = "lsv2-test-secret";
-    process.env.LANGSMITH_PROJECT = "labelcheck-local";
-    process.env.LANGSMITH_TRACING = "true";
+    process.env.LANGSMITH_API_KEY = "shared-lsv2-test-secret";
+    process.env.LANGSMITH_PROJECT = "shared-project";
+    process.env.LANGSMITH_TRACING = "false";
+    process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_API_KEY = "app-lsv2-test-secret";
+    process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_PROJECT = "labelcheck-local";
+    process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_TRACING = "true";
 
     const data = await GET().json();
 
@@ -147,6 +165,7 @@ describe("GET /api/health", () => {
       tracingEnabled: true,
       project: "labelcheck-local",
     });
-    expect(JSON.stringify(data)).not.toContain("lsv2-test-secret");
+    expect(JSON.stringify(data)).not.toContain("app-lsv2-test-secret");
+    expect(JSON.stringify(data)).not.toContain("shared-lsv2-test-secret");
   });
 });

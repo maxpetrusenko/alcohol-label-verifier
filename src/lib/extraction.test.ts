@@ -12,6 +12,8 @@ describe("extractLabel", () => {
   const originalLangSmithKey = process.env.LANGSMITH_API_KEY;
   const originalLangSmithTracing = process.env.LANGSMITH_TRACING;
   const originalLangChainTracing = process.env.LANGCHAIN_TRACING_V2;
+  const originalAppLangSmithKey = process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_API_KEY;
+  const originalAppLangSmithTracing = process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_TRACING;
 
   beforeEach(() => {
     process.env.OPENAI_API_KEY = "test-key";
@@ -23,6 +25,8 @@ describe("extractLabel", () => {
     delete process.env.LANGSMITH_API_KEY;
     delete process.env.LANGSMITH_TRACING;
     delete process.env.LANGCHAIN_TRACING_V2;
+    delete process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_API_KEY;
+    delete process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_TRACING;
   });
 
   afterEach(() => {
@@ -45,6 +49,10 @@ describe("extractLabel", () => {
     else delete process.env.LANGSMITH_TRACING;
     if (originalLangChainTracing) process.env.LANGCHAIN_TRACING_V2 = originalLangChainTracing;
     else delete process.env.LANGCHAIN_TRACING_V2;
+    if (originalAppLangSmithKey) process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_API_KEY = originalAppLangSmithKey;
+    else delete process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_API_KEY;
+    if (originalAppLangSmithTracing) process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_TRACING = originalAppLangSmithTracing;
+    else delete process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_TRACING;
   });
 
   it("normalizes provider confidence and common warning OCR typos", async () => {

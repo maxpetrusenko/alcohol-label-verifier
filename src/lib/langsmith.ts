@@ -1,3 +1,4 @@
+import { Client } from "langsmith";
 import { traceable } from "langsmith/traceable";
 
 export type VisionTraceInput = {
@@ -20,16 +21,36 @@ function truthy(value: string | undefined): boolean {
   return /^(1|true|yes|on)$/iu.test(value ?? "");
 }
 
+function firstNonEmpty(...values: Array<string | undefined>) {
+  return values.find((value) => value !== undefined && value.trim() !== "");
+}
+
+export function langSmithApiKey() {
+  return firstNonEmpty(
+    process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_API_KEY,
+    process.env.LANGSMITH_API_KEY,
+    process.env.LANGCHAIN_API_KEY,
+  );
+}
+
 export function isLangSmithConfigured() {
-  return Boolean(process.env.LANGSMITH_API_KEY);
+  return Boolean(langSmithApiKey());
 }
 
 export function isLangSmithTracingEnabled() {
-  return isLangSmithConfigured() && truthy(process.env.LANGSMITH_TRACING ?? process.env.LANGCHAIN_TRACING_V2);
+  return (
+    isLangSmithConfigured() &&
+    truthy(firstNonEmpty(process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_TRACING, process.env.LANGSMITH_TRACING, process.env.LANGCHAIN_TRACING_V2))
+  );
 }
 
 export function langSmithProject() {
-  return process.env.LANGSMITH_PROJECT || process.env.LANGCHAIN_PROJECT || "alcohol-label-verifier";
+  return firstNonEmpty(
+    process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_PROJECT ||
+      undefined,
+    process.env.LANGSMITH_PROJECT,
+    process.env.LANGCHAIN_PROJECT,
+  ) ?? "alcohol-label-verifier";
 }
 
 export async function withLangSmithTrace<T>(
@@ -38,6 +59,8 @@ export async function withLangSmithTrace<T>(
   summarize: (value: T) => Record<string, unknown>,
 ): Promise<T> {
   if (!isLangSmithTracingEnabled()) return run();
+  const apiKey = langSmithApiKey();
+  if (!apiKey) return run();
 
   const traced = traceable(
     async (traceInput: VisionTraceInput): Promise<TraceEnvelope<T>> => {
@@ -52,6 +75,8 @@ export async function withLangSmithTrace<T>(
       name: "label-vision-extraction",
       run_type: "chain",
       project_name: langSmithProject(),
+      client: new Client({ apiKey }),
+      tracingEnabled: true,
       tags: ["labelcheck", "vision", input.provider],
       metadata: {
         provider: input.provider,
