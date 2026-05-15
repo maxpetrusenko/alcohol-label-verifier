@@ -1,0 +1,757 @@
+{
+  "project": {
+    "name": "LabelCheck Agent",
+    "repo": "alcohol-label-verifier",
+    "artifactPurpose": "Clickable package and component workflow map for the Next.js alcohol label verifier prototype.",
+    "inspiration": "DaveJ X prompt, fetched 2026-05-14: single page HTML, components/packages on page, clickable actions, highlighted flows, JSON-driven flow definitions.",
+    "sourceRequirement": "../Requirements-Take-Home Project_ AI-Powered Alcohol Label Verification App.docx",
+    "updatedAt": "2026-05-14"
+  },
+  "legend": {
+    "nodeKinds": [
+      {
+        "kind": "screen",
+        "label": "User-facing screen or UI component"
+      },
+      {
+        "kind": "state",
+        "label": "React state or client helper"
+      },
+      {
+        "kind": "route",
+        "label": "Next.js API route"
+      },
+      {
+        "kind": "library",
+        "label": "Shared TypeScript library"
+      },
+      {
+        "kind": "external",
+        "label": "External service or runtime dependency"
+      },
+      {
+        "kind": "data",
+        "label": "Static data, fixtures, or contracts"
+      },
+      {
+        "kind": "tooling",
+        "label": "Build, test, or local runtime tool"
+      }
+    ],
+    "edgeKinds": [
+      {
+        "kind": "client",
+        "label": "Client-side data movement"
+      },
+      {
+        "kind": "http",
+        "label": "HTTP request or response"
+      },
+      {
+        "kind": "server",
+        "label": "Server-side call"
+      },
+      {
+        "kind": "fallback",
+        "label": "Fallback path"
+      },
+      {
+        "kind": "tooling",
+        "label": "Developer command path"
+      }
+    ]
+  },
+  "nodes": [
+    {
+      "id": "reviewer",
+      "kind": "screen",
+      "title": "Reviewer",
+      "path": "human",
+      "summary": "Chooses a demo, fixture, upload, or batch and makes the final disposition.",
+      "x": 0.7,
+      "y": 2.55,
+      "w": 2.45,
+      "h": 1.05
+    },
+    {
+      "id": "home",
+      "kind": "screen",
+      "title": "Home screen",
+      "path": "src/app/page.tsx",
+      "summary": "Main client component. Owns form UI, label preview, fixture loading, verification submit, batch rail, result cards, and issue cards.",
+      "x": 3.45,
+      "y": 1.2,
+      "w": 2.65,
+      "h": 1.05
+    },
+    {
+      "id": "react-state",
+      "kind": "state",
+      "title": "App state",
+      "path": "src/app/page.tsx",
+      "summary": "application, labels, labelText, results, activeIndex, isVerifying, and error.",
+      "x": 3.45,
+      "y": 2.55,
+      "w": 2.65,
+      "h": 1.05
+    },
+    {
+      "id": "fixtures-lib",
+      "kind": "library",
+      "title": "Fixture catalog",
+      "path": "src/lib/fixtureCases.ts",
+      "summary": "Curated generated fixture metadata, image paths, expected decisions, text fallbacks, and application facts.",
+      "x": 6.5,
+      "y": 0.95,
+      "w": 2.65,
+      "h": 1.05
+    },
+    {
+      "id": "public-fixtures",
+      "kind": "data",
+      "title": "Fixture assets",
+      "path": "public/evals/fixtures/generated",
+      "summary": "PNG and JSON pairs copied from fsyeddev/ttb-label for demo, regression, and eval coverage.",
+      "x": 6.5,
+      "y": 2.25,
+      "w": 2.65,
+      "h": 1.05
+    },
+    {
+      "id": "file-reader",
+      "kind": "external",
+      "title": "File reader",
+      "path": "Web API",
+      "summary": "Reads uploaded image files as data URLs so the UI can preview and send them to the API.",
+      "x": 6.5,
+      "y": 3.55,
+      "w": 2.65,
+      "h": 1.05
+    },
+    {
+      "id": "label-payload",
+      "kind": "library",
+      "title": "Payload builder",
+      "path": "src/lib/labelPayload.ts",
+      "summary": "Normalizes selected labels and text fallback into the labels array expected by the verify route.",
+      "x": 6.5,
+      "y": 4.85,
+      "w": 2.65,
+      "h": 1.05
+    },
+    {
+      "id": "verify-route",
+      "kind": "route",
+      "title": "Verify route",
+      "path": "src/app/api/verify/route.ts",
+      "summary": "Validates request payload with Zod, verifies each label concurrently, returns results and mode metadata.",
+      "x": 9.75,
+      "y": 2.1,
+      "w": 2.65,
+      "h": 1.05
+    },
+    {
+      "id": "zod-schema",
+      "kind": "library",
+      "title": "Request schema",
+      "path": "src/app/api/verify/route.ts",
+      "summary": "Requires application facts and one to twenty-five labels before server work begins.",
+      "x": 9.75,
+      "y": 3.4,
+      "w": 2.65,
+      "h": 1.05
+    },
+    {
+      "id": "extraction",
+      "kind": "library",
+      "title": "Image extractor",
+      "path": "src/lib/extraction.ts",
+      "summary": "Reads each label through OpenAI vision when configured, otherwise uses supplied text or empty fallback.",
+      "x": 12.95,
+      "y": 2.1,
+      "w": 2.65,
+      "h": 1.05
+    },
+    {
+      "id": "openai",
+      "kind": "external",
+      "title": "Vision model",
+      "path": "https://api.openai.com/v1/responses",
+      "summary": "Optional vision extractor. Receives label image only, never expected application facts.",
+      "x": 15.95,
+      "y": 0.95,
+      "w": 2.65,
+      "h": 1.05
+    },
+    {
+      "id": "plain-text",
+      "kind": "library",
+      "title": "Text fallback",
+      "path": "src/lib/rules.ts",
+      "summary": "Text-only parser used for demo mode, OCR paste, missing API key, missing data URL, or provider failure.",
+      "x": 15.95,
+      "y": 3.35,
+      "w": 2.65,
+      "h": 1.05
+    },
+    {
+      "id": "rules",
+      "kind": "library",
+      "title": "Rule graph",
+      "path": "src/lib/rules.ts",
+      "summary": "Compares application facts to observed label evidence and produces checks, missing facts, score, decision, summary, and next steps.",
+      "x": 18.05,
+      "y": 2.1,
+      "w": 2.65,
+      "h": 1.05
+    },
+    {
+      "id": "types",
+      "kind": "data",
+      "title": "Result contract",
+      "path": "src/lib/types.ts",
+      "summary": "Shared types for ApplicationData, LabelExtraction, VerificationCheck, VerificationWorkflow, and VerificationResult.",
+      "x": 18.05,
+      "y": 3.4,
+      "w": 2.65,
+      "h": 1.05
+    },
+    {
+      "id": "review-presentation",
+      "kind": "library",
+      "title": "Review helper",
+      "path": "src/lib/reviewPresentation.ts",
+      "summary": "Small UI helper that decides which checks need reviewer attention and how many issue cards to label.",
+      "x": 18.05,
+      "y": 4.7,
+      "w": 2.65,
+      "h": 1.05
+    },
+    {
+      "id": "health-route",
+      "kind": "route",
+      "title": "Health route",
+      "path": "src/app/api/health/route.ts",
+      "summary": "Basic runtime health endpoint for deploy or local smoke checks.",
+      "x": 9.75,
+      "y": 4.7,
+      "w": 2.65,
+      "h": 1.05
+    },
+    {
+      "id": "tests",
+      "kind": "tooling",
+      "title": "Test suites",
+      "path": "src/**/*.test.ts",
+      "summary": "Rules, payload, fixture, presentation, generated fixture eval, and API route coverage.",
+      "x": 20.95,
+      "y": 4.05,
+      "w": 2.3,
+      "h": 1.05
+    },
+    {
+      "id": "next-build",
+      "kind": "tooling",
+      "title": "Build gate",
+      "path": "package.json",
+      "summary": "npm run lint, npm run test, and npm run build gate the app before handoff.",
+      "x": 20.95,
+      "y": 5.35,
+      "w": 2.3,
+      "h": 1.05
+    },
+    {
+      "id": "result-ui",
+      "kind": "screen",
+      "title": "Result cards",
+      "path": "src/app/page.tsx",
+      "summary": "Rendered evidence, score, issue cards, batch rail statuses, missing facts, and next actions.",
+      "x": 20.95,
+      "y": 2.1,
+      "w": 2.3,
+      "h": 1.05
+    }
+  ],
+  "flows": [
+    {
+      "id": "demo-success",
+      "title": "Demo label success",
+      "actor": "Reviewer",
+      "intent": "Load the built-in clean bourbon example and see an approved result without API credentials.",
+      "input": "Click Demo, then Verify label.",
+      "expectedOutcome": "Approved result when demo text matches demo application facts.",
+      "happyPath": true,
+      "edges": [
+        {
+          "from": "reviewer",
+          "to": "home",
+          "kind": "client",
+          "label": "click Demo",
+          "payload": "User action resets application, labels, labelText, results, activeIndex, and error."
+        },
+        {
+          "from": "home",
+          "to": "react-state",
+          "kind": "client",
+          "label": "set demo state",
+          "payload": "demoApplication plus demo label text become the working form state."
+        },
+        {
+          "from": "home",
+          "to": "label-payload",
+          "kind": "client",
+          "label": "build labels",
+          "payload": "labels and fallback text become [{ labelId, fileName, text }]."
+        },
+        {
+          "from": "label-payload",
+          "to": "verify-route",
+          "kind": "http",
+          "label": "POST JSON",
+          "payload": "{ application, labels } is sent to /api/verify."
+        },
+        {
+          "from": "verify-route",
+          "to": "zod-schema",
+          "kind": "server",
+          "label": "validate",
+          "payload": "applicationSchema and labelSchema reject malformed requests."
+        },
+        {
+          "from": "verify-route",
+          "to": "extraction",
+          "kind": "server",
+          "label": "verifyOneLabel",
+          "payload": "Each label is passed to extractLabel with fileName and text."
+        },
+        {
+          "from": "extraction",
+          "to": "plain-text",
+          "kind": "fallback",
+          "label": "no image or key",
+          "payload": "Demo text is parsed by extractionFromPlainText."
+        },
+        {
+          "from": "plain-text",
+          "to": "rules",
+          "kind": "server",
+          "label": "observed evidence",
+          "payload": "LabelExtraction has brand, class, ABV, contents, warning, bottler, confidence, notes."
+        },
+        {
+          "from": "rules",
+          "to": "types",
+          "kind": "server",
+          "label": "result contract",
+          "payload": "VerificationResult includes decision approved, score, checks, workflow, and nextSteps."
+        },
+        {
+          "from": "types",
+          "to": "result-ui",
+          "kind": "http",
+          "label": "render response",
+          "payload": "results[] populates score, evidence, issue cards, and next action copy."
+        },
+        {
+          "from": "home",
+          "to": "review-presentation",
+          "kind": "client",
+          "label": "issue labels",
+          "payload": "issueTitle(0) renders No issues."
+        }
+      ]
+    },
+    {
+      "id": "fixture-mismatch",
+      "title": "Fixture mismatch failure",
+      "actor": "Reviewer",
+      "intent": "Load a generated fixture where source facts deliberately disagree with visible label evidence.",
+      "input": "Open Fixtures and text fallback, select Brand mismatch rejection, then verify.",
+      "expectedOutcome": "Rejected result with blocking brand-name mismatch and correction guidance.",
+      "happyPath": false,
+      "edges": [
+        {
+          "from": "reviewer",
+          "to": "home",
+          "kind": "client",
+          "label": "select fixture",
+          "payload": "Fixture button calls loadFixture(fixture)."
+        },
+        {
+          "from": "home",
+          "to": "fixtures-lib",
+          "kind": "client",
+          "label": "fixture metadata",
+          "payload": "FixtureCase supplies expectedDecision, application facts, public image path, public JSON path, and text fallback."
+        },
+        {
+          "from": "fixtures-lib",
+          "to": "public-fixtures",
+          "kind": "client",
+          "label": "fetch PNG",
+          "payload": "public/evals/fixtures/generated/{fixture}.png is fetched as a Blob."
+        },
+        {
+          "from": "public-fixtures",
+          "to": "file-reader",
+          "kind": "client",
+          "label": "Blob to data URL",
+          "payload": "FileReader creates a data URL for preview and optional vision extraction."
+        },
+        {
+          "from": "file-reader",
+          "to": "react-state",
+          "kind": "client",
+          "label": "set active label",
+          "payload": "labels = [{ labelId, fileName, mimeType, dataUrl, text }]."
+        },
+        {
+          "from": "react-state",
+          "to": "label-payload",
+          "kind": "client",
+          "label": "submit state",
+          "payload": "Application facts and label payload move into POST body."
+        },
+        {
+          "from": "label-payload",
+          "to": "verify-route",
+          "kind": "http",
+          "label": "POST verify",
+          "payload": "Route receives one label and one source application record."
+        },
+        {
+          "from": "verify-route",
+          "to": "extraction",
+          "kind": "server",
+          "label": "extract observed",
+          "payload": "Observed label evidence is extracted from the label image or fixture text."
+        },
+        {
+          "from": "extraction",
+          "to": "rules",
+          "kind": "server",
+          "label": "compare blind",
+          "payload": "AI observed evidence is compared to application facts only inside deterministic rules."
+        },
+        {
+          "from": "rules",
+          "to": "result-ui",
+          "kind": "http",
+          "label": "blocking result",
+          "payload": "Brand mismatch returns decision rejected and fail guidance."
+        }
+      ]
+    },
+    {
+      "id": "upload-vision",
+      "title": "Uploaded image with vision",
+      "actor": "Reviewer",
+      "intent": "Upload a real label photo and use the configured vision model for extraction.",
+      "input": "Choose Upload or Camera with an image while OPENAI_API_KEY is configured.",
+      "expectedOutcome": "Vision extraction returns structured observed evidence, then rules decide.",
+      "happyPath": true,
+      "edges": [
+        {
+          "from": "reviewer",
+          "to": "home",
+          "kind": "client",
+          "label": "choose image",
+          "payload": "input[type=file] sends one or more File objects to onFiles."
+        },
+        {
+          "from": "home",
+          "to": "file-reader",
+          "kind": "client",
+          "label": "read files",
+          "payload": "Each file becomes PendingLabel with labelId, fileName, mimeType, and dataUrl."
+        },
+        {
+          "from": "file-reader",
+          "to": "react-state",
+          "kind": "client",
+          "label": "preview data URL",
+          "payload": "dataUrl powers the image preview and server payload."
+        },
+        {
+          "from": "react-state",
+          "to": "label-payload",
+          "kind": "client",
+          "label": "prepare labels",
+          "payload": "Images keep dataUrl and omit fallback text unless fixture text exists."
+        },
+        {
+          "from": "label-payload",
+          "to": "verify-route",
+          "kind": "http",
+          "label": "POST verify",
+          "payload": "application plus labels array goes to route."
+        },
+        {
+          "from": "verify-route",
+          "to": "extraction",
+          "kind": "server",
+          "label": "extractLabel",
+          "payload": "Route passes only the current label to extraction."
+        },
+        {
+          "from": "extraction",
+          "to": "openai",
+          "kind": "server",
+          "label": "vision request",
+          "payload": "Model receives strict JSON schema prompt plus input_image data URL. Expected facts are not sent."
+        },
+        {
+          "from": "openai",
+          "to": "extraction",
+          "kind": "server",
+          "label": "strict JSON",
+          "payload": "labelText, brandName, classType, alcoholContent, netContents, warning, bottler, origin, confidence, notes."
+        },
+        {
+          "from": "extraction",
+          "to": "rules",
+          "kind": "server",
+          "label": "observed facts",
+          "payload": "mergeExtraction combines model fields with optional text fallback."
+        },
+        {
+          "from": "rules",
+          "to": "result-ui",
+          "kind": "http",
+          "label": "result cards",
+          "payload": "UI renders extracted evidence, checks, score, decision, and next steps."
+        }
+      ]
+    },
+    {
+      "id": "provider-fallback",
+      "title": "Vision failure fallback",
+      "actor": "System",
+      "intent": "Keep the prototype usable when the model key is missing or provider call fails.",
+      "input": "No OPENAI_API_KEY, no image dataUrl, unreadable JSON, or provider non-200.",
+      "expectedOutcome": "Text fallback or empty extraction runs through rules with low confidence and reviewer guidance.",
+      "happyPath": false,
+      "edges": [
+        {
+          "from": "verify-route",
+          "to": "extraction",
+          "kind": "server",
+          "label": "attempt extraction",
+          "payload": "extractLabel receives label text, data URL, mime type, and file name."
+        },
+        {
+          "from": "extraction",
+          "to": "openai",
+          "kind": "server",
+          "label": "optional call",
+          "payload": "Only called when API key and dataUrl are present."
+        },
+        {
+          "from": "openai",
+          "to": "plain-text",
+          "kind": "fallback",
+          "label": "failure path",
+          "payload": "Provider error or unreadable JSON becomes note text and confidence 0."
+        },
+        {
+          "from": "plain-text",
+          "to": "rules",
+          "kind": "fallback",
+          "label": "low confidence",
+          "payload": "Fallback extraction still produces LabelExtraction for deterministic checks."
+        },
+        {
+          "from": "rules",
+          "to": "result-ui",
+          "kind": "http",
+          "label": "needs review",
+          "payload": "Confidence gate and missing evidence produce reviewer-facing next steps."
+        }
+      ]
+    },
+    {
+      "id": "batch-review",
+      "title": "Batch verify labels",
+      "actor": "Reviewer",
+      "intent": "Select up to twenty-five label files and verify them as independent rows.",
+      "input": "Upload multiple images, then click Verify N labels.",
+      "expectedOutcome": "One result per label, batch rail lets reviewer jump between approved, review, and blocked rows.",
+      "happyPath": true,
+      "edges": [
+        {
+          "from": "reviewer",
+          "to": "home",
+          "kind": "client",
+          "label": "multi-select files",
+          "payload": "Browser file picker returns FileList."
+        },
+        {
+          "from": "home",
+          "to": "file-reader",
+          "kind": "client",
+          "label": "Promise.all reads",
+          "payload": "onFiles rejects batches above 25 and reads the rest in parallel."
+        },
+        {
+          "from": "file-reader",
+          "to": "react-state",
+          "kind": "client",
+          "label": "labels[]",
+          "payload": "labels state holds all PendingLabel entries and resets results."
+        },
+        {
+          "from": "react-state",
+          "to": "label-payload",
+          "kind": "client",
+          "label": "build batch payload",
+          "payload": "Each label preserves file identity and data URL."
+        },
+        {
+          "from": "label-payload",
+          "to": "verify-route",
+          "kind": "http",
+          "label": "POST batch",
+          "payload": "Zod accepts labels array length 1 to 25."
+        },
+        {
+          "from": "verify-route",
+          "to": "extraction",
+          "kind": "server",
+          "label": "Promise.all verifyOneLabel",
+          "payload": "Each label is extracted independently so one broken image does not fail the full batch."
+        },
+        {
+          "from": "extraction",
+          "to": "rules",
+          "kind": "server",
+          "label": "per-label result",
+          "payload": "Each extraction is converted into one VerificationResult."
+        },
+        {
+          "from": "rules",
+          "to": "result-ui",
+          "kind": "http",
+          "label": "results[]",
+          "payload": "UI shows result count, blocked count, and per-label status in the batch rail."
+        }
+      ]
+    },
+    {
+      "id": "missing-application-facts",
+      "title": "Missing application facts",
+      "actor": "Reviewer",
+      "intent": "Understand what fails when source facts are incomplete.",
+      "input": "Clear required application fields and run verification.",
+      "expectedOutcome": "Rules return missingApplicationFacts and next steps instead of pretending the label passed.",
+      "happyPath": false,
+      "edges": [
+        {
+          "from": "reviewer",
+          "to": "home",
+          "kind": "client",
+          "label": "edit fields",
+          "payload": "Application facts inputs mutate application state."
+        },
+        {
+          "from": "home",
+          "to": "react-state",
+          "kind": "client",
+          "label": "blank facts",
+          "payload": "brandName, classType, alcoholContent, netContents, or bottlerAddress can become empty."
+        },
+        {
+          "from": "react-state",
+          "to": "verify-route",
+          "kind": "http",
+          "label": "submit",
+          "payload": "Zod requires core string fields but can receive whitespace after UI edits."
+        },
+        {
+          "from": "verify-route",
+          "to": "rules",
+          "kind": "server",
+          "label": "missing facts",
+          "payload": "missingApplicationFacts checks blank normalized values and imported country-of-origin needs."
+        },
+        {
+          "from": "rules",
+          "to": "types",
+          "kind": "server",
+          "label": "workflow",
+          "payload": "VerificationWorkflow explains missing facts, comparison summary, and next steps."
+        },
+        {
+          "from": "types",
+          "to": "result-ui",
+          "kind": "http",
+          "label": "review UI",
+          "payload": "Missing facts panel shows field labels and correction guidance."
+        }
+      ]
+    },
+    {
+      "id": "health-check",
+      "title": "Health check",
+      "actor": "Developer or deploy monitor",
+      "intent": "Confirm the app runtime can respond before deeper QA.",
+      "input": "GET /api/health.",
+      "expectedOutcome": "JSON health response from the Next route.",
+      "happyPath": true,
+      "edges": [
+        {
+          "from": "reviewer",
+          "to": "health-route",
+          "kind": "http",
+          "label": "GET health",
+          "payload": "Smoke check hits the route directly."
+        },
+        {
+          "from": "health-route",
+          "to": "result-ui",
+          "kind": "http",
+          "label": "JSON response",
+          "payload": "Monitor receives basic runtime health."
+        }
+      ]
+    },
+    {
+      "id": "production-build",
+      "title": "Production build gate",
+      "actor": "Developer",
+      "intent": "Validate code before handoff or deploy.",
+      "input": "npm run lint, npm run test, npm run build.",
+      "expectedOutcome": "ESLint, Vitest, and Next.js build complete without errors.",
+      "happyPath": true,
+      "edges": [
+        {
+          "from": "reviewer",
+          "to": "next-build",
+          "kind": "tooling",
+          "label": "run gate",
+          "payload": "Developer invokes package scripts."
+        },
+        {
+          "from": "next-build",
+          "to": "tests",
+          "kind": "tooling",
+          "label": "test suite",
+          "payload": "Vitest covers rules, route behavior, fixture mapping, and payload preparation."
+        },
+        {
+          "from": "tests",
+          "to": "rules",
+          "kind": "tooling",
+          "label": "regression checks",
+          "payload": "Tests exercise pass, mismatch, warning, and generated fixture behavior."
+        },
+        {
+          "from": "next-build",
+          "to": "result-ui",
+          "kind": "tooling",
+          "label": "compile app",
+          "payload": "Next build compiles page, routes, shared libraries, and client bundle."
+        }
+      ]
+    }
+  ]
+}

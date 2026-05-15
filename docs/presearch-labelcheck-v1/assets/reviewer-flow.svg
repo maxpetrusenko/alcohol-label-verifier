@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" role="img" aria-labelledby="title desc">
+  <title id="title">Reviewer workflow</title>
+  <desc id="desc">The reviewer picks a COLA-style application row, attaches label artwork, AI extracts label evidence only, rules compare, reviewer decides disposition, and exports the packet.</desc>
+  <defs>
+    <style>
+      .bg{fill:#102b27}
+      .lane{fill:#f7efe2;stroke:#d9c8a7;stroke-width:2}
+      .card{fill:#fffaf1;stroke:#c8b894;stroke-width:2;rx:20}
+      .ok{fill:#1f6b55}
+      .warn{fill:#b7791f}
+      .bad{fill:#953b39}
+      .title{font:800 30px Avenir Next, Verdana, sans-serif;fill:#fffaf1}
+      .label{font:800 18px Avenir Next, Verdana, sans-serif;fill:#102b27}
+      .copy{font:500 14px Avenir Next, Verdana, sans-serif;fill:#475b55}
+      .white{font:800 12px Avenir Next, Verdana, sans-serif;fill:#fffaf1;letter-spacing:1px}
+      .arrow{stroke:#fffaf1;stroke-width:4;fill:none;marker-end:url(#arrow)}
+    </style>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#fffaf1"/>
+    </marker>
+  </defs>
+  <rect class="bg" width="1200" height="500"/>
+  <text class="title" x="48" y="62">One obvious reviewer loop</text>
+  <text class="copy" x="50" y="92" fill="#d9e6de">Designed for agents who need speed, receipts, and a clean override path.</text>
+
+  <g transform="translate(48 145)">
+    <rect class="card" width="180" height="145"/>
+    <circle class="ok" cx="30" cy="31" r="15"/>
+    <text class="white" x="25" y="36">1</text>
+    <text class="label" x="24" y="72">Pick row</text>
+    <text class="copy" x="24" y="101">COLA queue, JSON,</text>
+    <text class="copy" x="24" y="124">CSV, or fixture</text>
+  </g>
+  <path class="arrow" d="M245 218 L305 218"/>
+
+  <g transform="translate(320 145)">
+    <rect class="card" width="180" height="145"/>
+    <circle class="ok" cx="30" cy="31" r="15"/>
+    <text class="white" x="25" y="36">2</text>
+    <text class="label" x="24" y="72">Attach labels</text>
+    <text class="copy" x="24" y="101">Front, back, neck,</text>
+    <text class="copy" x="24" y="124">or pasted OCR</text>
+  </g>
+  <path class="arrow" d="M517 218 L577 218"/>
+
+  <g transform="translate(592 145)">
+    <rect class="card" width="180" height="145"/>
+    <circle class="warn" cx="30" cy="31" r="15"/>
+    <text class="white" x="25" y="36">3</text>
+    <text class="label" x="24" y="72">Review issues</text>
+    <text class="copy" x="24" y="101">Blocking, warning,</text>
+    <text class="copy" x="24" y="124">low confidence</text>
+  </g>
+  <path class="arrow" d="M789 218 L849 218"/>
+
+  <g transform="translate(864 145)">
+    <rect class="card" width="180" height="145"/>
+    <circle class="bad" cx="30" cy="31" r="15"/>
+    <text class="white" x="25" y="36">4</text>
+    <text class="label" x="24" y="72">Disposition</text>
+    <text class="copy" x="24" y="101">Accept, correction,</text>
+    <text class="copy" x="24" y="124">override, SME</text>
+  </g>
+
+  <g transform="translate(172 350)">
+    <rect class="lane" width="856" height="72" rx="18"/>
+    <text class="label" x="28" y="31">Export packet</text>
+    <text class="copy" x="28" y="55">Application facts + extracted evidence + rule checks + citations + mode + elapsed time + reviewer notes. Raw images excluded by default.</text>
+  </g>
+  <path class="arrow" d="M954 292 C920 330 850 354 805 368"/>
+</svg>

@@ -27,6 +27,91 @@
   },
   {
     "schemaVersion": 1,
+    "id": "imported-spirits-pass",
+    "title": "Imported spirits pass",
+    "kind": "imported-pass",
+    "variant": "clean",
+    "expectedDecision": "approved",
+    "expectedProblemChecks": [],
+    "extractionConfidence": 0.72,
+    "application": {
+      "brandName": "Highland Crest",
+      "classType": "Scotch Whisky",
+      "alcoholContent": "40% Alc./Vol. (80 Proof)",
+      "netContents": "700 mL",
+      "bottlerAddress": "Highland Crest Imports, New York, NY",
+      "countryOfOrigin": "Scotland",
+      "beverageKind": "spirits",
+      "imported": true
+    },
+    "labelVisibleText": "Highland Crest\nScotch Whisky\n40% Alc./Vol. (80 Proof)\n700 mL\nImported by Highland Crest Imports, New York, NY\nProduct of Scotland\nGOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.",
+    "visualObservation": "",
+    "artifacts": {
+      "svg": "imported-spirits-pass.svg",
+      "html": "imported-spirits-pass.html"
+    },
+    "contentHash": "eb3a3055211deb40"
+  },
+  {
+    "schemaVersion": 1,
+    "id": "imported-country-mismatch",
+    "title": "Imported spirits country mismatch",
+    "kind": "imported-mismatch",
+    "variant": "clean",
+    "expectedDecision": "rejected",
+    "expectedProblemChecks": [
+      "country-origin"
+    ],
+    "extractionConfidence": 0.72,
+    "application": {
+      "brandName": "Highland Crest",
+      "classType": "Scotch Whisky",
+      "alcoholContent": "40% Alc./Vol. (80 Proof)",
+      "netContents": "700 mL",
+      "bottlerAddress": "Highland Crest Imports, New York, NY",
+      "countryOfOrigin": "Ireland",
+      "beverageKind": "spirits",
+      "imported": true
+    },
+    "labelVisibleText": "Highland Crest\nScotch Whisky\n40% Alc./Vol. (80 Proof)\n700 mL\nImported by Highland Crest Imports, New York, NY\nProduct of Scotland\nGOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.",
+    "visualObservation": "",
+    "artifacts": {
+      "svg": "imported-country-mismatch.svg",
+      "html": "imported-country-mismatch.html"
+    },
+    "contentHash": "607c8e52ce547b21"
+  },
+  {
+    "schemaVersion": 1,
+    "id": "imported-importer-mismatch",
+    "title": "Imported spirits importer mismatch",
+    "kind": "imported-mismatch",
+    "variant": "clean",
+    "expectedDecision": "rejected",
+    "expectedProblemChecks": [
+      "bottler-address"
+    ],
+    "extractionConfidence": 0.72,
+    "application": {
+      "brandName": "Highland Crest",
+      "classType": "Scotch Whisky",
+      "alcoholContent": "40% Alc./Vol. (80 Proof)",
+      "netContents": "700 mL",
+      "bottlerAddress": "Atlantic Beverage Imports, Boston, MA",
+      "countryOfOrigin": "Scotland",
+      "beverageKind": "spirits",
+      "imported": true
+    },
+    "labelVisibleText": "Highland Crest\nScotch Whisky\n40% Alc./Vol. (80 Proof)\n700 mL\nImported by Highland Crest Imports, New York, NY\nProduct of Scotland\nGOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.",
+    "visualObservation": "",
+    "artifacts": {
+      "svg": "imported-importer-mismatch.svg",
+      "html": "imported-importer-mismatch.html"
+    },
+    "contentHash": "c22ac815e76e138f"
+  },
+  {
+    "schemaVersion": 1,
     "id": "field-mismatch-brand",
     "title": "Field mismatch: brand",
     "kind": "field-mismatch",

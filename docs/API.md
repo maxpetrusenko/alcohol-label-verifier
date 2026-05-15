@@ -15,16 +15,26 @@ The browser UI is for human reviewers. Tools should use the JSON API or CLI.
 - Errors use `{ error: { code, message, requestId, issues? } }`.
 - Successful machine calls include `meta.requestId` or `requestId` for export packets.
 
+## Prototype limitations
+
+API consumers must treat LabelCheck V1 as a prototype review aid, not a production compliance authority.
+
+The API does not verify font size, boldness, contrast, same-field-of-vision layout, exact placement, or warning separation. Those require layout-aware extraction, bounding boxes, and image-region evidence that V1 does not expose.
+
+The API also does not provide authentication, RBAC, audit logs, retention/deletion policy, encrypted persistence, COLAs integration, final reviewer disposition, FedRAMP/ATO assurance, or approved government model-hosting guarantees.
+
+Vision mode depends on the configured provider key and outbound network access. Gemini is the default provider; OpenAI is available with `VISION_PROVIDER=openai`. If provider secrets are missing or blocked, the API falls back to text-only extraction behavior. Uploaded image data is sent to the configured model provider when vision mode is active.
+
 ## CLI
 
 The CLI is a thin HTTP client over `/api/v1/*`.
 
 ```bash
 LABELCHECK_BASE_URL=http://localhost:3000 labelcheck health
-labelcheck verify input.json
-labelcheck extract label.png
-labelcheck export verify-response.json --format json
-labelcheck export verify-response.json --format csv
+LABELCHECK_BASE_URL=http://localhost:3000 labelcheck verify input.json
+LABELCHECK_BASE_URL=http://localhost:3000 labelcheck extract label.png
+LABELCHECK_BASE_URL=http://localhost:3000 labelcheck export verify-response.json --format json
+LABELCHECK_BASE_URL=http://localhost:3000 labelcheck export verify-response.json --format csv
 ```
 
 For local development without installing the package:
@@ -32,6 +42,8 @@ For local development without installing the package:
 ```bash
 node bin/labelcheck.mjs health
 ```
+
+`verify` accepts the same batch JSON as `/api/v1/verify`, including up to 25 labels per request. Agents should chunk larger jobs into 25-label requests and preserve `labelId` values to join results back to source files.
 
 ## Endpoints
 
@@ -46,12 +58,15 @@ Returns:
   "vision": {
     "configured": false,
     "mode": "text-only-demo",
-    "model": "gpt-4.1-mini"
+    "provider": "gemini",
+    "model": "gemini-2.5-flash-lite",
+    "endpoint": "generateContent",
+    "imageDetail": "low"
   }
 }
 ```
 
-Use `vision.configured` to verify local or production secret wiring without exposing `OPENAI_API_KEY`.
+Use `vision.configured` to verify local or production secret wiring without exposing provider secrets such as `OPENAI_API_KEY`, `GEMINI_API_KEY`, `GEMINI_API_KEY_MAX`, `GEMINI_API_KEY_TURKEY`, or `GOOGLE_API_KEY`.
 
 ### `POST /api/v1/extract`
 
@@ -78,6 +93,10 @@ Request:
 ### `POST /api/v1/verify`
 
 Main tool endpoint. Verifies 1 to 25 labels per request against application facts. For 200+ label batches, chunk calls at 25 labels; the browser UI does this automatically and preserves per-label result order.
+
+V1 scope is strongest for distilled spirits. `application.beverageKind` may also be `wine` or `beer` for the common field-matching flow; when no source alcohol content is supplied, those profiles can pass the `alcohol-content-profile` check because wine and malt beverage rules include commodity-specific exceptions. `other` returns a blocking `supported-profile` check.
+
+Use `bottlerAddress` for the label's required bottler, producer, distiller, or importer name-and-address statement, for example `Distilled and bottled by Old Cypress Distillery, Louisville, KY`. Do not put this in `countryOfOrigin`; country origin is only for import-origin statements such as `Product of Canada`.
 
 Request:
 

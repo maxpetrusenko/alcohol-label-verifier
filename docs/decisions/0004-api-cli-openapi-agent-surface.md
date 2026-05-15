@@ -21,9 +21,12 @@ The intended surface is:
 - `docs/openapi.json` as the compact machine-readable contract
 - `labelcheck` CLI as a local and future automation wrapper over the same API
 
+The CLI intentionally accepts the same batch JSON as `/api/v1/verify`, including multiple labels per request, so agents can use it for local batch verification without scraping the browser.
+
 ## Consequences
 
 - Agent and workflow integrations depend on structured responses, not DOM shape.
 - The API can be wrapped later as MCP tools or workflow-agent actions without changing core behavior.
 - New response fields should be additive inside `v1`.
 - Errors need stable codes and request IDs before this becomes a public or cross-team API.
+- Agents should chunk large jobs at the documented request limit and preserve caller-provided `labelId` values.

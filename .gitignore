@@ -12,7 +12,9 @@
 
 # testing
 /coverage
+/test-results
 /public/evals/fixtures/degraded-generated/
+/public/evals/fixtures/nano-banana-generated/
 
 # next.js
 /.next/
@@ -33,6 +35,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -41,3 +44,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .gstack/
+.codex/
+.claude/
+.cursor/
+/agents/
+/skills/
+
+# local/source prompt artifacts
+docs/*.docx

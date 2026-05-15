@@ -6,7 +6,7 @@ export const beverageKindSchema = z.enum(["spirits", "wine", "beer", "other"]);
 export const applicationSchema = z.object({
   brandName: z.string().min(1),
   classType: z.string().min(1),
-  alcoholContent: z.string().min(1),
+  alcoholContent: z.string().optional().default(""),
   netContents: z.string().min(1),
   bottlerAddress: z.string().optional(),
   countryOfOrigin: z.string().optional(),

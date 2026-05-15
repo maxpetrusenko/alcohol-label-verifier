@@ -1,6 +1,6 @@
 # LabelCheck V1 task plan
 
-Reference first: [`docs/presearch-labelcheck-v1-flow.html`](./presearch-labelcheck-v1-flow.html)
+Reference first: [`docs/PRESEARCH.html`](./PRESEARCH.html)
 
 ## V1 product target
 
@@ -8,9 +8,9 @@ A stateless spirits-label discrepancy review cockpit. One review session, 1–25
 
 ## Phase 0 — reset docs/source of truth
 
-- [x] Create buildable presearch flow artifact: `docs/presearch-labelcheck-v1-flow.html`.
+- [x] Create buildable presearch flow artifact: `docs/PRESEARCH.html`.
 - [x] Add markdown pointer: `docs/presearch-labelcheck-v1-flow.md`.
-- [ ] Update README to make this the first doc.
+- [x] Update README with setup, live URL, docs, and verification notes.
 - [ ] Keep older docs as background only; do not implement them wholesale.
 
 ## Phase 1 — TDD rule contract

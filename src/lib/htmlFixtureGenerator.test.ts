@@ -25,6 +25,9 @@ describe("deterministic HTML/SVG fixture generator", () => {
 
     expect(manifest.map((fixture) => fixture.id)).toEqual([
       "clean-pass",
+      "imported-spirits-pass",
+      "imported-country-mismatch",
+      "imported-importer-mismatch",
       "field-mismatch-brand",
       "warning-wrong-text",
       "warning-title-case",

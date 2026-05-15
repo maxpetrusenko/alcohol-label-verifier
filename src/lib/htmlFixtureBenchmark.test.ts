@@ -20,8 +20,8 @@ describe("deterministic HTML/SVG fixture benchmark", () => {
 
     console.log(`html fixture benchmark: ${report.matched}/${report.total} matched. report=${reportPath}`);
 
-    expect(fixtures).toHaveLength(9);
-    expect(report.total).toBe(9);
+    expect(fixtures).toHaveLength(12);
+    expect(report.total).toBe(12);
     expect(report.gaps).toEqual([]);
   });
 
@@ -29,6 +29,9 @@ describe("deterministic HTML/SVG fixture benchmark", () => {
     const byId = Object.fromEntries(loadHtmlGeneratedFixtures().map((fixture) => [fixture.id, fixture]));
 
     expect(benchmarkHtmlGeneratedFixture(byId["clean-pass"]).actualDecision).toBe("approved");
+    expect(benchmarkHtmlGeneratedFixture(byId["imported-spirits-pass"]).actualDecision).toBe("approved");
+    expect(benchmarkHtmlGeneratedFixture(byId["imported-country-mismatch"]).problemChecks).toContain("country-origin");
+    expect(benchmarkHtmlGeneratedFixture(byId["imported-importer-mismatch"]).problemChecks).toContain("bottler-address");
     expect(benchmarkHtmlGeneratedFixture(byId["field-mismatch-brand"]).problemChecks).toContain("brand-name");
     expect(benchmarkHtmlGeneratedFixture(byId["warning-title-case"]).problemChecks).toContain("government-warning");
     expect(benchmarkHtmlGeneratedFixture(byId["bad-photo-blur"]).problemChecks).toContain("extraction-confidence");

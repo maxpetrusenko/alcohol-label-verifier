@@ -6,7 +6,6 @@ import { execFileSync } from "node:child_process";
 
 const GENERATED_DIR = "public/evals/fixtures/generated";
 const OUT_DIR = "public/evals/fixtures/degraded-generated";
-const DEFAULT_COUNT = 500;
 const DEFAULT_SEED = 20260514;
 
 const DEGRADATION_FAMILIES = [
@@ -20,6 +19,10 @@ const DEGRADATION_FAMILIES = [
   "distance-downsample",
   "crop-occlusion",
   "perspective-skew",
+  "viewpoint-top",
+  "viewpoint-bottom",
+  "viewpoint-inward",
+  "viewpoint-outward",
 ];
 
 const SEVERITY_LEVELS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -29,6 +32,30 @@ const CAMERA_ORIENTATIONS = [
   { name: "tilt-right", angleDegrees: 15 },
   { name: "sideways", angleDegrees: 90 },
   { name: "upside-down", angleDegrees: 180 },
+];
+
+const DEFAULT_COUNT = DEGRADATION_FAMILIES.length * SEVERITY_LEVELS.length * CAMERA_ORIENTATIONS.length;
+const INCONSISTENT_SOURCE_IDS = new Set([
+  // Copied JSON says Glasgow bottler, image prompt says New York importer.
+  // Keep this fixture for source-corpus coverage, but do not use it as degraded-photo ground truth.
+  "01-pass-02",
+]);
+
+const VARIANT_SMOKE_ROWS = [
+  { family: "defocus-blur", severityLevel: 1, name: "upright", angleDegrees: 0 },
+  { family: "motion-blur", severityLevel: 9, name: "upright", angleDegrees: 0 },
+  { family: "low-light", severityLevel: 7, name: "tilt-left", angleDegrees: -15 },
+  { family: "overexposed", severityLevel: 7, name: "tilt-right", angleDegrees: 15 },
+  { family: "flash-glare", severityLevel: 6, name: "sideways", angleDegrees: 90 },
+  { family: "blue-cast", severityLevel: 7, name: "upright", angleDegrees: 0 },
+  { family: "jpeg-noise", severityLevel: 1, name: "upside-down", angleDegrees: 180 },
+  { family: "distance-downsample", severityLevel: 6, name: "tilt-left", angleDegrees: -15 },
+  { family: "crop-occlusion", severityLevel: 6, name: "tilt-right", angleDegrees: 15 },
+  { family: "perspective-skew", severityLevel: 6, name: "upright", angleDegrees: 0 },
+  { family: "viewpoint-top", severityLevel: 7, name: "upright", angleDegrees: 0 },
+  { family: "viewpoint-bottom", severityLevel: 7, name: "upright", angleDegrees: 0 },
+  { family: "viewpoint-inward", severityLevel: 7, name: "tilt-left", angleDegrees: -15 },
+  { family: "viewpoint-outward", severityLevel: 7, name: "tilt-right", angleDegrees: 15 },
 ];
 
 function argValue(name, fallback) {
@@ -41,6 +68,7 @@ function usage() {
   console.log(`Usage:
   npm run fixtures:degrade
   node scripts/generate-degraded-fixtures.mjs --count 500 --seed 20260514
+  node scripts/generate-degraded-fixtures.mjs --variants-smoke --out /tmp/degraded-smoke
   node scripts/generate-degraded-fixtures.mjs --random
 
 Generates a matrix of degradation family x severity level x camera orientation.
@@ -80,7 +108,7 @@ function readManifest(root) {
 }
 
 function sourceCasesWithImages(root) {
-  return readManifest(root).filter((item) => existsSync(join(root, GENERATED_DIR, `${item.id}.png`)));
+  return readManifest(root).filter((item) => !INCONSISTENT_SOURCE_IDS.has(item.id) && existsSync(join(root, GENERATED_DIR, `${item.id}.png`)));
 }
 
 function hashFile(path) {
@@ -90,7 +118,21 @@ function hashFile(path) {
 function requiresQualityReview(family, level, orientationName) {
   if (orientationName === "upside-down") return true;
   if (orientationName === "sideways" && level >= 4) return true;
-  if (["motion-blur", "flash-glare", "crop-occlusion", "perspective-skew", "distance-downsample"].includes(family)) return level >= 6;
+  if (
+    [
+      "motion-blur",
+      "flash-glare",
+      "crop-occlusion",
+      "perspective-skew",
+      "distance-downsample",
+      "viewpoint-top",
+      "viewpoint-bottom",
+      "viewpoint-inward",
+      "viewpoint-outward",
+    ].includes(family)
+  ) {
+    return level >= 6;
+  }
   return level >= 7;
 }
 
@@ -114,6 +156,10 @@ function qualityNote(family, level, angleDegrees, orientationName, reviewRequire
       "distance-downsample": "Readable photo: label is smaller in frame but text remains legible.",
       "crop-occlusion": "Readable photo: full mandatory panel remains visible.",
       "perspective-skew": "Readable photo: label is slightly off-square but text remains legible.",
+      "viewpoint-top": "Readable photo: bottle is photographed from above but label text remains legible.",
+      "viewpoint-bottom": "Readable photo: bottle is photographed from below but label text remains legible.",
+      "viewpoint-inward": "Readable photo: label plane rotates inward but text remains legible.",
+      "viewpoint-outward": "Readable photo: label plane rotates outward but text remains legible.",
     };
     return `${labels[family] ?? "Readable photo: label text remains legible."} Camera orientation is ${orientationName} (${angleDegrees} degrees).`;
   }
@@ -130,6 +176,10 @@ function qualityNote(family, level, angleDegrees, orientationName, reviewRequire
     "distance-downsample": `Visual note: label was photographed from too far away with ${intensity} downsampling.`,
     "crop-occlusion": `Visual note: label photo has ${intensity} cropping or partial occlusion.`,
     "perspective-skew": `Visual note: label photo has ${intensity} perspective skew.`,
+    "viewpoint-top": `Visual note: label photo is taken from ${intensity} top-down viewpoint.`,
+    "viewpoint-bottom": `Visual note: label photo is taken from ${intensity} bottom-up viewpoint.`,
+    "viewpoint-inward": `Visual note: label plane has ${intensity} inward rotation toward the bottle center.`,
+    "viewpoint-outward": `Visual note: label plane has ${intensity} outward rotation away from the bottle center.`,
   };
   const orientationProblem =
     orientationName === "upside-down"
@@ -167,8 +217,27 @@ function familyToken(family) {
     "distance-downsample": "far",
     "crop-occlusion": "crop",
     "perspective-skew": "skew",
+    "viewpoint-top": "top",
+    "viewpoint-bottom": "bottom",
+    "viewpoint-inward": "inward",
+    "viewpoint-outward": "outward",
   };
   return tokens[family] ?? family;
+}
+
+function perspectiveArgs(args, points) {
+  return [
+    ...args,
+    "-virtual-pixel",
+    "background",
+    "+distort",
+    "Perspective",
+    points,
+    "-gravity",
+    "center",
+    "-extent",
+    "640x640",
+  ];
 }
 
 function applyCameraAngle(args, angleDegrees) {
@@ -283,18 +352,34 @@ function commandForDegradation(input, output, family, level, angleDegrees, rand)
     ];
   } else if (family === "perspective-skew") {
     const skew = Math.round(4 + level * 4);
-    args = [
-      ...args,
-      "-virtual-pixel",
-      "background",
-      "+distort",
-      "Perspective",
+    args = perspectiveArgs(
+      args,
       `0,0 ${skew},${Math.round(skew * 0.5)} 640,0 ${640 - skew},${skew} 0,640 ${Math.round(skew * 0.6)},${640 - skew} 640,640 ${640 - Math.round(skew * 0.7)},${640 - Math.round(skew * 0.4)}`,
-      "-gravity",
-      "center",
-      "-extent",
-      "640x640",
-    ];
+    );
+  } else if (family === "viewpoint-top") {
+    const depth = Math.round(12 + level * 6);
+    args = perspectiveArgs(
+      args,
+      `0,0 0,0 640,0 640,0 0,640 ${depth},${640 - Math.round(depth * 0.25)} 640,640 ${640 - depth},${640 - Math.round(depth * 0.25)}`,
+    );
+  } else if (family === "viewpoint-bottom") {
+    const depth = Math.round(12 + level * 6);
+    args = perspectiveArgs(
+      args,
+      `0,0 ${depth},${Math.round(depth * 0.25)} 640,0 ${640 - depth},${Math.round(depth * 0.25)} 0,640 0,640 640,640 640,640`,
+    );
+  } else if (family === "viewpoint-inward") {
+    const depth = Math.round(10 + level * 5);
+    args = perspectiveArgs(
+      args,
+      `0,0 ${depth},${Math.round(depth * 0.4)} 640,0 ${640 - Math.round(depth * 0.35)},0 0,640 ${depth},${640 - Math.round(depth * 0.4)} 640,640 ${640 - Math.round(depth * 0.35)},640`,
+    );
+  } else if (family === "viewpoint-outward") {
+    const depth = Math.round(10 + level * 5);
+    args = perspectiveArgs(
+      args,
+      `0,0 ${Math.round(depth * 0.35)},0 640,0 ${640 - depth},${Math.round(depth * 0.4)} 0,640 ${Math.round(depth * 0.35)},640 640,640 ${640 - depth},${640 - Math.round(depth * 0.4)}`,
+    );
   }
 
   const withAngle = applyCameraAngle(args, angleDegrees);
@@ -304,7 +389,8 @@ function commandForDegradation(input, output, family, level, angleDegrees, rand)
 function generate() {
   const root = process.cwd();
   const outDir = resolve(root, argValue("--out", OUT_DIR));
-  const count = Number(argValue("--count", String(DEFAULT_COUNT)));
+  const variantsSmoke = process.argv.includes("--variants-smoke");
+  const count = Number(argValue("--count", variantsSmoke ? String(VARIANT_SMOKE_ROWS.length) : String(DEFAULT_COUNT)));
   const seed = process.argv.includes("--random") ? Date.now() : Number(argValue("--seed", String(DEFAULT_SEED)));
   const rand = mulberry32(seed);
 
@@ -318,11 +404,14 @@ function generate() {
   rmSync(outDir, { recursive: true, force: true });
   mkdirSync(outDir, { recursive: true });
 
-  const generatedRows = [];
-  for (const family of DEGRADATION_FAMILIES) {
-    for (const severityLevel of SEVERITY_LEVELS) {
-      for (const orientation of CAMERA_ORIENTATIONS) {
-        generatedRows.push({ family, severityLevel, ...orientation });
+  let generatedRows = VARIANT_SMOKE_ROWS;
+  if (!variantsSmoke) {
+    generatedRows = [];
+    for (const family of DEGRADATION_FAMILIES) {
+      for (const severityLevel of SEVERITY_LEVELS) {
+        for (const orientation of CAMERA_ORIENTATIONS) {
+          generatedRows.push({ family, severityLevel, ...orientation });
+        }
       }
     }
   }

@@ -59,6 +59,44 @@ describe("POST /api/verify", () => {
     expect(data.results[1].decision).toBe("rejected");
   });
 
+  it("treats degraded review-photo warning uncertainty as needs review", async () => {
+    const response = await POST(
+      requestWithLabels([
+        {
+          labelId: "degraded",
+          fileName: "bad__review__flash__rotate-p015.jpg",
+          text: "Old Cypress Distillery\nKentucky Straight Bourbon Whiskey\n45% Alc./Vol.\n750 mL\nDistilled and bottled by Old Cypress Distillery, Louisville, KY",
+        },
+      ]),
+    );
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.results[0].decision).toBe("needs_review");
+    expect(data.results[0].checks.find((check: { id: string }) => check.id === "government-warning")).toMatchObject({
+      status: "needs_review",
+    });
+  });
+
+  it("does not clean-pass warning text from a crowded multi-label filename", async () => {
+    const response = await POST(
+      requestWithLabels([
+        {
+          labelId: "crowded",
+          fileName: "nano-scene-crowded-counter-overlap.png",
+          text: `Old Cypress Distillery\nKentucky Straight Bourbon Whiskey\n45% Alc./Vol.\n750 mL\nDistilled and bottled by Old Cypress Distillery, Louisville, KY\n${GOVERNMENT_WARNING_TEXT}`,
+        },
+      ]),
+    );
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.results[0].decision).toBe("rejected");
+    expect(data.results[0].checks.find((check: { id: string }) => check.id === "target-isolation")).toMatchObject({
+      status: "fail",
+    });
+  });
+
   it("rejects batches over the configured per-request label limit", async () => {
     const labels = Array.from({ length: 26 }, (_, index) => ({
       labelId: `label-${index}`,

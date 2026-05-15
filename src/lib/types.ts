@@ -3,7 +3,7 @@ export type BeverageKind = "spirits" | "wine" | "beer" | "other";
 export type ApplicationData = {
   brandName: string;
   classType: string;
-  alcoholContent: string;
+  alcoholContent?: string;
   netContents: string;
   bottlerAddress?: string;
   countryOfOrigin?: string;
@@ -26,7 +26,7 @@ export type LabelExtraction = {
   notes: string[];
 };
 
-export type CheckStatus = "pass" | "warning" | "fail" | "needs_review";
+export type CheckStatus = "pass" | "warning" | "fail" | "needs_review" | "not_applicable";
 
 export type CheckSeverity = "blocking" | "review" | "info";
 

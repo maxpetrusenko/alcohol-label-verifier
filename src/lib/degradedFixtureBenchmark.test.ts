@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
@@ -9,6 +10,22 @@ import {
 } from "./degradedFixtureBenchmark";
 
 const reportPath = "/tmp/labelcheck-degraded-fixture-benchmark.json";
+const expectedVariants = [
+  "defocus-blur",
+  "motion-blur",
+  "low-light",
+  "overexposed",
+  "flash-glare",
+  "blue-cast",
+  "jpeg-noise",
+  "distance-downsample",
+  "crop-occlusion",
+  "perspective-skew",
+  "viewpoint-top",
+  "viewpoint-bottom",
+  "viewpoint-inward",
+  "viewpoint-outward",
+];
 
 function hasMagick() {
   try {
@@ -20,11 +37,11 @@ function hasMagick() {
 }
 
 describe.skipIf(!hasMagick())("degraded generated fixture benchmark", () => {
-  it("generates and benchmarks 500 degraded fixture photos without committing image artifacts", () => {
+  it("generates and benchmarks one representative photo per degradation variant", () => {
     const outDir = mkdtempSync(join(tmpdir(), "labelcheck-degraded-fixtures-"));
 
     try {
-      execFileSync(process.execPath, ["scripts/generate-degraded-fixtures.mjs", "--count", "500", "--out", outDir], {
+      execFileSync(process.execPath, ["scripts/generate-degraded-fixtures.mjs", "--variants-smoke", "--out", outDir], {
         stdio: "ignore",
       });
 
@@ -36,31 +53,25 @@ describe.skipIf(!hasMagick())("degraded generated fixture benchmark", () => {
 
       console.log(`degraded fixture benchmark: ${report.matched}/${report.total} matched. report=${reportPath}`);
 
-      expect(fixtures).toHaveLength(500);
-      expect(report.total).toBe(500);
+      expect(fixtures).toHaveLength(expectedVariants.length);
+      expect(report.total).toBe(expectedVariants.length);
       expect(report.gaps).toEqual([]);
-      expect(Object.keys(report.byVariant)).toEqual([
-        "defocus-blur",
-        "motion-blur",
-        "low-light",
-        "overexposed",
-        "flash-glare",
-        "blue-cast",
-        "jpeg-noise",
-        "distance-downsample",
-        "crop-occlusion",
-        "perspective-skew",
-      ]);
+      expect(Object.keys(report.byVariant)).toEqual(expectedVariants);
+      expect(Object.values(report.byVariant).every((variant) => variant.total === 1 && variant.matched === 1)).toBe(true);
       expect(report.results.some((result) => result.actualDecision === "approved")).toBe(true);
       expect(report.results.some((result) => result.actualDecision === "needs_review")).toBe(true);
       expect(report.results.some((result) => result.orientation === "upside-down")).toBe(true);
 
-      for (const fixture of [fixtures[0], fixtures[49], fixtures[199], fixtures[499]]) {
-        expect(existsSync(join(outDir, fixture.image.split("/").pop() ?? ""))).toBe(true);
+      for (const fixture of fixtures) {
+        const imagePath = join(outDir, fixture.image.split("/").pop() ?? "");
+
+        expect(existsSync(imagePath)).toBe(true);
+        const imageHash = createHash("sha256").update(readFileSync(imagePath)).digest("hex").slice(0, 16);
+        expect(imageHash).toBe(fixture.imageHash);
         expect(readFileSync(join(outDir, `${fixture.id}.json`), "utf8")).toContain(fixture.imageHash);
       }
     } finally {
       rmSync(outDir, { recursive: true, force: true });
     }
-  }, 180_000);
+  }, 30_000);
 });

@@ -27,6 +27,27 @@ const cleanLabel = [
   GOVERNMENT_WARNING_TEXT,
 ].join("\n");
 
+const importedApplication = {
+  brandName: "Highland Crest",
+  classType: "Scotch Whisky",
+  alcoholContent: "40% Alc./Vol. (80 Proof)",
+  netContents: "700 mL",
+  bottlerAddress: "Highland Crest Imports, New York, NY",
+  countryOfOrigin: "Scotland",
+  beverageKind: "spirits",
+  imported: true,
+};
+
+const importedLabel = [
+  "Highland Crest",
+  "Scotch Whisky",
+  "40% Alc./Vol. (80 Proof)",
+  "700 mL",
+  "Imported by Highland Crest Imports, New York, NY",
+  "Product of Scotland",
+  GOVERNMENT_WARNING_TEXT,
+].join("\n");
+
 function defineCase(id, title, kind, overrides = {}) {
   return {
     id,
@@ -44,6 +65,28 @@ function defineCase(id, title, kind, overrides = {}) {
 
 export const fixtureDefinitions = [
   defineCase("clean-pass", "Clean pass", "clean-pass"),
+  defineCase("imported-spirits-pass", "Imported spirits pass", "imported-pass", {
+    application: importedApplication,
+    labelVisibleText: importedLabel,
+  }),
+  defineCase("imported-country-mismatch", "Imported spirits country mismatch", "imported-mismatch", {
+    application: {
+      ...importedApplication,
+      countryOfOrigin: "Ireland",
+    },
+    labelVisibleText: importedLabel,
+    expectedDecision: "rejected",
+    expectedProblemChecks: ["country-origin"],
+  }),
+  defineCase("imported-importer-mismatch", "Imported spirits importer mismatch", "imported-mismatch", {
+    application: {
+      ...importedApplication,
+      bottlerAddress: "Atlantic Beverage Imports, Boston, MA",
+    },
+    labelVisibleText: importedLabel,
+    expectedDecision: "rejected",
+    expectedProblemChecks: ["bottler-address"],
+  }),
   defineCase("field-mismatch-brand", "Field mismatch: brand", "field-mismatch", {
     application: {
       ...baseApplication,

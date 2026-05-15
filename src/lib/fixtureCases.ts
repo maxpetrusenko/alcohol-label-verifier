@@ -159,6 +159,30 @@ ${GOVERNMENT_WARNING_TEXT}`,
     "Copied per-case JSON conflicts with upstream manifest prompt, which describes Product of Scotland.",
   ),
   defineFixtureCase(
+    "01-pass-03",
+    "pass",
+    "Frostweaver vodka approval",
+    {
+      brand_name: "Frostweaver",
+      class_type: "Vodka",
+      abv: "40% Alc./Vol.",
+      net_contents: "1000 mL",
+      bottler_name: "Frostweaver Spirits",
+      bottler_address: "Denver, CO",
+      country_of_origin: "",
+      is_import: false,
+      description: "Clean, fully compliant Vodka",
+      expected_behavior: "All fields pass, including bottler/producer address.",
+    },
+    "approved",
+    `Frostweaver
+Vodka
+40% Alc./Vol.
+1000 mL
+Produced and bottled by Frostweaver Spirits, Denver, CO
+${GOVERNMENT_WARNING_TEXT}`,
+  ),
+  defineFixtureCase(
     "02-mismatch-01",
     "mismatch",
     "Brand mismatch rejection",

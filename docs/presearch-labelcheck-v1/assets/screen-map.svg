@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">Screen map</title>
+  <desc id="desc">The V1 interface maps intake, uploads, batch filters, evidence cards, disposition, and export actions.</desc>
+  <defs>
+    <style>
+      .bg{fill:#efe8da}
+      .panel{fill:#fffaf1;stroke:#bcae91;stroke-width:2;rx:22}
+      .dark{fill:#15352f}
+      .line{stroke:#bcae91;stroke-width:2}
+      .title{font:800 30px Avenir Next, Verdana, sans-serif;fill:#15352f}
+      .label{font:800 17px Avenir Next, Verdana, sans-serif;fill:#15352f}
+      .copy{font:500 13px Avenir Next, Verdana, sans-serif;fill:#52645f}
+      .pill{fill:#dfe9e4;stroke:#9bb0a6;stroke-width:1}
+      .fail{fill:#f2d8d6;stroke:#bd6b66;stroke-width:1}
+      .warn{fill:#f3dfb7;stroke:#bc842e;stroke-width:1}
+      .pass{fill:#cfe8dd;stroke:#55906f;stroke-width:1}
+      .white{font:800 13px Avenir Next, Verdana, sans-serif;fill:#fffaf1}
+    </style>
+  </defs>
+  <rect class="bg" width="1200" height="720"/>
+  <text class="title" x="52" y="66">Cockpit layout, not dashboard theatre</text>
+  <text class="copy" x="54" y="96">Every surface helps the reviewer move from intake to decision without hunting.</text>
+
+  <rect class="panel" x="52" y="132" width="335" height="500"/>
+  <text class="label" x="78" y="170">Queue row facts</text>
+  <line class="line" x1="78" y1="190" x2="360" y2="190"/>
+  <g transform="translate(78 215)">
+    <rect class="pill" width="258" height="34" rx="10"/>
+    <text class="copy" x="14" y="22">Brand: OLD TOM DISTILLERY</text>
+    <rect class="pill" y="48" width="258" height="34" rx="10"/>
+    <text class="copy" x="14" y="70">Class: Kentucky Straight Bourbon</text>
+    <rect class="pill" y="96" width="258" height="34" rx="10"/>
+    <text class="copy" x="14" y="118">ABV: 45% Alc./Vol. (90 Proof)</text>
+    <rect class="pill" y="144" width="258" height="34" rx="10"/>
+    <text class="copy" x="14" y="166">Net: 750 mL</text>
+    <rect class="pill" y="192" width="258" height="34" rx="10"/>
+    <text class="copy" x="14" y="214">Kind: distilled spirits</text>
+  </g>
+  <rect class="dark" x="78" y="540" width="250" height="52" rx="14"/>
+  <text class="white" x="112" y="572">Run verification agent</text>
+
+  <rect class="panel" x="430" y="132" width="290" height="500"/>
+  <text class="label" x="456" y="170">Batch queue</text>
+  <line class="line" x1="456" y1="190" x2="694" y2="190"/>
+  <g transform="translate(456 216)">
+    <rect class="fail" width="210" height="54" rx="14"/>
+    <text class="label" x="14" y="24">3 blocking</text>
+    <text class="copy" x="14" y="43">warning text, ABV mismatch</text>
+    <rect class="warn" y="76" width="210" height="54" rx="14"/>
+    <text class="label" x="14" y="100">8 needs review</text>
+    <text class="copy" x="14" y="119">low confidence extraction</text>
+    <rect class="pass" y="152" width="210" height="54" rx="14"/>
+    <text class="label" x="14" y="176">14 clear</text>
+    <text class="copy" x="14" y="195">ready for acceptance</text>
+  </g>
+  <rect class="pill" x="456" y="492" width="210" height="44" rx="12"/>
+  <text class="copy" x="475" y="520">Text only demo mode available</text>
+
+  <rect class="panel" x="762" y="132" width="386" height="500"/>
+  <text class="label" x="788" y="170">Evidence and disposition</text>
+  <line class="line" x1="788" y1="190" x2="1122" y2="190"/>
+  <g transform="translate(788 216)">
+    <rect class="fail" width="305" height="76" rx="16"/>
+    <text class="label" x="16" y="29">Government warning</text>
+    <text class="copy" x="16" y="53">Blocking: wording or format not exact</text>
+    <rect class="warn" y="96" width="305" height="76" rx="16"/>
+    <text class="label" x="16" y="125">Class/type</text>
+    <text class="copy" x="16" y="149">Close match. Human review required.</text>
+    <rect class="pass" y="192" width="305" height="76" rx="16"/>
+    <text class="label" x="16" y="221">Brand name</text>
+    <text class="copy" x="16" y="245">Normalized match with punctuation tolerance.</text>
+  </g>
+  <rect class="dark" x="788" y="540" width="140" height="52" rx="14"/>
+  <text class="white" x="820" y="572">Accept</text>
+  <rect class="dark" x="952" y="540" width="140" height="52" rx="14"/>
+  <text class="white" x="982" y="572">Export</text>
+</svg>

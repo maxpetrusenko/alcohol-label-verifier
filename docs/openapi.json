@@ -3,9 +3,12 @@
   "info": {
     "title": "LabelCheck API",
     "version": "1.0.0",
-    "description": "Machine-readable API for alcohol label evidence extraction, deterministic verification, and review packet export."
+    "description": "Machine-readable API for alcohol label evidence extraction, deterministic verification, and review packet export. V1 is strongest for distilled spirits, supports wine and beer/malt common field matching with limited alcohol-content exception handling, and blocks open-ended other profiles."
   },
   "servers": [
+    {
+      "url": "https://cola.maxpetrusenko.com"
+    },
     {
       "url": "http://localhost:3000"
     }
@@ -135,12 +138,35 @@
           },
           "service": {
             "type": "string"
+          },
+          "vision": {
+            "type": "object",
+            "properties": {
+              "configured": {
+                "type": "boolean"
+              },
+              "mode": {
+                "type": "string"
+              },
+              "provider": {
+                "type": "string"
+              },
+              "model": {
+                "type": "string"
+              },
+              "endpoint": {
+                "type": "string"
+              },
+              "imageDetail": {
+                "type": "string"
+              }
+            }
           }
         }
       },
       "Application": {
         "type": "object",
-        "required": ["brandName", "classType", "alcoholContent", "netContents", "beverageKind"],
+        "required": ["brandName", "classType", "netContents", "beverageKind"],
         "properties": {
           "brandName": {
             "type": "string",
@@ -152,7 +178,7 @@
           },
           "alcoholContent": {
             "type": "string",
-            "minLength": 1
+            "description": "Required for distilled spirits. Optional for wine and beer/malt where commodity-specific exceptions may apply."
           },
           "netContents": {
             "type": "string",
@@ -166,7 +192,8 @@
           },
           "beverageKind": {
             "type": "string",
-            "enum": ["spirits", "wine", "beer", "other"]
+            "enum": ["spirits", "wine", "beer", "other"],
+            "description": "V1 supports spirits, wine, and beer/malt for common field matching. Other is accepted by schema but returns a blocking supported-profile check."
           },
           "imported": {
             "type": "boolean"

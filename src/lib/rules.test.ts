@@ -44,6 +44,186 @@ describe("label verification rules", () => {
     expect(result.checks.find((check) => check.id === "government-warning")?.status).toBe("fail");
   });
 
+  it("routes OCR punctuation uncertainty on the warning to review instead of rejection", () => {
+    const warningWithDroppedPeriod = GOVERNMENT_WARNING_TEXT.replace("birth defects. (2)", "birth defects (2)");
+    const extraction = extractionFromPlainText(`STONE'S THROW\nKentucky Straight Bourbon Whiskey\n45% Alc./Vol. (90 Proof)\n750 mL\nBottled by Stone's Throw Distilling, Frankfort, KY\nProduct of United States\n${warningWithDroppedPeriod}`);
+    const result = verifyLabel(application, extraction, "warning-punctuation-ocr");
+
+    expect(result.decision).toBe("needs_review");
+    expect(result.checks.find((check) => check.id === "government-warning")?.status).toBe("needs_review");
+  });
+
+  it("routes degraded-photo missing warning extraction to review when label facts are visible", () => {
+    const extraction = {
+      ...extractionFromPlainText(
+        "STONE'S THROW\nKentucky Straight Bourbon Whiskey\n45% Alc./Vol. (90 Proof)\n750 mL\nBottled by Stone's Throw Distilling, Frankfort, KY\nProduct of United States",
+      ),
+      confidence: 0.98,
+      notes: ["Flash glare and blur across the lower warning panel make small mandatory text unreadable."],
+    };
+    const result = verifyLabel(application, extraction, "bad-review-flash-photo");
+
+    expect(result.decision).toBe("needs_review");
+    expect(result.checks.find((check) => check.id === "government-warning")?.status).toBe("needs_review");
+  });
+
+  it("does not clean-pass exact warning text from a multi-label scene", () => {
+    const extraction = {
+      ...extractionFromPlainText(
+        `STONE'S THROW\nKentucky Straight Bourbon Whiskey\n45% Alc./Vol. (90 Proof)\n750 mL\nBottled by Stone's Throw Distilling, Frankfort, KY\nProduct of United States\n${GOVERNMENT_WARNING_TEXT}`,
+      ),
+      confidence: 0.95,
+      notes: ["Multiple visible bottles and overlapping labels make the source label ambiguous."],
+    };
+    const result = verifyLabel(application, extraction, "crowded-overlap-scene");
+
+    expect(result.decision).toBe("rejected");
+    expect(result.checks.find((check) => check.id === "target-isolation")).toMatchObject({
+      status: "fail",
+      guidance: expect.stringContaining("one product label per image"),
+    });
+    expect(result.checks.find((check) => check.id === "government-warning")?.status).toBe("needs_review");
+  });
+
+  it("passes exact warning text split across label line wraps", () => {
+    const wrappedWarning = GOVERNMENT_WARNING_TEXT.replace("Surgeon General, women", "Surgeon\nGeneral, women").replace("defects. (2)", "defects.\n(2)");
+    const extraction = extractionFromPlainText(`STONE'S THROW\nKentucky Straight Bourbon Whiskey\n45% Alc./Vol. (90 Proof)\n750 mL\nBottled by Stone's Throw Distilling, Frankfort, KY\nProduct of United States\n${wrappedWarning}`);
+    const result = verifyLabel(application, extraction, "warning-line-wrap");
+
+    expect(result.decision).toBe("approved");
+    expect(result.checks.find((check) => check.id === "government-warning")?.status).toBe("pass");
+  });
+
+  it("rejects placeholder warning-present text as missing statutory warning evidence", () => {
+    const extraction = extractionFromPlainText("STONE'S THROW\nKentucky Straight Bourbon Whiskey\n45% Alc./Vol. (90 Proof)\n750 mL\nGOVERNMENT WARNING PRESENT");
+    const result = verifyLabel(application, extraction, "warning-placeholder");
+
+    expect(result.decision).toBe("rejected");
+    expect(result.checks.find((check) => check.id === "government-warning")?.status).toBe("fail");
+  });
+
+  it("routes visible but unreadable government warning evidence to review", () => {
+    const extraction = {
+      ...extractionFromPlainText(
+        "STONE'S THROW\nKentucky Straight Bourbon Whiskey\n45% Alc./Vol. (90 Proof)\n750 mL\nBottled by Stone's Throw Distilling, Frankfort, KY\nProduct of United States\nGOVERNMENT WARNING: According to the Surgeon General ... blurred lower panel",
+      ),
+      notes: ["Flash glare and blur cross the Government Warning panel, so exact wording cannot be verified."],
+    };
+    const result = verifyLabel(application, extraction, "warning-visible-unreadable");
+
+    expect(result.decision).toBe("needs_review");
+    expect(result.checks.find((check) => check.id === "government-warning")).toMatchObject({
+      status: "needs_review",
+      rationale: "Government Warning evidence is visible, but image quality or extraction confidence prevents exact word-for-word verification.",
+    });
+  });
+
+  it("handles wine and malt alcohol-content exceptions without requiring a source ABV", () => {
+    const extraction = extractionFromPlainText(`STONE'S THROW\nRed Wine\n750 mL\nBottled by Stone's Throw Cellars, Napa, CA\nProduct of United States\n${GOVERNMENT_WARNING_TEXT}`);
+    const result = verifyLabel(
+      {
+        brandName: "Stone's Throw",
+        classType: "Red Wine",
+        netContents: "750 mL",
+        bottlerAddress: "Stone's Throw Cellars, Napa, CA",
+        countryOfOrigin: "United States",
+        beverageKind: "wine",
+      },
+      extraction,
+      "wine-no-abv",
+    );
+
+    expect(result.decision).toBe("approved");
+    expect(result.checks.find((check) => check.id === "alcohol-content-profile")).toMatchObject({
+      status: "not_applicable",
+      severity: "info",
+    });
+  });
+
+  it("rejects unsupported open-ended beverage profiles", () => {
+    const extraction = extractionFromPlainText(`STONE'S THROW\nKentucky Straight Bourbon Whiskey\n45% Alc./Vol. (90 Proof)\n750 mL\nBottled by Stone's Throw Distilling, Frankfort, KY\nProduct of United States\n${GOVERNMENT_WARNING_TEXT}`);
+    const result = verifyLabel({ ...application, beverageKind: "other" }, extraction, "other-selected");
+
+    expect(result.decision).toBe("rejected");
+    expect(result.checks.find((check) => check.id === "supported-profile")?.status).toBe("fail");
+  });
+
+  it("requires country of origin when the application is marked imported", () => {
+    const result = verifyLabel(
+      { ...application, bottlerAddress: "Stone's Throw Imports, New York, NY", imported: true, countryOfOrigin: "" },
+      extractionFromPlainText(`STONE'S THROW\nKentucky Straight Bourbon Whiskey\n45% Alc./Vol. (90 Proof)\n750 mL\nImported by Stone's Throw Imports, New York, NY\n${GOVERNMENT_WARNING_TEXT}`),
+      "import-missing-origin",
+    );
+
+    expect(result.decision).toBe("needs_review");
+    expect(result.missingApplicationFacts.find((fact) => fact.field === "countryOfOrigin")).toMatchObject({
+      severity: "blocking",
+    });
+  });
+
+  it("checks importer name and address for imported products", () => {
+    const result = verifyLabel(
+      {
+        ...application,
+        brandName: "Sol de Jalisco",
+        classType: "Blanco Tequila",
+        alcoholContent: "40% Alc./Vol.",
+        bottlerAddress: "Casa Jalisco Imports, Denver, CO",
+        countryOfOrigin: "Mexico",
+        imported: true,
+      },
+      extractionFromPlainText(`Sol de Jalisco\nBlanco Tequila\n40% Alc./Vol.\n750 mL\nImported by Wrong Importer, Austin, TX\nProduct of Mexico\n${GOVERNMENT_WARNING_TEXT}`),
+      "importer-address-mismatch",
+    );
+
+    expect(result.decision).toBe("rejected");
+    expect(result.checks.find((check) => check.id === "bottler-address")).toMatchObject({
+      status: "fail",
+      expected: "Casa Jalisco Imports, Denver, CO",
+      observed: "Wrong Importer, Austin, TX",
+    });
+    expect(result.checks.find((check) => check.id === "country-origin")).toMatchObject({
+      status: "pass",
+    });
+  });
+
+  it("rejects bottler or producer address mismatches separately from import country", () => {
+    const result = verifyLabel(
+      { ...application, brandName: "Old Cypress Distillery", bottlerAddress: "Old Tom Distillery, Frankfort, KY", countryOfOrigin: "" },
+      extractionFromPlainText(`Old Cypress Distillery\nKentucky Straight Bourbon Whiskey\n45% Alc./Vol. (90 Proof)\n750 mL\nDistilled and bottled by Old Cypress Distillery, Louisville, KY\n${GOVERNMENT_WARNING_TEXT}`),
+      "bottler-address-mismatch",
+    );
+
+    expect(result.decision).toBe("rejected");
+    expect(result.checks.find((check) => check.id === "bottler-address")).toMatchObject({
+      status: "fail",
+      observed: "Old Cypress Distillery, Louisville, KY",
+    });
+    expect(result.checks.find((check) => check.id === "country-origin")).toMatchObject({
+      status: "not_applicable",
+      expected: "Application import status is unchecked, so country of origin is not required",
+      observed: "N/A: not evaluated from photo",
+    });
+  });
+
+  it("keeps a readable bottler address mismatch as fail even on an angled photo", () => {
+    const result = verifyLabel(
+      { ...application, bottlerAddress: "Old Tom Distillery, Frankfort, KY", countryOfOrigin: "" },
+      {
+        ...extractionFromPlainText(
+          `Iron Horse\nStraight Bourbon Whiskey\n45% Alc./Vol.\n750 mL\nBottled by Iron Horse Distillers, Chicago, IL\n${GOVERNMENT_WARNING_TEXT}`,
+        ),
+        notes: ["Photo is angled, but the bottler address line is readable."],
+      },
+      "angled-readable-address-mismatch",
+    );
+
+    expect(result.checks.find((check) => check.id === "bottler-address")).toMatchObject({
+      status: "fail",
+      observed: "Iron Horse Distillers, Chicago, IL",
+    });
+  });
+
   it("identifies missing application facts before pretending the review is complete", () => {
     const incompleteApplication: ApplicationData = {
       brandName: "Stone's Throw",
@@ -85,6 +265,41 @@ describe("label verification rules", () => {
     expect(result.checks.find((check) => check.id === "image-quality")?.status).toBe("needs_review");
   });
 
+  it("keeps multi-product and covered-label scene photos out of clean approval", () => {
+    const extraction = {
+      ...extractionFromPlainText(`STONE'S THROW\nKentucky Straight Bourbon Whiskey\n45% Alc./Vol. (90 Proof)\n750 mL\nBottled by Stone's Throw Distilling, Frankfort, KY\nProduct of United States\n${GOVERNMENT_WARNING_TEXT}`),
+      notes: ["Multiple visible bottles on a shelf; the target label is not isolated and part of the label is covered by hand."],
+    };
+
+    const result = verifyLabel(application, extraction, "scene-many-products");
+
+    expect(result.decision).toBe("rejected");
+    expect(result.checks.find((check) => check.id === "target-isolation")?.status).toBe("fail");
+    expect(result.checks.find((check) => check.id === "image-quality")).toMatchObject({
+      status: "needs_review",
+      observed: "Multiple visible bottles",
+    });
+  });
+
+  it("flags structured fields that are not backed by raw extracted text", () => {
+    const extraction = {
+      ...extractionFromPlainText("STONE'S THROW\nKentucky Straight Bourbon Whiskey"),
+      alcoholContent: "45% Alc./Vol. (90 Proof)",
+      netContents: "750 mL",
+      bottlerAddress: "Bottled by Stone's Throw Distilling, Frankfort, KY",
+      governmentWarning: GOVERNMENT_WARNING_TEXT,
+      confidence: 0.98,
+    };
+
+    const result = verifyLabel({ ...application, countryOfOrigin: "" }, extraction, "inferred-structured-fields");
+
+    expect(result.decision).toBe("needs_review");
+    expect(result.checks.find((check) => check.id === "extraction-grounding")).toMatchObject({
+      status: "needs_review",
+      observed: expect.stringContaining("net contents"),
+    });
+  });
+
   it("adds needs-review guidance when label evidence is missing", () => {
     const result = verifyLabel(application, { labelText: "", confidence: 0, notes: [] }, "blank-label");
     const brand = result.checks.find((check) => check.id === "brand-name");
@@ -112,7 +327,34 @@ describe("label verification rules", () => {
     expect(result.decision).toBe("rejected");
     expect(result.checks.find((check) => check.id === "label-presence")?.status).toBe("fail");
     expect(result.checks.find((check) => check.id === "class-type")?.status).toBe("needs_review");
-    expect(result.checks.find((check) => check.id === "class-type")?.observed).toBe("");
+    expect(result.checks.find((check) => check.id === "class-type")?.observed).toBeUndefined();
+  });
+
+  it("does not use raw OCR garbage as a fallback for missing structured fields", () => {
+    const result = verifyLabel(
+      application,
+      {
+        labelText: "C",
+        confidence: 0,
+        notes: ["target label not isolated: multiple bottles or labels visible"],
+      },
+      "covered-pouring-label",
+    );
+
+    expect(result.decision).toBe("rejected");
+    expect(result.checks.find((check) => check.id === "target-isolation")?.status).toBe("fail");
+    expect(result.checks.find((check) => check.id === "class-type")).toMatchObject({
+      status: "needs_review",
+      observed: undefined,
+    });
+    expect(result.checks.find((check) => check.id === "alcohol-content")).toMatchObject({
+      status: "needs_review",
+      observed: undefined,
+    });
+    expect(result.checks.find((check) => check.id === "net-contents")).toMatchObject({
+      status: "needs_review",
+      observed: undefined,
+    });
   });
 
   it("does not flag label absence when vision extracted label facts with missing origin notes", () => {

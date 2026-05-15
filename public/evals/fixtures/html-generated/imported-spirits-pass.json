@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "imported-spirits-pass",
+  "title": "Imported spirits pass",
+  "kind": "imported-pass",
+  "variant": "clean",
+  "expectedDecision": "approved",
+  "expectedProblemChecks": [],
+  "extractionConfidence": 0.72,
+  "application": {
+    "brandName": "Highland Crest",
+    "classType": "Scotch Whisky",
+    "alcoholContent": "40% Alc./Vol. (80 Proof)",
+    "netContents": "700 mL",
+    "bottlerAddress": "Highland Crest Imports, New York, NY",
+    "countryOfOrigin": "Scotland",
+    "beverageKind": "spirits",
+    "imported": true
+  },
+  "labelVisibleText": "Highland Crest\nScotch Whisky\n40% Alc./Vol. (80 Proof)\n700 mL\nImported by Highland Crest Imports, New York, NY\nProduct of Scotland\nGOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.",
+  "visualObservation": "",
+  "artifacts": {
+    "svg": "imported-spirits-pass.svg",
+    "html": "imported-spirits-pass.html"
+  },
+  "contentHash": "eb3a3055211deb40"
+}

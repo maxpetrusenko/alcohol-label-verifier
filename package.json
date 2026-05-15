@@ -13,6 +13,8 @@
     "test": "vitest run",
     "fixtures:generate": "node scripts/generate-html-fixtures.mjs",
     "fixtures:degrade": "node scripts/generate-degraded-fixtures.mjs",
+    "fixtures:scenes": "node scripts/generate-scene-samples.mjs",
+    "fixtures:nano": "node scripts/generate-nano-banana-fixtures.mjs",
     "fixtures:benchmark": "vitest run src/lib/htmlFixtureBenchmark.test.ts",
     "eval:fixtures": "vitest run src/lib/generatedFixtureEval.test.ts",
     "eval:html-fixtures": "vitest run src/lib/htmlFixtureBenchmark.test.ts",

@@ -2,24 +2,28 @@
 
 AI-powered alcohol label verification prototype for TTB-style compliance review.
 
+Live prototype: <https://cola.maxpetrusenko.com>
+
 ## What it does
 
-- Upload one alcohol label or a batch of label images.
-- Drag image files or a folder onto the label area, or use `Bulk upload` to select up to 300 images at once; each image becomes its own review row.
-- Use `Camera` on localhost or HTTPS to capture one label image from the browser camera.
+- Scope is strongest for distilled spirits in V1. Wine and beer/malt reviews are supported for the common field-matching flow, including documented alcohol-content exceptions; `Other` remains blocked as an unsupported open-ended profile.
+- Upload one isolated alcohol label/product image, or a batch of isolated label images.
+- Drag image files or a folder onto the label area, or use `Bulk upload` to select up to 300 images at once; each image becomes its own review row and should correspond to one product/application record.
+- Use `Camera` on localhost or HTTPS to capture one isolated label image from the browser camera.
 - Verify large browser batches in 25-label API chunks with bounded server concurrency: default 3 labels in flight, configurable up to 10 through the API options.
 - Enter the application record fields agents normally compare by eye.
 - Extract visible label data with a vision model when configured.
 - Fall back to pasted OCR/text so the prototype is testable without API credentials.
 - Keep extraction blind: the model sees label evidence, not the expected application facts.
+- Do not infer label facts from bottle shape, common container sizes, standard warning text, or other not-shown label panels. A field can pass only when the value is visible in extracted text or supplied through explicit text fallback.
 - Run deterministic compliance checks for:
   - brand name
   - class/type designation
   - alcohol content / proof
   - net contents
   - Government Health Warning text
-  - optional bottler/producer address
-  - optional country of origin
+  - bottler/producer name and address, for example `Distilled and bottled by Old Cypress Distillery, Louisville, KY`
+  - country of origin when imported
 - Route low-confidence extraction and poor image evidence to human review instead of clean approval.
 - Show per-label batch results, decision counts, and reviewer-oriented next steps.
 - Export structured review packets through the API/tool surface.
@@ -29,7 +33,7 @@ AI-powered alcohol label verification prototype for TTB-style compliance review.
 
 - Next.js App Router + TypeScript
 - Tailwind CSS
-- OpenAI Responses API for optional vision extraction
+- Vision extraction through a low-latency provider path: Gemini by default, OpenAI available with `VISION_PROVIDER=openai`
 - Zod request validation
 - Vitest for rules, routes, presentation, and fixture benchmark coverage
 - Deterministic HTML/SVG fixture generator for local regression cases
@@ -45,15 +49,31 @@ npm run dev
 
 Open <http://localhost:3000>.
 
+Production smoke check:
+
+```bash
+curl -fsS https://cola.maxpetrusenko.com/api/health
+```
+
 ## Environment
 
 ```bash
-OPENAI_API_KEY=your_key_here
-OPENAI_VISION_MODEL=gpt-4.1-mini
+VISION_PROVIDER=gemini
+GEMINI_API_KEY=your_key_here
+GEMINI_API_KEY_MAX=
+GEMINI_API_KEY_TURKEY=
+GEMINI_VISION_MODEL=gemini-2.5-flash-lite
+VISION_MAX_OUTPUT_TOKENS=450
+OPENAI_API_KEY=
+OPENAI_VISION_MODEL=gpt-4.1-nano
+OPENAI_VISION_ENDPOINT=chat_completions
+OPENAI_IMAGE_DETAIL=low
+OPENAI_VISION_MAX_OUTPUT_TOKENS=450
 ```
 
-If `OPENAI_API_KEY` is missing, the app runs in text-only demo mode using the OCR/text fallback box.
-Check `/api/health` to confirm whether the running local or production server sees the key; it reports `vision.configured` without exposing the secret.
+If the configured provider key is missing, the app runs in text-only demo mode using the OCR/text fallback box. Gemini is the default provider; set one of `GEMINI_API_KEY`, `GEMINI_API_KEY_MAX`, `GEMINI_API_KEY_TURKEY`, or `GOOGLE_API_KEY`. Set `VISION_PROVIDER=openai` to use OpenAI instead.
+Check `/api/health` to confirm whether the running local or production server sees the key; it reports `vision.configured`, `vision.provider`, and the selected model without exposing secrets.
+The browser compresses uploaded/camera images to a bounded JPEG before verification so normal vision calls stay fast enough for reviewer use.
 
 ## Test and build
 
@@ -84,24 +104,62 @@ Generate and benchmark the degraded-photo eval set:
 
 ```bash
 npm run fixtures:degrade
+npm run fixtures:scenes
 npm run eval:degraded-fixtures
 ```
 
-This uses ImageMagick locally to create 500 seeded low-quality JPG variants from the copied fixture PNGs: defocus blur, motion blur, low light, overexposure, flash glare, blue cast, JPEG noise, distance/downsample, crop/occlusion, and perspective skew across severity and camera orientation. Artifacts are local generated files under `public/evals/fixtures/degraded-generated/` and are ignored by git; the benchmark report is written to `/tmp/labelcheck-degraded-fixture-benchmark.json`.
+`fixtures:degrade` uses ImageMagick locally to create the full seeded degraded set from copied fixture PNGs: defocus blur, motion blur, low light, overexposure, flash glare, blue cast, JPEG noise, distance/downsample, crop/occlusion, perspective skew, and camera viewpoint angles from top, bottom, inward, and outward label rotation across severity and camera orientation. `eval:degraded-fixtures` keeps the normal test gate fast by generating one representative image per degradation variant. Artifacts are local generated files under `public/evals/fixtures/degraded-generated/` or a temp directory and are ignored by git; the benchmark report is written to `/tmp/labelcheck-degraded-fixture-benchmark.json`.
+
+`fixtures:scenes` writes a small committed scene-photo sample set under `public/evals/fixtures/degraded-samples/`: many bottles in storage, oblique shelf rows, crowded counters, and a pouring/hand-covered label. These cases are expected to block with a clear target-isolation message because the label panel is not isolated. They are not field-matching ground truth fixtures.
+
+Generate opt-in Nano Banana edge-case photos when you want fresh realistic demo images:
+
+```bash
+npm run fixtures:nano
+```
+
+This uses Gemini image generation with `GEMINI_API_KEY`, `GOOGLE_API_KEY`, `GEMINI_API_KEY_MAX`, or `GEMINI_API_KEY_TURKEY` and writes images plus metadata to `public/evals/fixtures/nano-banana-generated/`. It is intentionally outside CI because paid model calls and generated pixels are not deterministic. Use these images only for image-quality and target-ambiguity review behavior; generated label names and text may not match application facts and may not be legally exact. Use `GEMINI_IMAGE_MODEL=gemini-3-pro-image-preview npm run fixtures:nano` to try Nano Banana Pro when that model is available on the configured key.
 
 A small reviewable subset is committed under `public/evals/fixtures/degraded-samples/`. Sample filenames encode photo quality, expected outcome, degradation family, severity, rotation, and source fixture, for example `bad__review__flash__l09__rotate-p015__src-01-pass-03__243.jpg`.
 
-The deterministic and degraded benchmarks prove the rule engine and image-quality gates behave reproducibly. A claim that the live OpenAI vision model recognizes labels correctly should be backed by a separate opt-in vision eval run with `OPENAI_API_KEY` configured, because CI intentionally avoids paid model calls.
+The deterministic and degraded benchmarks prove the rule engine and image-quality gates behave reproducibly. A claim that the live vision model recognizes labels correctly should be backed by a separate opt-in vision eval run with the configured provider key, because CI intentionally avoids paid model calls.
 
 Run the opt-in live vision eval when you want presentation evidence for model recognition:
 
 ```bash
-OPENAI_API_KEY=... npm run eval:vision -- --limit 10
+VISION_PROVIDER=gemini GEMINI_API_KEY=... npm run eval:vision -- --limit 10
 ```
 
-This reads copied generated fixture PNGs through the configured vision model and writes `/tmp/labelcheck-vision-model-eval.json` with field-level match rates for brand, class/type, ABV, net contents, and bottler/address.
+This reads copied generated fixture PNGs through the configured vision model and writes `/tmp/labelcheck-vision-model-eval.json` with field-level match rates plus p50/p95/max latency for brand, class/type, ABV, net contents, bottler/importer address, and country of origin. Gemini is the default path; set `VISION_PROVIDER=openai` to benchmark OpenAI instead.
 
-The committed local fixture set currently covers nine cases: clean pass, brand mismatch, wrong warning text, title-case warning prefix, blur, glare, low light, perspective skew, and tiny warning text.
+The committed local fixture set currently covers twelve cases: clean pass, imported spirits pass, imported country mismatch, imported importer mismatch, brand mismatch, wrong warning text, title-case warning prefix, blur, glare, low light, perspective skew, and tiny warning text.
+
+## Prototype limitations
+
+This prototype does not prove final label compliance. It is a review assistant for field matching and rule-surfacing.
+
+It does not verify:
+
+- health-warning font size, boldness, contrast, continuous placement, or separation from other label text
+- same-field-of-vision layout requirements
+- exact visual placement of brand, class/type, alcohol content, net contents, or warning text
+- full wine or beer/malt commodity rule coverage beyond the common field checks and alcohol-content exception handling
+- final image readability beyond heuristic low-confidence and degraded-image gates
+- target-bottle disambiguation in photos with many bottles, shelves, racks, overlapping products, or multiple readable labels
+- label facts that are physically covered by hands, pouring angles, bottle shoulders, glare, crop, or another object
+- whether a missing field appears on another label panel that was not uploaded
+- COLAs identity, submission status, or source-record authenticity
+- reviewer disposition, reason codes, audit trails, retention, deletion, RBAC, or production security controls
+- FedRAMP/ATO suitability, procurement approval, approved model hosting, or government-network access
+
+For multi-product shelf/rack photos, covered labels, and ambiguous target bottles, the intended prototype behavior is a blocking target-isolation message: the reviewer should upload or crop one isolated label panel rather than letting the app guess which product to verify. Batch review means many separate label images, not one crowded image containing many products. A production version should add target selection, label-region detection, perspective correction, and confidence-backed crop review before comparison.
+
+Cloud/model assumptions:
+
+- Gemini vision extraction is the default and requires a Gemini or Google API key. OpenAI vision extraction requires `VISION_PROVIDER=openai` plus server-side `OPENAI_API_KEY`.
+- If the key, network, or provider is unavailable, the app falls back to text-only demo behavior.
+- CI does not call paid model APIs; live model recognition claims require `npm run eval:vision`.
+- Uploaded image data is sent to the model provider when vision mode is configured.
 
 ## Approach
 
@@ -113,6 +171,8 @@ The prototype separates extraction from compliance judgment:
 
 This avoids the brittle black-box pattern: the model reads; rules decide; humans see the receipts.
 
+The reviewer may use judgment for harmless formatting equivalence after text is visible, such as case, punctuation, or apostrophes. The app should not use judgment to fill in missing ABV, net contents, warning text, bottler address, or country of origin from bottle appearance, common defaults, or expected application facts.
+
 Current accepted decisions live in [`docs/decisions`](docs/decisions):
 
 - blind extraction
@@ -121,6 +181,7 @@ Current accepted decisions live in [`docs/decisions`](docs/decisions):
 - API, CLI, and OpenAPI as the machine surface
 - deterministic fixtures and benchmark harness
 - deferred auth, audit logs, persistence, and COLAs integration
+- Gemini as the default low-latency vision provider
 
 ## Machine and agent access
 
@@ -132,6 +193,15 @@ Current local API routes:
 - `POST /api/extract` extracts visible label evidence from image data or fallback text.
 - `POST /api/verify` verifies one or more labels against application facts and returns structured decisions, evidence, checks, and next steps. The API accepts up to 25 labels per request; the browser chunks larger batches automatically.
 - New integrations should use the versioned aliases: `/api/v1/health`, `/api/v1/extract`, `/api/v1/verify`, and `/api/v1/export`.
+
+Local CLI wrapper:
+
+```bash
+LABELCHECK_BASE_URL=http://localhost:3000 node bin/labelcheck.mjs health
+LABELCHECK_BASE_URL=http://localhost:3000 node bin/labelcheck.mjs verify input.json
+LABELCHECK_BASE_URL=http://localhost:3000 node bin/labelcheck.mjs extract label.png
+LABELCHECK_BASE_URL=http://localhost:3000 node bin/labelcheck.mjs export verify-response.json --format csv
+```
 
 Example `POST /api/verify` call:
 
@@ -175,6 +245,7 @@ Planned agent/tool surface:
 
 See [`docs/API.md`](docs/API.md) for the current tool integration contract.
 See [`docs/decisions`](docs/decisions) for the requirement-focused architecture decisions behind this split.
+See [`docs/REQUIREMENTS_TRACE.md`](docs/REQUIREMENTS_TRACE.md) for the take-home requirement coverage matrix.
 
 ## Assumptions and limitations
 
@@ -190,10 +261,12 @@ See [`docs/decisions`](docs/decisions) for the requirement-focused architecture 
 Read these in order:
 
 1. [`docs/PRESEARCH.html`](docs/PRESEARCH.html) — START HERE: clean visual presearch artifact with named app flows, UI, source spine, API shape, and TDD sequence.
-2. [`docs/TASKS.md`](docs/TASKS.md) — V1 implementation backlog derived from the presearch artifact.
-3. [`docs/PRODUCT_BLUEPRINT.md`](docs/PRODUCT_BLUEPRINT.md) — broader corrective research/background; do not implement wholesale.
-4. [`docs/product-blueprint-designs.html`](docs/product-blueprint-designs.html) — earlier visual artifact/background.
-5. [`docs/PRESEARCH.md`](docs/PRESEARCH.md) — original lightweight source notes.
-6. [`docs/SPEC.md`](docs/SPEC.md) — older implementation baseline; superseded where it conflicts with the V1 flow.
-7. [`docs/API.md`](docs/API.md) — API, CLI, and tool integration contract.
-8. [`docs/decisions`](docs/decisions) — concise ADRs for blind extraction, deterministic rules, human review, tool surfaces, fixture benchmarks, and deferred auth/audit scope.
+2. [`docs/REQUIREMENTS_TRACE.md`](docs/REQUIREMENTS_TRACE.md) — take-home requirement coverage matrix: implemented, partial, and missing.
+3. [`docs/SPEED_EVIDENCE.md`](docs/SPEED_EVIDENCE.md) — local and deployed speed probe evidence for the 5-second requirement.
+4. [`docs/TASKS.md`](docs/TASKS.md) — V1 implementation backlog derived from the presearch artifact.
+5. [`docs/PRODUCT_BLUEPRINT.md`](docs/PRODUCT_BLUEPRINT.md) — broader corrective research/background; do not implement wholesale.
+6. [`docs/product-blueprint-designs.html`](docs/product-blueprint-designs.html) — earlier visual artifact/background.
+7. [`docs/PRESEARCH.md`](docs/PRESEARCH.md) — original lightweight source notes.
+8. [`docs/SPEC.md`](docs/SPEC.md) — older implementation baseline; superseded where it conflicts with the V1 flow.
+9. [`docs/API.md`](docs/API.md) — API, CLI, and tool integration contract.
+10. [`docs/decisions`](docs/decisions) — concise ADRs for blind extraction, deterministic rules, human review, tool surfaces, fixture benchmarks, and deferred auth/audit scope.

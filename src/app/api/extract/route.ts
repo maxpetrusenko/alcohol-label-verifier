@@ -3,6 +3,7 @@ import { apiError, makeRequestId } from "../../../lib/apiResponses";
 import { extractRequestSchema } from "../../../lib/apiSchemas";
 import { mapWithConcurrency } from "../../../lib/concurrency";
 import { buildExtractionGuidance, extractLabel } from "../../../lib/extraction";
+import { visionMode } from "../../../lib/visionConfig";
 
 export const runtime = "nodejs";
 
@@ -26,7 +27,7 @@ export async function POST(request: Request) {
         requestId,
         count: results.length,
         elapsedMs: Date.now() - started,
-        mode: process.env.OPENAI_API_KEY ? "vision+guidance" : "text-only-demo",
+        mode: visionMode("guidance"),
       },
     });
   } catch (error) {
