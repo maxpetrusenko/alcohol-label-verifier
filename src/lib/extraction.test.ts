@@ -9,6 +9,9 @@ describe("extractLabel", () => {
   const originalGeminiMaxKey = process.env.GEMINI_API_KEY_MAX;
   const originalGeminiTurkeyKey = process.env.GEMINI_API_KEY_TURKEY;
   const originalProvider = process.env.VISION_PROVIDER;
+  const originalLangSmithKey = process.env.LANGSMITH_API_KEY;
+  const originalLangSmithTracing = process.env.LANGSMITH_TRACING;
+  const originalLangChainTracing = process.env.LANGCHAIN_TRACING_V2;
 
   beforeEach(() => {
     process.env.OPENAI_API_KEY = "test-key";
@@ -17,6 +20,9 @@ describe("extractLabel", () => {
     delete process.env.GEMINI_API_KEY;
     delete process.env.GEMINI_API_KEY_MAX;
     delete process.env.GEMINI_API_KEY_TURKEY;
+    delete process.env.LANGSMITH_API_KEY;
+    delete process.env.LANGSMITH_TRACING;
+    delete process.env.LANGCHAIN_TRACING_V2;
   });
 
   afterEach(() => {
@@ -33,6 +39,12 @@ describe("extractLabel", () => {
     else delete process.env.GEMINI_API_KEY_TURKEY;
     if (originalProvider) process.env.VISION_PROVIDER = originalProvider;
     else delete process.env.VISION_PROVIDER;
+    if (originalLangSmithKey) process.env.LANGSMITH_API_KEY = originalLangSmithKey;
+    else delete process.env.LANGSMITH_API_KEY;
+    if (originalLangSmithTracing) process.env.LANGSMITH_TRACING = originalLangSmithTracing;
+    else delete process.env.LANGSMITH_TRACING;
+    if (originalLangChainTracing) process.env.LANGCHAIN_TRACING_V2 = originalLangChainTracing;
+    else delete process.env.LANGCHAIN_TRACING_V2;
   });
 
   it("normalizes provider confidence and common warning OCR typos", async () => {
@@ -73,6 +85,46 @@ describe("extractLabel", () => {
 
     expect(extraction.confidence).toBe(0.95);
     expect(extraction.governmentWarning).toBe(GOVERNMENT_WARNING_TEXT);
+  });
+
+  it("preserves visible warning capitalization from raw label evidence", async () => {
+    const titleCaseWarning = GOVERNMENT_WARNING_TEXT.replace("GOVERNMENT WARNING:", "Government Warning:");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(
+          JSON.stringify({
+            choices: [
+              {
+                message: {
+                  content: JSON.stringify({
+                    labelText: `Copper Fox\nBourbon Whiskey\n40% Alc./Vol.\n750 mL\nFox Distillers, Lexington, KY\n${titleCaseWarning}`,
+                    brandName: "Copper Fox",
+                    classType: "Bourbon Whiskey",
+                    alcoholContent: "40% Alc./Vol.",
+                    netContents: "750 mL",
+                    governmentWarning: GOVERNMENT_WARNING_TEXT,
+                    bottlerAddress: "Fox Distillers, Lexington, KY",
+                    countryOfOrigin: "",
+                    confidence: 0.98,
+                    notes: [],
+                  }),
+                },
+              },
+            ],
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+      ),
+    );
+
+    const extraction = await extractLabel({
+      fileName: "warning-title-case.jpg",
+      mimeType: "image/jpeg",
+      dataUrl: "data:image/jpeg;base64,test",
+    });
+
+    expect(extraction.governmentWarning).toBe(titleCaseWarning);
   });
 
   it("can call the Gemini vision provider when configured", async () => {

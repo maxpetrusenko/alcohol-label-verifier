@@ -62,6 +62,7 @@ describe("reviewRows", () => {
       check({ id: "net-contents", label: "Net contents" }),
       check({ id: "bottler-address", label: "Bottler / producer / importer address", severity: "review" }),
       check({ id: "alcohol-content", label: "Alcohol content" }),
+      check({ id: "bottle-size", label: "Bottle size standard of fill", severity: "blocking", status: "fail" }),
     ]);
     const rows = reviewRows(result);
 
@@ -73,6 +74,7 @@ describe("reviewRows", () => {
       "bottler-address",
       "country-origin",
       "government-warning",
+      "bottle-size",
       "image-quality",
     ]);
     expect(coreReviewRows(result).map((row) => row.id)).toEqual([
@@ -83,6 +85,7 @@ describe("reviewRows", () => {
       "bottler-address",
       "country-origin",
       "government-warning",
+      "bottle-size",
     ]);
     expect(supplementalReviewRows(result).map((row) => row.id)).toEqual(["image-quality"]);
   });

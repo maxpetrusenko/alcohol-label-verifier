@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isLangSmithConfigured, isLangSmithTracingEnabled, langSmithProject } from "../../../lib/langsmith";
 import { hasConfiguredVisionProvider, visionEndpoint, visionMode, visionModel, visionProvider } from "../../../lib/visionConfig";
 
 export function GET() {
@@ -12,6 +13,11 @@ export function GET() {
       model: visionModel(),
       endpoint: visionEndpoint(),
       imageDetail: process.env.OPENAI_IMAGE_DETAIL || "low",
+    },
+    langsmith: {
+      configured: isLangSmithConfigured(),
+      tracingEnabled: isLangSmithTracingEnabled(),
+      project: langSmithProject(),
     },
   });
 }

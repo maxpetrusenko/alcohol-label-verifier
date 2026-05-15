@@ -32,15 +32,16 @@ function withUploadQualityHint(extraction: LabelExtraction, fileName: string): L
 
 async function verifyOneLabel(application: ApplicationData, label: LabelInputPayload, index: number, batchStarted: number) {
   const labelId = label.labelId ?? `${index + 1}-${label.fileName}`;
+  const labelApplication = label.application ?? application;
 
   try {
     const extraction = withUploadQualityHint(await extractLabel(label), label.fileName);
-    const result = verifyLabel(application, extraction, label.fileName);
+    const result = verifyLabel(labelApplication, extraction, label.fileName);
     return { ...result, labelId, elapsedMs: Date.now() - batchStarted };
   } catch (error) {
     const fallback = withUploadQualityHint(extractionFromPlainText(label.text ?? ""), label.fileName);
     const result = verifyLabel(
-      application,
+      labelApplication,
       {
         ...fallback,
         confidence: 0,

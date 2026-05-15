@@ -1,3 +1,4 @@
+import { withLangSmithTrace, type VisionTraceInput } from "./langsmith";
 import { extractionFromPlainText } from "./rules";
 import type { LabelExtraction } from "./types";
 
@@ -56,6 +57,10 @@ function cleanGovernmentWarning(value: string | undefined): string | undefined {
     .replace(/\bGOVERNMENT\s+WARN(?:I|l)NG\s*:/iu, "GOVERNMENT WARNING:");
 }
 
+function visibleGovernmentWarning(labelText: string): string | undefined {
+  return labelText.match(/government\s+warning:[\s\S]+?(?:health problems\.?|$)/iu)?.[0].trim();
+}
+
 function sanitizeProviderError(status: number, message: string): string {
   const compact = message.replace(/\s+/g, " ").trim();
   return `Vision extraction failed with provider status ${status}: ${compact.slice(0, 180)}`;
@@ -83,7 +88,7 @@ function plausibleFieldValue(fieldLabel: string, value: string): boolean {
     case "net contents":
       return /\b\d+(?:\.\d+)?\s*(?:ml|l|liter|litre|fl\.?\s*oz\.?|ounces?)\b/iu.test(value);
     case "government warning":
-      return /\bGOVERNMENT\s+WARNING\s*:/u.test(value) && /pregnancy|drive a car|operate machinery|health problems/iu.test(value);
+      return /\bGOVERNMENT\s+WARNING\s*:/iu.test(value) && /pregnancy|drive a car|operate machinery|health problems/iu.test(value);
     case "bottler/address":
       return normalized.length >= 8 && (value.includes(",") || /\b(?:bottled|distilled|produced|imported|by|inc|llc|co|company|distiller|distillery|winery|brewery)\b/iu.test(value));
     case "country of origin":
@@ -102,7 +107,10 @@ function groundedValue(labelText: string, fieldLabel: string, value: string | un
     return undefined;
   }
   if (!labelText.trim()) return cleaned;
-  if (normalizeEvidence(labelText).includes(normalizeEvidence(cleaned))) return cleaned;
+  if (normalizeEvidence(labelText).includes(normalizeEvidence(cleaned))) {
+    if (fieldLabel === "government warning") return visibleGovernmentWarning(labelText) ?? cleaned;
+    return cleaned;
+  }
   notes.push(`Removed ${fieldLabel} because it was not present in raw extracted label text.`);
   return undefined;
 }
@@ -188,8 +196,16 @@ function parseMaxOutputTokens() {
   return Number.isFinite(value) && value > 0 ? value : 450;
 }
 
+function selectedVisionModel(provider: "gemini" | "openai") {
+  return provider === "gemini" ? process.env.GEMINI_VISION_MODEL || "gemini-2.5-flash-lite" : process.env.OPENAI_VISION_MODEL || "gpt-4.1-nano";
+}
+
+function selectedVisionEndpoint(provider: "gemini" | "openai") {
+  return provider === "gemini" ? "generateContent" : process.env.OPENAI_VISION_ENDPOINT || "chat_completions";
+}
+
 async function callOpenAiVision(apiKey: string, prompt: string, dataUrl: string) {
-  const model = process.env.OPENAI_VISION_MODEL || "gpt-4.1-nano";
+  const model = selectedVisionModel("openai");
   const detail = process.env.OPENAI_IMAGE_DETAIL || "low";
   const maxOutputTokens = parseMaxOutputTokens();
 
@@ -261,7 +277,7 @@ async function callOpenAiVision(apiKey: string, prompt: string, dataUrl: string)
 async function callGeminiVision(apiKey: string, prompt: string, dataUrl: string) {
   const parsed = parseDataUrl(dataUrl);
   if (!parsed) throw new Error("Gemini vision requires a base64 data URL.");
-  const model = process.env.GEMINI_VISION_MODEL || "gemini-2.5-flash-lite";
+  const model = selectedVisionModel("gemini");
   const maxOutputTokens = parseMaxOutputTokens();
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
     method: "POST",
@@ -299,6 +315,19 @@ function geminiApiKey(): string | undefined {
   return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY_MAX || process.env.GEMINI_API_KEY_TURKEY;
 }
 
+function traceInputForLabel(label: ExtractableLabel, provider: "gemini" | "openai"): VisionTraceInput {
+  return {
+    provider,
+    model: selectedVisionModel(provider),
+    endpoint: selectedVisionEndpoint(provider),
+    fileName: label.fileName,
+    mimeType: label.mimeType,
+    hasImage: Boolean(label.dataUrl),
+    hasFallbackText: Boolean(label.text),
+    fallbackTextLength: label.text?.length ?? 0,
+  };
+}
+
 export async function extractLabel(label: ExtractableLabel): Promise<LabelExtraction> {
   const provider = process.env.VISION_PROVIDER === "openai" ? "openai" : "gemini";
   const apiKey = provider === "gemini" ? geminiApiKey() : process.env.OPENAI_API_KEY;
@@ -306,6 +335,7 @@ export async function extractLabel(label: ExtractableLabel): Promise<LabelExtrac
   if (!apiKey || !label.dataUrl) {
     return fallback ?? extractionFromPlainText("");
   }
+  const dataUrl = label.dataUrl;
 
   const prompt = `You are a careful TTB alcohol-label extraction assistant.
 Extract only text and fields visible on the submitted label image. Do not decide compliance.
@@ -316,8 +346,17 @@ Every non-empty structured field must be copied from visible text also present i
 Do not shorten or generalize class/type wording; preserve the full visible designation line when legible.
 Set governmentWarning only to the exact visible warning statement, including the leading "GOVERNMENT WARNING:" prefix when present. Preserve warning capitalization and punctuation when legible.`;
 
-  const { response, readText } =
-    provider === "gemini" ? await callGeminiVision(apiKey, prompt, label.dataUrl) : await callOpenAiVision(apiKey, prompt, label.dataUrl);
+  const { response, readText } = await withLangSmithTrace(
+    traceInputForLabel(label, provider),
+    () => (provider === "gemini" ? callGeminiVision(apiKey, prompt, dataUrl) : callOpenAiVision(apiKey, prompt, dataUrl)),
+    ({ response }) => ({
+      provider,
+      model: selectedVisionModel(provider),
+      endpoint: selectedVisionEndpoint(provider),
+      status: response.status,
+      ok: response.ok,
+    }),
+  );
 
   if (!response.ok) {
     const message = await response.text();

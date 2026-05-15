@@ -1,10 +1,9 @@
 "use client";
 
-import { ChangeEvent, DragEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, DragEvent, FormEvent, Fragment, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   BadgeCheck,
-  Bot,
   Camera,
   CheckCircle2,
   ClipboardList,
@@ -14,43 +13,32 @@ import {
   UploadCloud,
   XCircle,
 } from "lucide-react";
-import { fixtureCases, type FixtureCase } from "@/lib/fixtureCases";
 import {
   batchLimitError,
-  buildVerificationLabels,
   chunkVerificationLabels,
   isImageLikeUpload,
   type PendingLabel,
 } from "@/lib/labelPayload";
-import { batchSummary, decisionCounts, issueTitle, needsReviewerAttention } from "@/lib/reviewPresentation";
+import {
+  applicationFromImportJson,
+  applicationsFromCsvText,
+  applicationsFromImportJson,
+  isApplicationImportUpload,
+  isCsvLikeUpload,
+  type ImportedApplication,
+} from "@/lib/applicationImport";
+import { issueTitle, needsReviewerAttention } from "@/lib/reviewPresentation";
 import { coreReviewRows, supplementalReviewRows } from "@/lib/reviewRows";
-import { GOVERNMENT_WARNING_TEXT } from "@/lib/rules";
 import type { ApplicationData, VerificationResult } from "@/lib/types";
 
-const demoText = `OLD TOM DISTILLERY
-Kentucky Straight Bourbon Whiskey
-45% Alc./Vol. (90 Proof)
-750 mL
-Bottled by Old Tom Distillery, Frankfort, KY
-${GOVERNMENT_WARNING_TEXT}`;
-
-const demoApplication: ApplicationData = {
-  brandName: "OLD TOM DISTILLERY",
-  classType: "Kentucky Straight Bourbon Whiskey",
-  alcoholContent: "45% Alc./Vol. (90 Proof)",
-  netContents: "750 mL",
-  bottlerAddress: "Old Tom Distillery, Frankfort, KY",
-  countryOfOrigin: "",
+const defaultApplication: ApplicationData = {
+  brandName: "",
+  classType: "",
+  alcoholContent: "",
+  netContents: "",
+  bottlerAddress: "",
+  countryOfOrigin: "United States",
   beverageKind: "spirits",
-};
-
-const fixtureCategoryLabel: Record<FixtureCase["category"], string> = {
-  pass: "Pass",
-  mismatch: "Mismatch",
-  label_noncompliant: "Label rule",
-  matching_noncompliant: "Rule gap",
-  warning_bad: "Warning",
-  warning_sneaky: "Warning",
 };
 
 const MAX_VISION_IMAGE_EDGE = 768;
@@ -62,20 +50,16 @@ const fields = [
   ["alcoholContent", "Alcohol"],
   ["netContents", "Contents"],
   ["bottlerAddress", "Bottler / producer / importer address"],
-  ["countryOfOrigin", "Import country"],
+  ["countryOfOrigin", "Country"],
 ] as const;
 
 type FactFieldKey = (typeof fields)[number][0];
 
 const fieldPlaceholders: Partial<Record<FactFieldKey, string>> = {
   bottlerAddress: "Example: Frostweaver Spirits, Denver, CO",
-  countryOfOrigin: "Required when imported",
 };
 
-const fieldHelp: Partial<Record<FactFieldKey, string>> = {
-  bottlerAddress: "Required label element: name and address statement shown on the label.",
-  countryOfOrigin: "Separate from address; only required for imported products.",
-};
+const selectFieldKeys = new Set<FactFieldKey>(["alcoholContent", "netContents", "countryOfOrigin"]);
 
 const fieldOptions: Partial<Record<FactFieldKey, string[]>> = {
   classType: [
@@ -101,10 +85,15 @@ const fieldOptions: Partial<Record<FactFieldKey, string[]>> = {
     "Ale",
     "Hard Cider",
   ],
-  alcoholContent: ["40% Alc./Vol.", "45% Alc./Vol. (90 Proof)", "35% Alc./Vol.", "13.5% Alc./Vol.", "12% Alc./Vol.", "5% Alc./Vol."],
+  alcoholContent: ["40% Alc./Vol.", "43% Alc./Vol.", "45% Alc./Vol. (90 Proof)", "35% Alc./Vol.", "13.5% Alc./Vol.", "12% Alc./Vol.", "5% Alc./Vol."],
   netContents: ["50 mL", "100 mL", "200 mL", "375 mL", "700 mL", "750 mL", "1 L", "1.75 L", "12 fl oz", "16 fl oz"],
   countryOfOrigin: ["United States", "Mexico", "France", "Italy", "Spain", "Canada", "Ireland", "Scotland", "United Kingdom", "Japan"],
 };
+
+const demoFixtures = {
+  pass: "01-pass-01",
+  fail: "06-warning-sneaky-01",
+} as const;
 
 function optionListId(key: FactFieldKey) {
   return fieldOptions[key] ? `options-${key}` : undefined;
@@ -129,56 +118,69 @@ function rowStatusLabel(row: { status: string; severity: string }) {
   return statusLabel(row.status);
 }
 
-type ReviewerDisposition = "approved" | "rejected" | "sme_review";
+function diffToken(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "");
+}
+
+function renderLabelEvidence(row: { id: string; expected: string; observed: string; status: string }) {
+  const observed = row.observed || "Not found";
+  if (row.id !== "government-warning" || row.status === "pass" || !row.expected || !row.observed) return observed;
+
+  const expectedWords = row.expected.split(/\s+/).map(diffToken);
+  let wordIndex = 0;
+  return observed.split(/(\s+)/).map((part, index) => {
+    if (/^\s+$/u.test(part)) return <Fragment key={index}>{part}</Fragment>;
+    const differs = diffToken(part) !== expectedWords[wordIndex];
+    wordIndex += 1;
+    return differs ? (
+      <mark className="diff-word" key={index}>
+        {part}
+      </mark>
+    ) : (
+      <Fragment key={index}>{part}</Fragment>
+    );
+  });
+}
+
+function rowReason(row: { id: string; label: string; expected: string; observed: string; status: string; rationale: string; guidance?: string }) {
+  if (row.status === "pass") return "";
+  if (row.status === "needs_review" && !row.observed) {
+    return `Could not read ${row.label.toLowerCase()} from the label image. Upload a clearer image or inspect that label area manually.`;
+  }
+  if (row.id === "government-warning" && row.observed) {
+    if (!/^GOVERNMENT\s+WARNING\s*:/u.test(row.observed)) {
+      return 'Government Health Warning prefix must be exactly "GOVERNMENT WARNING:" in all caps.';
+    }
+    return "Government Health Warning must match the statutory wording exactly. Correct the highlighted word or punctuation before approval.";
+  }
+  const mismatchReasons: Record<string, string> = {
+    "brand-name": "Brand name on the label does not match the application record.",
+    "class-type": row.rationale.includes("fanciful name")
+      ? "Application and label both show this text, but it is a fanciful name, not a legal class/type. Add the legal designation, such as Vodka, Rum, Whiskey, or Liqueur."
+      : "Class/type on the label does not match the application record.",
+    "alcohol-content": "Alcohol content or proof on the label does not match the application record.",
+    "net-contents": row.expected === row.observed
+      ? "Net contents match the application, but this container size is not authorized for this beverage profile."
+      : "Net contents on the label do not match the application record.",
+    "bottler-address": "Bottler, producer, or importer statement on the label does not match the application record.",
+    "country-origin": "Country of origin on the label is missing or does not match the imported product record.",
+    "target-isolation": "This image does not isolate one target product label, so the app may compare the wrong label.",
+    "supported-profile": "This source record selected an unsupported beverage profile. Choose distilled spirits, wine, or beer.",
+    "alcohol-content-profile": "Alcohol content could not be checked because this beverage profile has conditional ABV rules.",
+  };
+  if (row.status === "fail" && mismatchReasons[row.id]) return mismatchReasons[row.id];
+  if (row.status === "needs_review" && mismatchReasons[row.id]) return mismatchReasons[row.id];
+  return row.guidance || row.rationale;
+}
+
+type ReviewerDisposition = "approved" | "rejected";
 
 type Adjudication = {
   decision: ReviewerDisposition;
-  note: string;
-};
-
-type VisionHealth = {
-  configured: boolean;
-  mode: string;
-  provider: string;
-  model: string;
-  endpoint?: string;
 };
 
 function dispositionLabel(decision: ReviewerDisposition) {
-  if (decision === "sme_review") return "SME review";
   return decision === "approved" ? "Approved" : "Rejected";
-}
-
-function decisionCopy(result?: VerificationResult) {
-  if (!result) {
-    return {
-      title: "Ready",
-      body: "Add label and facts.",
-      tone: "idle",
-    };
-  }
-
-  if (result.decision === "approved") {
-    return {
-      title: "Approved",
-      body: "Label matches application.",
-      tone: "pass",
-    };
-  }
-
-  if (result.decision === "rejected") {
-    return {
-      title: "Blocked",
-      body: "Fix label or facts.",
-      tone: "fail",
-    };
-  }
-
-  return {
-    title: "Needs review",
-    body: "Missing or uncertain evidence.",
-    tone: "review",
-  };
 }
 
 function stopMediaStream(stream: MediaStream | null) {
@@ -199,6 +201,10 @@ type DroppedDataTransferItem = DataTransferItem & {
   webkitGetAsEntry?: () => DroppedEntry | null;
 };
 
+function isSupportedUpload(file: File) {
+  return isImageLikeUpload(file) || isApplicationImportUpload(file);
+}
+
 function fileFromEntry(entry: DroppedEntry) {
   return new Promise<File | null>((resolve) => {
     if (!entry.file) {
@@ -206,7 +212,7 @@ function fileFromEntry(entry: DroppedEntry) {
       return;
     }
 
-    entry.file((file) => resolve(isImageLikeUpload(file) ? file : null), () => resolve(null));
+    entry.file((file) => resolve(isSupportedUpload(file) ? file : null), () => resolve(null));
   });
 }
 
@@ -235,7 +241,7 @@ async function filesFromEntry(entry: DroppedEntry): Promise<File[]> {
   return files;
 }
 
-async function imageFilesFromDrop(dataTransfer: DataTransfer) {
+async function filesFromDrop(dataTransfer: DataTransfer) {
   const entries: DroppedEntry[] = [];
   for (const item of [...dataTransfer.items]) {
     const entry = (item as DroppedDataTransferItem).webkitGetAsEntry?.();
@@ -247,7 +253,7 @@ async function imageFilesFromDrop(dataTransfer: DataTransfer) {
     return files.flat();
   }
 
-  return [...dataTransfer.files].filter(isImageLikeUpload);
+  return [...dataTransfer.files].filter(isSupportedUpload);
 }
 
 function readFileAsDataUrl(file: File) {
@@ -257,6 +263,32 @@ function readFileAsDataUrl(file: File) {
     reader.onerror = () => reject(new Error(`Could not read ${file.name}`));
     reader.readAsDataURL(file);
   });
+}
+
+function readFileAsText(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error(`Could not read ${file.name}`));
+    reader.readAsText(file);
+  });
+}
+
+function basename(fileName: string) {
+  return fileName.replace(/\.[^.]+$/u, "");
+}
+
+async function applicationsFromImportFile(file: File): Promise<ImportedApplication[]> {
+  const text = await readFileAsText(file);
+  return isCsvLikeUpload(file) ? applicationsFromCsvText(text, file.name) : applicationsFromImportJson(JSON.parse(text), file.name);
+}
+
+async function applicationFromKnownEvalFixture(imageFile: File) {
+  const id = basename(imageFile.name);
+  if (!/^(?:0[1-6])-[a-z]+(?:-[a-z]+)?-\d{2}$/iu.test(id)) return null;
+  const response = await fetch(`/evals/fixtures/generated/${id}.json`, { cache: "no-store" });
+  if (!response.ok) return null;
+  return applicationFromImportJson(await response.json());
 }
 
 function drawScaledImage(source: CanvasImageSource, width: number, height: number) {
@@ -290,13 +322,10 @@ async function optimizedImageDataUrl(file: File) {
 }
 
 export default function Home() {
-  const [application, setApplication] = useState<ApplicationData>(demoApplication);
-  const [labels, setLabels] = useState<PendingLabel[]>([{ labelId: "demo-label", fileName: "demo-label.txt", text: demoText }]);
-  const [labelText, setLabelText] = useState(demoText);
+  const [application, setApplication] = useState<ApplicationData>(defaultApplication);
+  const [importedApplications, setImportedApplications] = useState<ImportedApplication[]>([]);
+  const [labels, setLabels] = useState<PendingLabel[]>([]);
   const [results, setResults] = useState<VerificationResult[]>([]);
-  const [verifyMode, setVerifyMode] = useState<string | null>(null);
-  const [visionHealth, setVisionHealth] = useState<VisionHealth | null>(null);
-  const [healthError, setHealthError] = useState<string | null>(null);
   const [verifiedCount, setVerifiedCount] = useState(0);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -304,6 +333,7 @@ export default function Home() {
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [isDropActive, setIsDropActive] = useState(false);
+  const [isFactsDropActive, setIsFactsDropActive] = useState(false);
   const [adjudications, setAdjudications] = useState<Record<string, Adjudication>>({});
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const cameraStreamRef = useRef<MediaStream | null>(null);
@@ -312,44 +342,17 @@ export default function Home() {
   const activeResult = results[activeIndex] ?? results[0];
   const activeAdjudicationKey = activeResult?.labelId ?? activeLabel?.labelId ?? activeResult?.fileName ?? activeLabel?.fileName ?? "single-label";
   const activeAdjudication = activeResult ? adjudications[activeAdjudicationKey] : undefined;
-  const resultCopy = decisionCopy(activeResult);
   const batchCount = Math.max(labels.length, results.length);
   const hasBatch = batchCount > 1;
-  const counts = decisionCounts(results);
+  const hasApplicationBatch = importedApplications.length > 1;
   const nextSteps = activeResult?.nextSteps?.length ? activeResult.nextSteps : activeResult?.workflow?.nextSteps ?? [];
   const attentionChecks = useMemo(
     () => activeResult?.checks.filter((check) => needsReviewerAttention(check.status)) ?? [],
     [activeResult],
   );
-  const activeReviewRows = useMemo(() => (activeResult ? coreReviewRows(activeResult) : []), [activeResult]);
+  const activeReviewRows = useMemo(() => (activeResult ? coreReviewRows(activeResult).filter((row) => row.status !== "not_applicable") : []), [activeResult]);
   const scoredReviewRows = useMemo(() => activeReviewRows.filter((row) => row.severity !== "info"), [activeReviewRows]);
-  const activeSupplementalRows = useMemo(() => (activeResult ? supplementalReviewRows(activeResult) : []), [activeResult]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadHealth() {
-      try {
-        const response = await fetch("/api/health", { cache: "no-store" });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error?.message || "Health check failed");
-        if (!cancelled) {
-          setVisionHealth(data.vision ?? null);
-          setHealthError(null);
-        }
-      } catch {
-        if (!cancelled) {
-          setVisionHealth(null);
-          setHealthError("Provider status unavailable. Verification can still run, but network or server health needs review.");
-        }
-      }
-    }
-
-    void loadHealth();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const activeSupplementalRows = useMemo(() => (activeResult ? supplementalReviewRows(activeResult).filter((row) => row.status !== "not_applicable") : []), [activeResult]);
 
   useEffect(() => {
     if (!isCameraOpen) {
@@ -405,17 +408,64 @@ export default function Home() {
     return ["batch-item", index === activeIndex ? "active" : "", result ? `decision-${result.decision}` : ""].filter(Boolean).join(" ");
   }
 
+  function loadImportedApplications(rows: ImportedApplication[]) {
+    setImportedApplications(rows);
+    if (rows[0]) setApplication(rows[0].application);
+  }
+
+  function normalizedFileKey(fileName?: string) {
+    return basename(fileName ?? "").toLowerCase().replace(/[^a-z0-9]+/gu, "");
+  }
+
+  function applicationForLabel(label: PendingLabel, index: number): ApplicationData | null {
+    if (!hasApplicationBatch) return importedApplications[0]?.application ?? application;
+    const labelKey = normalizedFileKey(label.fileName);
+    const matched = importedApplications.find((row) => {
+      const rowKey = normalizedFileKey(row.fileName);
+      return rowKey && (rowKey === labelKey || labelKey.includes(rowKey) || rowKey.includes(labelKey));
+    });
+    return matched?.application ?? importedApplications[index]?.application ?? null;
+  }
+
+  async function importApplicationFiles(files: File[]) {
+    if (!files.length) return [];
+    const imported = (await Promise.all(files.map(applicationsFromImportFile))).flat();
+    if (!imported.length) throw new Error("No application rows found. Use JSON or CSV with brand, class/type, ABV, and net contents columns.");
+    loadImportedApplications(imported);
+    return imported;
+  }
+
   async function onFiles(files: FileList | File[] | null) {
     const selectedFiles = files ? [...files] : [];
     if (!selectedFiles.length) return;
-    const limitError = batchLimitError(selectedFiles.length);
+    const imageFiles = selectedFiles.filter(isImageLikeUpload);
+    const importFiles = selectedFiles.filter(isApplicationImportUpload);
+    const limitError = batchLimitError(imageFiles.length);
     if (limitError) {
       setError(limitError);
       return;
     }
 
+    try {
+      const importedApplication =
+        importFiles.length > 0
+          ? (await importApplicationFiles(importFiles))[0]?.application
+          : imageFiles.length === 1
+            ? await applicationFromKnownEvalFixture(imageFiles[0])
+            : null;
+      if (importedApplication) setApplication(importedApplication);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not import application facts.");
+      return;
+    }
+
+    if (!imageFiles.length) {
+      setError(importFiles.length ? null : "Select label image files.");
+      return;
+    }
+
     const next = await Promise.all(
-      selectedFiles.map(async (file, index) => {
+      imageFiles.map(async (file, index) => {
         const image = await optimizedImageDataUrl(file);
         return {
           labelId: makeLabelId(file.name, index),
@@ -428,10 +478,8 @@ export default function Home() {
 
     setLabels(next);
     setActiveIndex(0);
-    setLabelText("");
     setResults([]);
     setAdjudications({});
-    setVerifyMode(null);
     setVerifiedCount(0);
     setError(null);
   }
@@ -459,10 +507,8 @@ export default function Home() {
       },
     ]);
     setActiveIndex(0);
-    setLabelText("");
     setResults([]);
     setAdjudications({});
-    setVerifyMode(null);
     setVerifiedCount(0);
     setError(null);
     setIsCameraOpen(false);
@@ -472,6 +518,17 @@ export default function Home() {
     const files = event.currentTarget.files ? [...event.currentTarget.files] : [];
     event.currentTarget.value = "";
     void onFiles(files);
+  }
+
+  async function handleApplicationImportInput(event: ChangeEvent<HTMLInputElement>) {
+    const files = event.currentTarget.files ? [...event.currentTarget.files] : [];
+    event.currentTarget.value = "";
+    try {
+      await importApplicationFiles(files);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not import application facts.");
+    }
   }
 
   function handleDragOver(event: DragEvent<HTMLElement>) {
@@ -487,61 +544,100 @@ export default function Home() {
   async function handleDrop(event: DragEvent<HTMLElement>) {
     event.preventDefault();
     setIsDropActive(false);
-    const files = await imageFilesFromDrop(event.dataTransfer);
+    const files = await filesFromDrop(event.dataTransfer);
     if (!files.length) {
-      setError("Drop image files or a folder containing images.");
+      setError("Drop image files, JSON source facts, or a folder containing them.");
       return;
     }
     await onFiles(files);
   }
 
-  function loadDemo() {
-    setApplication(demoApplication);
-    setLabelText(demoText);
-    setLabels([{ labelId: "demo-label", fileName: "demo-label.txt", text: demoText }]);
-    setResults([]);
-    setAdjudications({});
-    setVerifyMode(null);
-    setVerifiedCount(0);
-    setActiveIndex(0);
-    setError(null);
+  function handleFactsDragOver(event: DragEvent<HTMLElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+    event.dataTransfer.dropEffect = "copy";
+    setIsFactsDropActive(true);
+  }
+
+  function handleFactsDragLeave(event: DragEvent<HTMLElement>) {
+    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setIsFactsDropActive(false);
+  }
+
+  async function handleFactsDrop(event: DragEvent<HTMLElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsFactsDropActive(false);
+    const files = [...event.dataTransfer.files].filter(isApplicationImportUpload);
+    if (!files.length) {
+      setError("Drop a JSON or CSV source facts file on Application facts.");
+      return;
+    }
+    try {
+      await importApplicationFiles(files);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not import application facts.");
+    }
   }
 
   function clearLabelSelection() {
     setLabels([]);
-    setLabelText("");
     setResults([]);
     setAdjudications({});
-    setVerifyMode(null);
     setVerifiedCount(0);
     setActiveIndex(0);
     setError(null);
   }
 
-  async function loadFixture(fixture: FixtureCase) {
+  async function loadDemoFixture(kind: keyof typeof demoFixtures) {
+    const id = demoFixtures[kind];
+    setIsVerifying(true);
     setError(null);
     setResults([]);
     setAdjudications({});
-    setVerifyMode(null);
     setVerifiedCount(0);
-    setActiveIndex(0);
-    setApplication(fixture.application);
-    setLabelText(fixture.labelText ?? "");
 
     try {
-      const response = await fetch(fixture.publicImagePath);
-      if (!response.ok) throw new Error(`Could not load ${fixture.id} image`);
-      const blob = await response.blob();
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result));
-        reader.onerror = () => reject(new Error(`Could not read ${fixture.id} image`));
-        reader.readAsDataURL(blob);
+      const [factsResponse, imageResponse] = await Promise.all([
+        fetch(`/evals/fixtures/generated/${id}.json`, { cache: "no-store" }),
+        fetch(`/evals/fixtures/generated/${id}.png`, { cache: "no-store" }),
+      ]);
+      if (!factsResponse.ok || !imageResponse.ok) throw new Error(`Could not load ${id}.`);
+
+      const demoApplication = applicationFromImportJson(await factsResponse.json());
+      if (!demoApplication) throw new Error(`Could not read application facts for ${id}.`);
+
+      const blob = await imageResponse.blob();
+      const file = new File([blob], `${id}.png`, { type: blob.type || "image/png" });
+      const image = await optimizedImageDataUrl(file);
+      const label = {
+        labelId: makeLabelId(file.name, 0),
+        fileName: file.name,
+        mimeType: image.mimeType,
+        dataUrl: image.dataUrl,
+      };
+
+      setApplication(demoApplication);
+      setImportedApplications([]);
+      setLabels([label]);
+      setActiveIndex(0);
+
+      const response = await fetch("/api/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ application: demoApplication, labels: [label] }),
       });
-      setLabels([{ labelId: fixture.id, fileName: `${fixture.id}.png`, mimeType: blob.type || "image/png", dataUrl, text: fixture.labelText }]);
+      const data = await response.json();
+      if (!response.ok) {
+        const message = typeof data.error === "string" ? data.error : data.error?.message;
+        throw new Error(message || `Verification failed for ${id}.`);
+      }
+      setResults(data.results);
+      setVerifiedCount(data.results.length);
     } catch (err) {
-      setLabels([{ labelId: fixture.id, fileName: `${fixture.id}.png`, text: fixture.labelText }]);
-      setError(err instanceof Error ? err.message : "Fixture image load failed; text fallback is loaded.");
+      setError(err instanceof Error ? err.message : "Could not load demo fixture.");
+    } finally {
+      setIsVerifying(false);
     }
   }
 
@@ -551,28 +647,54 @@ export default function Home() {
     setError(null);
     setResults([]);
     setAdjudications({});
-    setVerifyMode(null);
     setVerifiedCount(0);
 
-    const payloadLabels = buildVerificationLabels(labels, labelText);
+    if (!labels.length) {
+      setError("Upload or capture one label photo before verification.");
+      setIsVerifying(false);
+      return;
+    }
 
     try {
       let nextResults: VerificationResult[] = [];
-      for (const chunk of chunkVerificationLabels(payloadLabels)) {
-        const response = await fetch("/api/verify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ application, labels: chunk }),
+      if (hasApplicationBatch) {
+        const matchedLabels = labels.map((label, index) => {
+          const labelApplication = applicationForLabel(label, index);
+          if (!labelApplication) throw new Error(`No application facts found for ${label.fileName}.`);
+          return { ...label, application: labelApplication };
         });
-        const data = await response.json();
-        if (!response.ok) {
-          const message = typeof data.error === "string" ? data.error : data.error?.message;
-          throw new Error(message || `Verification failed after ${nextResults.length} labels`);
+
+        for (const chunk of chunkVerificationLabels(matchedLabels)) {
+          const response = await fetch("/api/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ application, labels: chunk }),
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            const message = typeof data.error === "string" ? data.error : data.error?.message;
+            throw new Error(message || `Verification failed after ${nextResults.length} labels`);
+          }
+          nextResults = [...nextResults, ...data.results];
+          setResults(nextResults);
+          setVerifiedCount(nextResults.length);
         }
-        nextResults = [...nextResults, ...data.results];
-        setResults(nextResults);
-        setVerifiedCount(nextResults.length);
-        setVerifyMode(typeof data.meta?.mode === "string" ? data.meta.mode : null);
+      } else {
+        for (const chunk of chunkVerificationLabels(labels)) {
+          const response = await fetch("/api/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ application, labels: chunk }),
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            const message = typeof data.error === "string" ? data.error : data.error?.message;
+            throw new Error(message || `Verification failed after ${nextResults.length} labels`);
+          }
+          nextResults = [...nextResults, ...data.results];
+          setResults(nextResults);
+          setVerifiedCount(nextResults.length);
+        }
       }
       setActiveIndex(0);
     } catch (err) {
@@ -587,17 +709,6 @@ export default function Home() {
       ...current,
       [activeAdjudicationKey]: {
         decision,
-        note: current[activeAdjudicationKey]?.note ?? "",
-      },
-    }));
-  }
-
-  function setReviewerNote(note: string) {
-    setAdjudications((current) => ({
-      ...current,
-      [activeAdjudicationKey]: {
-        decision: current[activeAdjudicationKey]?.decision ?? "sme_review",
-        note,
       },
     }));
   }
@@ -606,24 +717,32 @@ export default function Home() {
     return (
       <>
         <div className="fact-grid">
-          {fields.map(([key, label]) => (
-            <label
-              key={key}
-              className={["fact-field", key === "bottlerAddress" ? "wide-field" : "", fieldHelp[key] ? "has-help" : ""]
-                .filter(Boolean)
-                .join(" ")}
-            >
-              <span>{label}</span>
-              <input
-                value={application[key] ?? ""}
-                placeholder={fieldPlaceholders[key]}
-                list={optionListId(key)}
-                onChange={(event) => setApplication((current) => ({ ...current, [key]: event.target.value }))}
-              />
-              {fieldHelp[key] ? <small className="field-help">{fieldHelp[key]}</small> : null}
-            </label>
-          ))}
-          {Object.entries(fieldOptions).map(([key, options]) => (
+          {fields.map(([key, label]) => {
+            const className = ["fact-field", key === "bottlerAddress" ? "wide-field" : ""].filter(Boolean).join(" ");
+            return (
+              <label key={key} className={className}>
+                <span>{label}</span>
+                {selectFieldKeys.has(key) ? (
+                  <select value={application[key] ?? ""} onChange={(event) => setApplication((current) => ({ ...current, [key]: event.target.value }))}>
+                    <option value="">Select {label.toLowerCase()}</option>
+                    {fieldOptions[key]?.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    value={application[key] ?? ""}
+                    placeholder={fieldPlaceholders[key]}
+                    list={optionListId(key)}
+                    onChange={(event) => setApplication((current) => ({ ...current, [key]: event.target.value }))}
+                  />
+                )}
+              </label>
+            );
+          })}
+          {Object.entries(fieldOptions).filter(([key]) => !selectFieldKeys.has(key as FactFieldKey)).map(([key, options]) => (
             <datalist key={key} id={`options-${key}`}>
               {options.map((option) => (
                 <option key={option} value={option} />
@@ -639,37 +758,9 @@ export default function Home() {
               <option value="spirits">Distilled spirits</option>
               <option value="wine">Wine</option>
               <option value="beer">Beer / malt beverage</option>
-              <option value="other">Other</option>
             </select>
           </label>
-          <label className="checkbox-field">
-            <span>Import status</span>
-            <div className="checkbox-control">
-              <input
-                type="checkbox"
-                checked={Boolean(application.imported)}
-                onChange={(event) => setApplication((current) => ({ ...current, imported: event.target.checked }))}
-              />
-              <strong>Imported product</strong>
-            </div>
-          </label>
         </div>
-
-        <details className="fixture-drawer">
-          <summary>Fixtures and text fallback</summary>
-          <div className="fixture-strip" aria-label="Generated fixture cases">
-            {fixtureCases.map((fixture) => (
-              <button key={fixture.id} type="button" onClick={() => void loadFixture(fixture)}>
-                <span>{fixtureCategoryLabel[fixture.category]}</span>
-                {fixture.title}
-              </button>
-            ))}
-          </div>
-          <textarea value={labelText} onChange={(event) => setLabelText(event.target.value)} aria-label="Label text fallback" />
-        </details>
-        {verifyMode === "text-only-demo" ? (
-          <p className="mode-message">Vision extraction is not configured here. Uploaded photos need OCR text fallback or a provider API key.</p>
-        ) : null}
 
         <button type="submit" className="run-button" disabled={isVerifying}>
           {isVerifying ? <Loader2 aria-hidden className="spin" /> : <Scale aria-hidden />}
@@ -687,6 +778,16 @@ export default function Home() {
         </button>
         {error ? <p className="error-message">{error}</p> : null}
       </>
+    );
+  }
+
+  function renderImportButton() {
+    return (
+      <label className="import-button" onClick={(event) => event.stopPropagation()}>
+        <ClipboardList aria-hidden />
+        <span>Import JSON / CSV</span>
+        <input className="file-input" type="file" accept=".json,.csv,application/json,text/csv" multiple onChange={handleApplicationImportInput} />
+      </label>
     );
   }
 
@@ -709,32 +810,16 @@ export default function Home() {
             onDrop={handleDrop}
           >
             <div className="label-preview" aria-label="Full label preview">
-              {activeLabel?.dataUrl ? (
+              {activeLabel ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={activeLabel.dataUrl} alt={`Uploaded label preview for ${activeLabel.fileName}`} />
-              ) : activeLabel ? (
-                <div className="mock-label">
-                  <span className="seal">COLA</span>
-                  <strong>OLD TOM DISTILLERY</strong>
-                  <p>Kentucky Straight Bourbon Whiskey</p>
-                  <p>45% Alc./Vol.  90 Proof</p>
-                  <p>750 mL</p>
-                  <small>Bottled by Old Tom Distillery, Frankfort, KY</small>
-                  <small className="warning-line">{GOVERNMENT_WARNING_TEXT}</small>
-                </div>
               ) : (
                 <div className="empty-label-state">
                   <UploadCloud aria-hidden />
                   <strong>Upload label photo</strong>
-                  <span>Use Upload, Camera, or drag images here.</span>
+                  <span>{isDropActive ? "Release to load" : "Drop images or a folder here. Up to 300 labels."}</span>
                 </div>
               )}
-            </div>
-
-            <div className="drop-strip" aria-live="polite">
-              <UploadCloud aria-hidden />
-              <strong>{isDropActive ? "Release to load this batch" : activeLabel?.dataUrl ? activeLabel.fileName : "Drop images or a folder here"}</strong>
-              <span>{activeLabel?.dataUrl ? `${activeIndex + 1}/${batchCount} selected. Drop another batch to replace it.` : "Up to 300 images. Large batches verify in 25-label chunks."}</span>
             </div>
 
             {hasBatch ? (
@@ -764,9 +849,9 @@ export default function Home() {
                 <input
                   className="file-input"
                   type="file"
-                  accept="image/*"
+                  accept="image/*,.json,.csv,application/json,text/csv"
                   multiple
-                  title="Upload one or more label photos"
+                  title="Upload label photos and optional JSON or CSV source facts"
                   onChange={handleFileInput}
                 />
               </label>
@@ -774,14 +859,17 @@ export default function Home() {
                 <Camera aria-hidden />
                 <span>{isCameraOpen ? "Close camera" : "Camera"}</span>
               </button>
-              <button type="button" className="ghost-button" onClick={loadDemo}>
-                Demo
-              </button>
               {activeLabel ? (
                 <button type="button" className="ghost-button secondary" onClick={clearLabelSelection}>
                   Clear
                 </button>
               ) : null}
+              <button type="button" className="ghost-button secondary" disabled={isVerifying} onClick={() => void loadDemoFixture("pass")}>
+                Demo pass
+              </button>
+              <button type="button" className="ghost-button secondary" disabled={isVerifying} onClick={() => void loadDemoFixture("fail")}>
+                Demo fail
+              </button>
               <span className="photo-meta">
                 <FileImage aria-hidden />
                 {activeLabel ? `${activeIndex + 1}/${batchCount} ${activeLabel.fileName}` : "No label selected"}
@@ -802,80 +890,60 @@ export default function Home() {
         </section>
 
         <aside className={`control-panel${activeResult ? " has-result" : ""}`} aria-label="Application facts and verification controls">
-          <section className="status-card">
-            <div className={`decision ${resultCopy.tone}`}>
-              {decisionIcon(activeResult?.decision)}
-              <div>
-                <h2>{resultCopy.title}</h2>
-                <p>{resultCopy.body}</p>
-              </div>
-            </div>
-            {activeResult ? (
-              <div className={`score-row decision-${activeResult.decision}`}>
-                <span>{activeResult.decision.replace("_", " ")}</span>
-                <strong>{activeResult.score}%</strong>
-              </div>
-            ) : null}
-            {results.length > 1 ? (
-              <div className="batch-summary">
-                <strong>{results.length}/{labels.length}</strong>
-                <span>{batchSummary(results)}</span>
-                <small>{counts.rejected ? "Start with blocked labels." : counts.needs_review ? "Review uncertain labels." : "Batch ready."}</small>
-              </div>
-            ) : null}
-            <div className={`provider-chip ${visionHealth?.configured ? "provider-ready" : "provider-demo"}`}>
-              <span>{visionHealth?.configured ? "Vision ready" : "Text-only mode"}</span>
-              <strong>
-                {visionHealth
-                  ? visionHealth.configured
-                    ? `${visionHealth.provider} · ${visionHealth.model}`
-                    : "Paste OCR/text fallback"
-                  : healthError
-                    ? "Status unavailable"
-                    : "Checking provider"}
-              </strong>
-              {verifyMode ? <small>Last run: {verifyMode}</small> : healthError ? <small>{healthError}</small> : null}
-            </div>
-          </section>
-
-          <section className={`facts-card${activeResult ? " facts-card-edit" : ""}`}>
+          <section
+            className={`facts-card${activeResult ? " facts-card-edit" : ""}${isFactsDropActive ? " facts-drop-active" : ""}`}
+            onDragOver={handleFactsDragOver}
+            onDragEnter={handleFactsDragOver}
+            onDragLeave={handleFactsDragLeave}
+            onDrop={handleFactsDrop}
+          >
             {activeResult ? (
               <details className="edit-facts-drawer">
                 <summary>
-                  <div className="section-title">
-                    <ClipboardList aria-hidden />
-                    <div>
-                      <h2>Edit application facts</h2>
-                      <p>Open only when the source record needs correction, then re-run verification.</p>
+                  <div className="facts-header">
+                    <div className="section-title">
+                      <ClipboardList aria-hidden />
+                      <div>
+                        <h2>Edit application facts</h2>
+                      </div>
                     </div>
+                    {renderImportButton()}
                   </div>
                 </summary>
                 {renderFactsEditor()}
               </details>
             ) : (
               <>
-                <div className="section-title">
-                  <ClipboardList aria-hidden />
-                  <div>
-                    <h2>Application facts</h2>
-                    <p>Typed or imported source record. The photo must independently show the label.</p>
+                <div className="facts-header">
+                  <div className="section-title">
+                    <ClipboardList aria-hidden />
+                    <div>
+                      <h2>Application facts</h2>
+                    </div>
                   </div>
+                  {renderImportButton()}
                 </div>
                 {renderFactsEditor()}
               </>
             )}
           </section>
 
+          {activeResult ? (
           <section className="guidance-panel" aria-label="Issues and next steps">
-            <div className={`section-title review-title decision-${activeResult?.decision ?? "idle"}`}>
-              {activeResult ? decisionIcon(activeResult.decision) : <AlertTriangle aria-hidden />}
-              <div>
-                <h2>{activeResult ? "Field comparison" : "Review"}</h2>
-                <p>{activeResult ? `${issueTitle(attentionChecks.length)} · ${activeResult.elapsedMs} ms` : "Run verification."}</p>
+            <div className="field-comparison-header">
+              <div className="section-title review-title">
+                {decisionIcon(activeResult.decision)}
+                <div>
+                  <h2>Field comparison</h2>
+                  <p>{`${issueTitle(attentionChecks.length)} · ${activeResult.elapsedMs} ms`}</p>
+                </div>
+              </div>
+              <div className={`score-row decision-${activeResult.decision}`}>
+                <span>{activeResult.decision.replace("_", " ")}</span>
+                <strong>{activeResult.score}%</strong>
               </div>
             </div>
 
-            {activeResult ? (
               <div className="comparison-stack">
                 <div className="comparison-meta">
                   <span>{Math.round(activeResult.extraction.confidence * 100)}% extraction confidence</span>
@@ -895,8 +963,9 @@ export default function Home() {
                         <strong>{row.label}</strong>
                       </div>
                       <p>{row.expected || "Not supplied"}</p>
-                      <p>{row.observed || "Not found"}</p>
+                      <p>{renderLabelEvidence(row)}</p>
                       <span>{rowStatusLabel(row)}</span>
+                      {rowReason(row) ? <small className="comparison-reason">{rowReason(row)}</small> : null}
                     </article>
                   ))}
                 </div>
@@ -911,8 +980,9 @@ export default function Home() {
                             <strong>{row.label}</strong>
                           </div>
                           <p>{row.expected || "Not supplied"}</p>
-                          <p>{row.observed || "Not found"}</p>
+                          <p>{renderLabelEvidence(row)}</p>
                           <span>{rowStatusLabel(row)}</span>
+                          {rowReason(row) ? <small className="comparison-reason">{rowReason(row)}</small> : null}
                         </article>
                       ))}
                     </div>
@@ -931,8 +1001,8 @@ export default function Home() {
                   ) : null}
                 </details>
 
-                <article className="next-card">
-                  <h3>{activeResult.decision === "approved" ? "Ready" : "Next action"}</h3>
+                <details className="next-card">
+                  <summary>{activeResult.decision === "approved" ? "Ready" : "Next action"}</summary>
                   {activeResult.missingApplicationFacts?.length ? (
                     <div className="missing-facts">
                       <strong>Missing facts</strong>
@@ -951,45 +1021,26 @@ export default function Home() {
                         </li>
                       ))}
                   </ul>
-                </article>
-
-                <article className="adjudication-card" aria-label="Reviewer final decision">
-                  <div>
-                    <h3>Reviewer decision</h3>
-                    <p>Tool recommendation: {activeResult.decision.replace("_", " ")}. Final disposition is yours.</p>
-                  </div>
-                  <div className="decision-actions">
-                    {(["approved", "rejected", "sme_review"] as const).map((decision) => (
-                      <button
-                        key={decision}
-                        type="button"
-                        className={`decision-action ${activeAdjudication?.decision === decision ? "selected" : ""} decision-action-${decision}`}
-                        onClick={() => setReviewerDecision(decision)}
-                      >
-                        {dispositionLabel(decision)}
-                      </button>
-                    ))}
-                  </div>
-                  <textarea
-                    aria-label="Reviewer note"
-                    placeholder="Optional note or reason for the final disposition."
-                    value={activeAdjudication?.note ?? ""}
-                    onChange={(event) => setReviewerNote(event.target.value)}
-                  />
-                  <p className="adjudication-state">
-                    {activeAdjudication
-                      ? `Recorded locally: ${dispositionLabel(activeAdjudication.decision)}${activeAdjudication.note ? " with note" : ""}.`
-                      : "No reviewer decision recorded yet."}
-                  </p>
-                </article>
+                </details>
               </div>
-            ) : (
-              <div className="empty-review">
-                <Bot aria-hidden />
-                <p>Photo plus facts becomes evidence, issues, next action.</p>
-              </div>
-            )}
           </section>
+          ) : null}
+          {activeResult ? (
+            <section className="review-action-bar" aria-label="Reviewer final decision">
+              <div className="decision-actions">
+                {(["approved", "rejected"] as const).map((decision) => (
+                  <button
+                    key={decision}
+                    type="button"
+                    className={`decision-action ${activeAdjudication?.decision === decision ? "selected" : ""} decision-action-${decision}`}
+                    onClick={() => setReviewerDecision(decision)}
+                  >
+                    {dispositionLabel(decision)}
+                  </button>
+                ))}
+              </div>
+            </section>
+          ) : null}
         </aside>
       </form>
     </main>

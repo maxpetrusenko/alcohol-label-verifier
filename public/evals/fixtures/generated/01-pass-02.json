@@ -5,6 +5,6 @@
   "net_contents": "700 mL",
   "bottler_name": "Highland Crest Imports",
   "bottler_address": "New York, NY",
-  "country_of_origin": "USA",
-  "is_import": false
+  "country_of_origin": "Scotland",
+  "is_import": true
 }

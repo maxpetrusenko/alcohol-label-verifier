@@ -8,7 +8,7 @@ import {
   type GeneratedFixtureEvalCase,
   type GeneratedManifestFixture,
 } from "./generatedFixtureEval";
-import type { FsyedGeneratedFixtureJson } from "./fixtureCases";
+import type { FsyedGeneratedFixtureJson } from "./applicationImport";
 
 const repoRoot = process.cwd();
 const generatedDir = join(repoRoot, "public/evals/fixtures/generated");

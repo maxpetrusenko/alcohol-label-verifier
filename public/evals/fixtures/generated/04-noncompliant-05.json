@@ -7,5 +7,7 @@
   "bottler_address": "San Diego, CA",
   "country_of_origin": "Mexico",
   "is_import": true,
-  "reason": "2000 mL is not an approved TTB standard fill size."
+  "reason": "2000 mL is an authorized distilled spirits standard of fill under current 27 CFR 5.203.",
+  "description": "Current standard-fill control: 2000 mL is authorized under 27 CFR 5.203",
+  "expected_behavior": "PASS current compliance (2000 mL is an authorized distilled spirits standard of fill)"
 }

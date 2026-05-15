@@ -1,4 +1,4 @@
-import { applicationFromFsyedFixture, type FsyedGeneratedFixtureJson } from "./fixtureCases";
+import { applicationFromFsyedFixture, type FsyedGeneratedFixtureJson } from "./applicationImport";
 import { extractionFromPlainText, verifyLabel } from "./rules";
 import type { VerificationDecision } from "./types";
 

@@ -11,6 +11,9 @@ describe("GET /api/health", () => {
   const originalGeminiMaxKey = process.env.GEMINI_API_KEY_MAX;
   const originalGeminiTurkeyKey = process.env.GEMINI_API_KEY_TURKEY;
   const originalGeminiModel = process.env.GEMINI_VISION_MODEL;
+  const originalLangSmithKey = process.env.LANGSMITH_API_KEY;
+  const originalLangSmithProject = process.env.LANGSMITH_PROJECT;
+  const originalLangSmithTracing = process.env.LANGSMITH_TRACING;
 
   beforeEach(() => {
     delete process.env.OPENAI_API_KEY;
@@ -22,6 +25,9 @@ describe("GET /api/health", () => {
     delete process.env.GEMINI_API_KEY_MAX;
     delete process.env.GEMINI_API_KEY_TURKEY;
     delete process.env.GEMINI_VISION_MODEL;
+    delete process.env.LANGSMITH_API_KEY;
+    delete process.env.LANGSMITH_PROJECT;
+    delete process.env.LANGSMITH_TRACING;
   });
 
   afterEach(() => {
@@ -51,6 +57,15 @@ describe("GET /api/health", () => {
 
     if (originalGeminiModel) process.env.GEMINI_VISION_MODEL = originalGeminiModel;
     else delete process.env.GEMINI_VISION_MODEL;
+
+    if (originalLangSmithKey) process.env.LANGSMITH_API_KEY = originalLangSmithKey;
+    else delete process.env.LANGSMITH_API_KEY;
+
+    if (originalLangSmithProject) process.env.LANGSMITH_PROJECT = originalLangSmithProject;
+    else delete process.env.LANGSMITH_PROJECT;
+
+    if (originalLangSmithTracing) process.env.LANGSMITH_TRACING = originalLangSmithTracing;
+    else delete process.env.LANGSMITH_TRACING;
   });
 
   it("reports text-only mode when no default provider key is configured", async () => {
@@ -63,6 +78,11 @@ describe("GET /api/health", () => {
       model: "gemini-2.5-flash-lite",
       endpoint: "generateContent",
       imageDetail: "low",
+    });
+    expect(data.langsmith).toEqual({
+      configured: false,
+      tracingEnabled: false,
+      project: "alcohol-label-verifier",
     });
   });
 
@@ -113,5 +133,20 @@ describe("GET /api/health", () => {
     expect(data.vision.configured).toBe(true);
     expect(data.vision.provider).toBe("gemini");
     expect(JSON.stringify(data)).not.toContain("named-gemini-secret");
+  });
+
+  it("reports LangSmith configuration without exposing the key", async () => {
+    process.env.LANGSMITH_API_KEY = "lsv2-test-secret";
+    process.env.LANGSMITH_PROJECT = "labelcheck-local";
+    process.env.LANGSMITH_TRACING = "true";
+
+    const data = await GET().json();
+
+    expect(data.langsmith).toEqual({
+      configured: true,
+      tracingEnabled: true,
+      project: "labelcheck-local",
+    });
+    expect(JSON.stringify(data)).not.toContain("lsv2-test-secret");
   });
 });

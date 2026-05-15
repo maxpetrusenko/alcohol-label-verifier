@@ -59,6 +59,47 @@ describe("POST /api/verify", () => {
     expect(data.results[1].decision).toBe("rejected");
   });
 
+  it("uses per-label application facts for mixed application batches", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          application,
+          labels: [
+            {
+              labelId: "old-cypress",
+              fileName: "old-cypress.txt",
+              application,
+              text: `Old Cypress Distillery\nKentucky Straight Bourbon Whiskey\n45% Alc./Vol.\n750 mL\nDistilled and bottled by Old Cypress Distillery, Louisville, KY\n${GOVERNMENT_WARNING_TEXT}`,
+            },
+            {
+              labelId: "smoky-hollow",
+              fileName: "02-mismatch-01.txt",
+              application: {
+                brandName: "Wrong Brand Name",
+                classType: "Tennessee Whiskey",
+                alcoholContent: "40% Alc./Vol.",
+                netContents: "750 mL",
+                bottlerAddress: "Smoky Hollow Distillery, Nashville, TN",
+                countryOfOrigin: "United States",
+                beverageKind: "spirits",
+              },
+              text: `Smoky Hollow\nTennessee Whiskey\n40% Alc./Vol.\n750 mL\nDistilled and bottled by Smoky Hollow Distillery, Nashville, TN\n${GOVERNMENT_WARNING_TEXT}`,
+            },
+          ],
+        }),
+      }),
+    );
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.results).toHaveLength(2);
+    expect(data.results[0].decision).toBe("approved");
+    expect(data.results[1].decision).toBe("rejected");
+    expect(data.results[1].checks.find((check: { id: string }) => check.id === "brand-name")).toMatchObject({ status: "fail" });
+  });
+
   it("treats degraded review-photo warning uncertainty as needs review", async () => {
     const response = await POST(
       requestWithLabels([

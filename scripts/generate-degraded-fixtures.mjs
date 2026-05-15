@@ -39,6 +39,8 @@ const INCONSISTENT_SOURCE_IDS = new Set([
   // Copied JSON says Glasgow bottler, image prompt says New York importer.
   // Keep this fixture for source-corpus coverage, but do not use it as degraded-photo ground truth.
   "01-pass-02",
+  // Source corpus marks 1500 mL spirits as non-compliant, but current 27 CFR 5.203 includes 1.5 L.
+  "04-noncompliant-04",
 ]);
 
 const VARIANT_SMOKE_ROWS = [

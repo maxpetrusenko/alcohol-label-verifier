@@ -22,6 +22,7 @@ export const labelInputSchema = z.object({
   mimeType: z.string().optional(),
   dataUrl: z.string().optional(),
   text: z.string().optional(),
+  application: applicationSchema.optional(),
 });
 
 export const apiOptionsSchema = z.object({

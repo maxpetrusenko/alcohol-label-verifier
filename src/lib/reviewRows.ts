@@ -58,15 +58,20 @@ export function reviewRows(result: VerificationResult): ReviewRow[] {
 
 export function coreReviewRows(result: VerificationResult): ReviewRow[] {
   const checksById = new Map(result.checks.map((check) => [check.id, check]));
-  return PRIMARY_CHECK_IDS.flatMap((id) => {
+  const primaryRows = PRIMARY_CHECK_IDS.flatMap((id) => {
     const check = checksById.get(id);
     return check ? [toReviewRow(check, result.extraction)] : [];
   });
+  const primaryIds = new Set(PRIMARY_CHECK_IDS);
+  const blockingSupplementalRows = result.checks
+    .filter((check) => !primaryIds.has(check.id as (typeof PRIMARY_CHECK_IDS)[number]) && check.severity === "blocking")
+    .map((check) => toReviewRow(check, result.extraction));
+  return [...primaryRows, ...blockingSupplementalRows];
 }
 
 export function supplementalReviewRows(result: VerificationResult): ReviewRow[] {
   const primaryIds = new Set(PRIMARY_CHECK_IDS);
   return result.checks
-    .filter((check) => !primaryIds.has(check.id as (typeof PRIMARY_CHECK_IDS)[number]))
+    .filter((check) => !primaryIds.has(check.id as (typeof PRIMARY_CHECK_IDS)[number]) && check.severity !== "blocking")
     .map((check) => toReviewRow(check, result.extraction));
 }

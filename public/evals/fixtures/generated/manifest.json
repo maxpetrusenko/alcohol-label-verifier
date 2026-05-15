@@ -25,8 +25,8 @@
       "class_type": "Scotch Whisky",
       "abv": "40% Alc./Vol.",
       "net_contents": "700 mL",
-      "bottler_name": "Highland Crest Distillers",
-      "bottler_address": "Glasgow, Scotland",
+      "bottler_name": "Highland Crest Imports",
+      "bottler_address": "New York, NY",
       "country_of_origin": "Scotland",
       "is_import": true
     },
@@ -59,8 +59,8 @@
       "class_type": "Blanco Tequila",
       "abv": "40% Alc./Vol.",
       "net_contents": "750 mL",
-      "bottler_name": "Agave Masters",
-      "bottler_address": "Tequila, Jalisco, Mexico",
+      "bottler_name": "Agave Masters Imports",
+      "bottler_address": "Austin, TX",
       "country_of_origin": "Mexico",
       "is_import": true
     },
@@ -127,8 +127,8 @@
       "class_type": "Cognac",
       "abv": "40% Alc./Vol.",
       "net_contents": "750 mL",
-      "bottler_name": "Delacroix Freres",
-      "bottler_address": "Cognac, France",
+      "bottler_name": "Delacroix USA",
+      "bottler_address": "Boston, MA",
       "country_of_origin": "France",
       "is_import": true
     },
@@ -444,7 +444,7 @@
   {
     "id": "03-noncompliant-07",
     "category": 3,
-    "description": "Label non-compliant: non-approved bottle size (250 mL)",
+    "description": "Current standard-fill control: 250 mL is authorized under 27 CFR 5.203",
     "form_data": {
       "brand_name": "Sunset Cove",
       "class_type": "Rum",
@@ -456,7 +456,7 @@
       "is_import": false
     },
     "image_prompt": "Photorealistic small glass bottle with a beach sunset label. Verbatim text to include exactly: 'Sunset Cove', 'Rum', '40% Alc./Vol.', '250 mL', 'Distilled and bottled by Cove Distillers, Honolulu, HI'. Include a separate paragraph in small print: 'GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.'",
-    "expected_behavior": "FAIL compliance (Net contents 250 mL not approved)"
+    "expected_behavior": "PASS current compliance (250 mL is an authorized distilled spirits standard of fill)"
   },
   {
     "id": "03-noncompliant-08",
@@ -566,7 +566,7 @@
   {
     "id": "04-noncompliant-04",
     "category": 4,
-    "description": "Non-compliant matching JSON: bottle size 1500 mL",
+    "description": "Current standard-fill control: 1500 mL is authorized under 27 CFR 5.203",
     "form_data": {
       "brand_name": "Alpine Peak",
       "class_type": "Gin",
@@ -576,15 +576,15 @@
       "bottler_address": "Denver, CO",
       "country_of_origin": "",
       "is_import": false,
-      "reason": "1500 mL is not an approved TTB standard fill size (1750 mL is approved, not 1500)."
+      "reason": "1500 mL is an authorized distilled spirits standard of fill under current 27 CFR 5.203."
     },
     "image_prompt": "Photorealistic very large glass bottle with a snowy mountain label. Verbatim text to include exactly: 'Alpine Peak', 'Gin', '40% Alc./Vol.', '1500 mL', 'Distilled and bottled by Alpine Spirits, Denver, CO'. Include a separate paragraph in small print: 'GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.'",
-    "expected_behavior": "FAIL compliance with reason provided"
+    "expected_behavior": "PASS current compliance (1500 mL is an authorized distilled spirits standard of fill)"
   },
   {
     "id": "04-noncompliant-05",
     "category": 4,
-    "description": "Non-compliant matching JSON: bottle size 2000 mL",
+    "description": "Current standard-fill control: 2000 mL is authorized under 27 CFR 5.203",
     "form_data": {
       "brand_name": "Fiesta Blue",
       "class_type": "Blanco Tequila",
@@ -594,10 +594,10 @@
       "bottler_address": "San Diego, CA",
       "country_of_origin": "Mexico",
       "is_import": true,
-      "reason": "2000 mL is not an approved TTB standard fill size."
+      "reason": "2000 mL is an authorized distilled spirits standard of fill under current 27 CFR 5.203."
     },
     "image_prompt": "Photorealistic massive glass bottle with a vibrant blue and silver label. Verbatim text to include exactly: 'Fiesta Blue', 'Blanco Tequila', '40% Alc./Vol.', '2000 mL', 'Imported by Fiesta Imports, San Diego, CA', 'Product of Mexico'. Include a separate paragraph in small print: 'GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.'",
-    "expected_behavior": "FAIL compliance with reason provided"
+    "expected_behavior": "PASS current compliance (2000 mL is an authorized distilled spirits standard of fill)"
   },
   {
     "id": "04-noncompliant-06",

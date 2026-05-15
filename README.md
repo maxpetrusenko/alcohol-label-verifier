@@ -63,6 +63,9 @@ GEMINI_API_KEY=your_key_here
 GEMINI_API_KEY_MAX=
 GEMINI_API_KEY_TURKEY=
 GEMINI_VISION_MODEL=gemini-2.5-flash-lite
+LANGSMITH_API_KEY=
+LANGSMITH_TRACING=false
+LANGSMITH_PROJECT=alcohol-label-verifier
 VISION_MAX_OUTPUT_TOKENS=450
 OPENAI_API_KEY=
 OPENAI_VISION_MODEL=gpt-4.1-nano
@@ -72,7 +75,8 @@ OPENAI_VISION_MAX_OUTPUT_TOKENS=450
 ```
 
 If the configured provider key is missing, the app runs in text-only demo mode using the OCR/text fallback box. Gemini is the default provider; set one of `GEMINI_API_KEY`, `GEMINI_API_KEY_MAX`, `GEMINI_API_KEY_TURKEY`, or `GOOGLE_API_KEY`. Set `VISION_PROVIDER=openai` to use OpenAI instead.
-Check `/api/health` to confirm whether the running local or production server sees the key; it reports `vision.configured`, `vision.provider`, and the selected model without exposing secrets.
+Set `LANGSMITH_API_KEY` and `LANGSMITH_TRACING=true` to trace sanitized vision extraction calls in LangSmith. Traces record provider/model/status and file metadata, not raw base64 label images or provider keys.
+Check `/api/health` to confirm whether the running local or production server sees the key; it reports `vision.configured`, `vision.provider`, the selected model, and LangSmith tracing status without exposing secrets.
 The browser compresses uploaded/camera images to a bounded JPEG before verification so normal vision calls stay fast enough for reviewer use.
 
 ## Test and build
@@ -140,9 +144,10 @@ This prototype does not prove final label compliance. It is a review assistant f
 
 It does not verify:
 
-- health-warning font size, boldness, contrast, continuous placement, or separation from other label text
-- same-field-of-vision layout requirements
+- health-warning font size, boldness, contrast, continuous placement, or separation from other label text; the statutory text itself is checked with exact capitalization and punctuation
+- same-field-of-vision layout requirements beyond review-only flags when OCR/notes indicate required facts may be split across panels
 - exact visual placement of brand, class/type, alcohol content, net contents, or warning text
+- ingredient/source-fact disclosures beyond deterministic text triggers for sulfites, FD&C Yellow #5, carmine/cochineal, and neutral-spirits source commodity
 - full wine or beer/malt commodity rule coverage beyond the common field checks and alcohol-content exception handling
 - final image readability beyond heuristic low-confidence and degraded-image gates
 - target-bottle disambiguation in photos with many bottles, shelves, racks, overlapping products, or multiple readable labels

@@ -23,7 +23,7 @@ describe("label verification rules", () => {
     expect(result.decision).toBe("approved");
     expect(result.checks.every((check) => check.status === "pass")).toBe(true);
     expect(result.checks.every((check) => check.requirementRef && check.severity)).toBe(true);
-    expect(result.workflow.comparisonSummary).toContain("7 of 7");
+    expect(result.workflow.comparisonSummary).toContain("6 of 6");
     expect(result.nextSteps).toEqual(["No deterministic blockers found. Agent may approve if artwork and source record context look complete."]);
   });
 
@@ -37,6 +37,18 @@ describe("label verification rules", () => {
     expect(result.nextSteps[0]).toContain("Resolve blocking mismatch");
   });
 
+  it("rejects a partial class/type designation", () => {
+    const extraction = extractionFromPlainText(`STONE'S THROW\nStraight Bourbon Whiskey\n45% Alc./Vol. (90 Proof)\n750 mL\nBottled by Stone's Throw Distilling, Frankfort, KY\nProduct of United States\n${GOVERNMENT_WARNING_TEXT}`);
+    const result = verifyLabel(application, extraction, "partial-class-type");
+
+    expect(result.decision).toBe("rejected");
+    expect(result.checks.find((check) => check.id === "class-type")).toMatchObject({
+      status: "fail",
+      expected: "Kentucky Straight Bourbon Whiskey",
+      observed: "Straight Bourbon Whiskey",
+    });
+  });
+
   it("flags non-exact warning text for review or rejection", () => {
     const extraction = extractionFromPlainText("STONE'S THROW\nKentucky Straight Bourbon Whiskey\n45% Alc./Vol. (90 Proof)\n750 mL\nGovernment Warning: drink responsibly");
     const result = verifyLabel(application, extraction, "bad-warning");
@@ -44,13 +56,22 @@ describe("label verification rules", () => {
     expect(result.checks.find((check) => check.id === "government-warning")?.status).toBe("fail");
   });
 
-  it("routes OCR punctuation uncertainty on the warning to review instead of rejection", () => {
+  it("rejects warning punctuation drift instead of normalizing it away", () => {
     const warningWithDroppedPeriod = GOVERNMENT_WARNING_TEXT.replace("birth defects. (2)", "birth defects (2)");
     const extraction = extractionFromPlainText(`STONE'S THROW\nKentucky Straight Bourbon Whiskey\n45% Alc./Vol. (90 Proof)\n750 mL\nBottled by Stone's Throw Distilling, Frankfort, KY\nProduct of United States\n${warningWithDroppedPeriod}`);
     const result = verifyLabel(application, extraction, "warning-punctuation-ocr");
 
-    expect(result.decision).toBe("needs_review");
-    expect(result.checks.find((check) => check.id === "government-warning")?.status).toBe("needs_review");
+    expect(result.decision).toBe("rejected");
+    expect(result.checks.find((check) => check.id === "government-warning")?.status).toBe("fail");
+  });
+
+  it("rejects warning capitalization drift instead of case-folding it", () => {
+    const titleCaseWarning = GOVERNMENT_WARNING_TEXT.replace("GOVERNMENT WARNING", "Government Warning");
+    const extraction = extractionFromPlainText(`STONE'S THROW\nKentucky Straight Bourbon Whiskey\n45% Alc./Vol. (90 Proof)\n750 mL\nBottled by Stone's Throw Distilling, Frankfort, KY\nProduct of United States\n${titleCaseWarning}`);
+    const result = verifyLabel(application, extraction, "warning-title-case");
+
+    expect(result.decision).toBe("rejected");
+    expect(result.checks.find((check) => check.id === "government-warning")?.status).toBe("fail");
   });
 
   it("routes degraded-photo missing warning extraction to review when label facts are visible", () => {
@@ -140,12 +161,24 @@ describe("label verification rules", () => {
     });
   });
 
-  it("rejects unsupported open-ended beverage profiles", () => {
-    const extraction = extractionFromPlainText(`STONE'S THROW\nKentucky Straight Bourbon Whiskey\n45% Alc./Vol. (90 Proof)\n750 mL\nBottled by Stone's Throw Distilling, Frankfort, KY\nProduct of United States\n${GOVERNMENT_WARNING_TEXT}`);
-    const result = verifyLabel({ ...application, beverageKind: "other" }, extraction, "other-selected");
+  it("infers the spirits profile instead of showing an unsupported other profile", () => {
+    const extraction = extractionFromPlainText(`Bella Notte\nAmaretto\n28% Alc./Vol.\n750 mL\nProduced and bottled by Bella Spirits, New York, NY\n${GOVERNMENT_WARNING_TEXT}`);
+    const result = verifyLabel(
+      {
+        brandName: "Bella Notte",
+        classType: "Amaretto",
+        alcoholContent: "28% Alc./Vol.",
+        netContents: "750 mL",
+        bottlerAddress: "Bella Spirits, New York, NY",
+        countryOfOrigin: "United States",
+        beverageKind: "other",
+      },
+      extraction,
+      "other-selected-amaretto",
+    );
 
-    expect(result.decision).toBe("rejected");
-    expect(result.checks.find((check) => check.id === "supported-profile")?.status).toBe("fail");
+    expect(result.checks.find((check) => check.id === "supported-profile")).toBeUndefined();
+    expect(result.checks.find((check) => check.id === "class-type")).toMatchObject({ status: "pass" });
   });
 
   it("requires country of origin when the application is marked imported", () => {
@@ -187,6 +220,28 @@ describe("label verification rules", () => {
     });
   });
 
+  it("rejects imported products without an imported-by or imported-for statement", () => {
+    const result = verifyLabel(
+      {
+        ...application,
+        brandName: "Sol de Jalisco",
+        classType: "Blanco Tequila",
+        alcoholContent: "40% Alc./Vol.",
+        bottlerAddress: "Casa Jalisco Imports, Denver, CO",
+        countryOfOrigin: "Mexico",
+        imported: true,
+      },
+      extractionFromPlainText(`Sol de Jalisco\nBlanco Tequila\n40% Alc./Vol.\n750 mL\nBottled by Casa Jalisco, Guadalajara, Mexico\nProduct of Mexico\n${GOVERNMENT_WARNING_TEXT}`),
+      "importer-missing-phrase",
+    );
+
+    expect(result.decision).toBe("rejected");
+    expect(result.checks.find((check) => check.id === "importer-statement")).toMatchObject({
+      status: "fail",
+      expected: "Imported by or Imported for plus U.S. importer name and address",
+    });
+  });
+
   it("rejects bottler or producer address mismatches separately from import country", () => {
     const result = verifyLabel(
       { ...application, brandName: "Old Cypress Distillery", bottlerAddress: "Old Tom Distillery, Frankfort, KY", countryOfOrigin: "" },
@@ -199,10 +254,21 @@ describe("label verification rules", () => {
       status: "fail",
       observed: "Old Cypress Distillery, Louisville, KY",
     });
+    expect(result.checks.find((check) => check.id === "country-origin")).toBeUndefined();
+  });
+
+  it("fails imported country of origin when the selected country is not found", () => {
+    const result = verifyLabel(
+      { ...application, countryOfOrigin: "France" },
+      extractionFromPlainText(`FROSTWEAVER\nVodka\n40% Alc./Vol.\n1000 ml\nProduced and bottled by Frostweaver Spirits, Denver, CO\n${GOVERNMENT_WARNING_TEXT}`),
+      "missing-import-origin",
+    );
+
+    expect(result.decision).toBe("rejected");
     expect(result.checks.find((check) => check.id === "country-origin")).toMatchObject({
-      status: "not_applicable",
-      expected: "Application import status is unchecked, so country of origin is not required",
-      observed: "N/A: not evaluated from photo",
+      status: "fail",
+      expected: "France",
+      observed: "US bottler/importer address only: Frostweaver Spirits, Denver, CO",
     });
   });
 
@@ -293,7 +359,7 @@ describe("label verification rules", () => {
 
     const result = verifyLabel({ ...application, countryOfOrigin: "" }, extraction, "inferred-structured-fields");
 
-    expect(result.decision).toBe("needs_review");
+    expect(result.decision).toBe("rejected");
     expect(result.checks.find((check) => check.id === "extraction-grounding")).toMatchObject({
       status: "needs_review",
       observed: expect.stringContaining("net contents"),
@@ -396,7 +462,137 @@ Government Warning: (1) According to the Surgeon General, women should not drink
     );
 
     expect(result.decision).toBe("rejected");
-    expect(result.checks.find((check) => check.id === "approved-bottle-size")?.status).toBe("fail");
+    expect(result.checks.find((check) => check.id === "approved-bottle-size")).toBeUndefined();
+    expect(result.checks.find((check) => check.id === "net-contents")).toMatchObject({
+      status: "fail",
+      expected: "800 mL",
+      observed: "800 mL",
+      rationale: "The label net contents match the application, but the amount is not an authorized distilled spirits standard of fill.",
+    });
+  });
+
+  it("accepts currently authorized distilled spirits bottle sizes", () => {
+    const extraction = extractionFromPlainText(`Alpine Peak\nGin\n40% Alc./Vol.\n1500 mL\nProduced and bottled by Alpine Spirits, Denver, CO\n${GOVERNMENT_WARNING_TEXT}`);
+
+    const result = verifyLabel(
+      {
+        brandName: "Alpine Peak",
+        classType: "Gin",
+        alcoholContent: "40% Alc./Vol.",
+        netContents: "1500 mL",
+        bottlerAddress: "Alpine Spirits, Denver, CO",
+        beverageKind: "spirits",
+      },
+      extraction,
+      "current-standard-fill",
+    );
+
+    expect(result.checks.find((check) => check.id === "net-contents")?.status).toBe("pass");
+  });
+
+  it("rejects proof-only alcohol content for distilled spirits", () => {
+    const result = verifyLabel(
+      { ...application, alcoholContent: "45% Alc./Vol. (90 Proof)", countryOfOrigin: "" },
+      extractionFromPlainText(`STONE'S THROW\nKentucky Straight Bourbon Whiskey\n90 Proof\n750 mL\nBottled by Stone's Throw Distilling, Frankfort, KY\n${GOVERNMENT_WARNING_TEXT}`),
+      "proof-only",
+    );
+
+    expect(result.decision).toBe("rejected");
+    expect(result.checks.find((check) => check.id === "alcohol-format")).toMatchObject({
+      status: "fail",
+      observed: "90 Proof",
+    });
+  });
+
+  it("rejects young whisky source facts without an age statement", () => {
+    const result = verifyLabel(
+      { ...application, classType: "Whiskey", agedYears: 2, countryOfOrigin: "" },
+      extractionFromPlainText(`STONE'S THROW\nWhiskey\n45% Alc./Vol. (90 Proof)\n750 mL\nBottled by Stone's Throw Distilling, Frankfort, KY\n${GOVERNMENT_WARNING_TEXT}`),
+      "young-whiskey-no-age",
+    );
+
+    expect(result.decision).toBe("rejected");
+    expect(result.checks.find((check) => check.id === "age-statement")?.status).toBe("fail");
+  });
+
+  it("rejects name/address lines without a standard attribution phrase", () => {
+    const extraction = {
+      ...extractionFromPlainText(`STONE'S THROW\nKentucky Straight Bourbon Whiskey\n45% Alc./Vol. (90 Proof)\n750 mL\nStone's Throw Distilling, Frankfort, KY\n${GOVERNMENT_WARNING_TEXT}`),
+      bottlerAddress: "Stone's Throw Distilling, Frankfort, KY",
+    };
+    const result = verifyLabel({ ...application, countryOfOrigin: "" }, extraction, "missing-name-address-phrase");
+
+    expect(result.decision).toBe("rejected");
+    expect(result.checks.find((check) => check.id === "name-address-phrase")?.status).toBe("fail");
+  });
+
+  it("flags mandatory facts split across label panels for review", () => {
+    const extraction = {
+      ...extractionFromPlainText(`STONE'S THROW\nKentucky Straight Bourbon Whiskey\n45% Alc./Vol. (90 Proof)\n750 mL\nBottled by Stone's Throw Distilling, Frankfort, KY\nProduct of United States\n${GOVERNMENT_WARNING_TEXT}`),
+      notes: ["Brand and class appear on the front panel; alcohol and net contents appear on a separate back panel."],
+    };
+    const result = verifyLabel(application, extraction, "split-panels");
+
+    expect(result.decision).toBe("needs_review");
+    expect(result.checks.find((check) => check.id === "same-field-of-vision")?.status).toBe("needs_review");
+  });
+
+  it("does not invent class/type conflicts when the extracted designation matches", () => {
+    const result = verifyLabel(
+      {
+        brandName: "Frostweaver",
+        classType: "Vodka",
+        alcoholContent: "40% Alc./Vol.",
+        netContents: "750 mL",
+        bottlerAddress: "Frostweaver Spirits, Denver, CO",
+        beverageKind: "spirits",
+      },
+      extractionFromPlainText(`Frostweaver\nVodka\nGin-inspired botanical spirit\n40% Alc./Vol.\n750 mL\nProduced and bottled by Frostweaver Spirits, Denver, CO\n${GOVERNMENT_WARNING_TEXT}`),
+      "conflicting-class-terms",
+    );
+
+    expect(result.checks.find((check) => check.id === "class-type")).toMatchObject({ status: "pass" });
+    expect(result.checks.find((check) => check.id === "class-type-conflict")).toBeUndefined();
+  });
+
+  it("rejects neutral spirits without a source commodity statement", () => {
+    const result = verifyLabel(
+      {
+        brandName: "Clearfield",
+        classType: "Neutral Spirits",
+        alcoholContent: "40% Alc./Vol.",
+        netContents: "750 mL",
+        bottlerAddress: "Clearfield Spirits, Denver, CO",
+        beverageKind: "spirits",
+      },
+      extractionFromPlainText(`Clearfield\nNeutral Spirits\n40% Alc./Vol.\n750 mL\nProduced and bottled by Clearfield Spirits, Denver, CO\n${GOVERNMENT_WARNING_TEXT}`),
+      "neutral-spirits-no-source",
+    );
+
+    expect(result.decision).toBe("rejected");
+    expect(result.checks.find((check) => check.id === "neutral-spirits-source")?.status).toBe("fail");
+  });
+
+  it("rejects source evidence for sulfites without the required label disclosure", () => {
+    const extraction = {
+      ...extractionFromPlainText(`Stone's Throw\nRed Wine\n750 mL\nBottled by Stone's Throw Cellars, Napa, CA\nProduct of United States\n${GOVERNMENT_WARNING_TEXT}`),
+      notes: ["Application lab facts indicate SO2 >= 10 ppm."],
+    };
+    const result = verifyLabel(
+      {
+        brandName: "Stone's Throw",
+        classType: "Red Wine",
+        netContents: "750 mL",
+        bottlerAddress: "Stone's Throw Cellars, Napa, CA",
+        countryOfOrigin: "United States",
+        beverageKind: "wine",
+      },
+      extraction,
+      "wine-sulfites-missing",
+    );
+
+    expect(result.decision).toBe("rejected");
+    expect(result.checks.find((check) => check.id === "sulfites-disclosure")?.status).toBe("fail");
   });
 
   it("rejects missing composition statements for liqueurs", () => {
@@ -453,7 +649,37 @@ Government Warning: (1) According to the Surgeon General, women should not drink
     );
 
     expect(result.decision).toBe("rejected");
-    expect(result.checks.find((check) => check.id === "approved-class-type")?.status).toBe("fail");
+    expect(result.checks.find((check) => check.id === "approved-class-type")).toBeUndefined();
+    expect(result.checks.find((check) => check.id === "class-type")).toMatchObject({
+      status: "fail",
+      observed: "Premium Reserve",
+      rationale: "The label text matches the application, but that text appears to be a fanciful name rather than an approved distilled spirits class/type.",
+    });
+  });
+
+  it("shows the supplied fanciful class as evidence when extraction misses class/type", () => {
+    const extraction = {
+      ...extractionFromPlainText(`Summit\n40% Alc./Vol.\n750 mL\nProduced and bottled by Summit Distilling, Denver, CO\n${GOVERNMENT_WARNING_TEXT}`),
+      classType: undefined,
+    };
+    const result = verifyLabel(
+      {
+        brandName: "Summit",
+        classType: "Mountain Ice",
+        alcoholContent: "40% Alc./Vol.",
+        netContents: "750 mL",
+        bottlerAddress: "Summit Distilling, Denver, CO",
+        beverageKind: "spirits",
+      },
+      extraction,
+      "fanciful-class-missed-extraction",
+    );
+
+    expect(result.checks.find((check) => check.id === "class-type")).toMatchObject({
+      status: "fail",
+      expected: "Mountain Ice",
+      observed: "Mountain Ice",
+    });
   });
 
   it("rejects non-standard production statements", () => {

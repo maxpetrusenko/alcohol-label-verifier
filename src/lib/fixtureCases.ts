@@ -1,20 +1,7 @@
-import type { ApplicationData, BeverageKind, VerificationDecision } from "./types";
+import { applicationFromFsyedFixture, type FsyedGeneratedFixtureJson } from "./applicationImport";
+import type { ApplicationData, VerificationDecision } from "./types";
 
 const GENERATED_FIXTURE_PUBLIC_PATH = "/evals/fixtures/generated";
-
-export type FsyedGeneratedFixtureJson = {
-  brand_name: string;
-  class_type: string;
-  abv: string;
-  net_contents: string;
-  bottler_name: string;
-  bottler_address: string;
-  country_of_origin: string;
-  is_import: boolean;
-  description?: string;
-  expected_behavior?: string;
-  reason?: string;
-};
 
 export type FixtureCategory = "pass" | "mismatch" | "label_noncompliant" | "matching_noncompliant" | "warning_bad" | "warning_sneaky";
 
@@ -36,35 +23,6 @@ export type FixtureCase = {
   };
   caveat?: string;
 };
-
-function beverageKindFromClassType(classType: string): BeverageKind {
-  const normalized = classType.toLowerCase();
-  if (/\b(beer|lager|ale|stout|porter)\b/u.test(normalized)) return "beer";
-  if (/\b(wine|cider|mead|sake)\b/u.test(normalized)) return "wine";
-  if (
-    /\b(whiskey|whisky|bourbon|rye|vodka|gin|rum|tequila|mezcal|liqueur|cognac|brandy|scotch|spirits?)\b/u.test(
-      normalized,
-    )
-  ) {
-    return "spirits";
-  }
-  return "other";
-}
-
-export function applicationFromFsyedFixture(fixture: FsyedGeneratedFixtureJson): ApplicationData {
-  const bottlerAddress = [fixture.bottler_name, fixture.bottler_address].filter(Boolean).join(", ");
-
-  return {
-    brandName: fixture.brand_name,
-    classType: fixture.class_type,
-    alcoholContent: fixture.abv,
-    netContents: fixture.net_contents,
-    ...(bottlerAddress ? { bottlerAddress } : {}),
-    ...(fixture.country_of_origin ? { countryOfOrigin: fixture.country_of_origin } : {}),
-    beverageKind: beverageKindFromClassType(fixture.class_type),
-    imported: fixture.is_import,
-  };
-}
 
 function fixturePaths(id: string) {
   return {
@@ -145,8 +103,8 @@ ${GOVERNMENT_WARNING_TEXT}`,
       net_contents: "700 mL",
       bottler_name: "Highland Crest Imports",
       bottler_address: "New York, NY",
-      country_of_origin: "USA",
-      is_import: false,
+      country_of_origin: "Scotland",
+      is_import: true,
     },
     "approved",
     `Highland Crest
@@ -156,7 +114,6 @@ Scotch Whisky
 Imported by Highland Crest Imports, New York, NY
 Product of Scotland
 ${GOVERNMENT_WARNING_TEXT}`,
-    "Copied per-case JSON conflicts with upstream manifest prompt, which describes Product of Scotland.",
   ),
   defineFixtureCase(
     "01-pass-03",

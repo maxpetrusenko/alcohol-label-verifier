@@ -16,7 +16,7 @@ Scope of this deployment: **distilled spirits only**. Wine and malt beverages ar
 
 The compliance engine surfaces advisories for four TTB rule areas:
 
-- Bottle size: standards of fill under 27 CFR 5.47.
+- Bottle size: standards of fill under 27 CFR 5.203.
 - State of distillation: origin disclosure for straight designations under 27 CFR 5.36.
 - Statement of composition: required for liqueurs, cordials, and specialty or flavored products under 27 CFR 5.39.
 - Non-standard production statements: terms like small batch, handcrafted, estate under 27 CFR 5.36.
