@@ -1,3 +1,4 @@
+import { withBraintrustTrace } from "./braintrust";
 import { withLangSmithTrace, type VisionTraceInput } from "./langsmith";
 import { extractionFromPlainText } from "./rules";
 import type { LabelExtraction } from "./types";
@@ -348,7 +349,18 @@ Set governmentWarning only to the exact visible warning statement, including the
 
   const { response, readText } = await withLangSmithTrace(
     traceInputForLabel(label, provider),
-    () => (provider === "gemini" ? callGeminiVision(apiKey, prompt, dataUrl) : callOpenAiVision(apiKey, prompt, dataUrl)),
+    () =>
+      withBraintrustTrace(
+        traceInputForLabel(label, provider),
+        () => (provider === "gemini" ? callGeminiVision(apiKey, prompt, dataUrl) : callOpenAiVision(apiKey, prompt, dataUrl)),
+        ({ response }) => ({
+          provider,
+          model: selectedVisionModel(provider),
+          endpoint: selectedVisionEndpoint(provider),
+          status: response.status,
+          ok: response.ok,
+        }),
+      ),
     ({ response }) => ({
       provider,
       model: selectedVisionModel(provider),

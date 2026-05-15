@@ -10,10 +10,23 @@ describe("extractLabel", () => {
   const originalGeminiTurkeyKey = process.env.GEMINI_API_KEY_TURKEY;
   const originalProvider = process.env.VISION_PROVIDER;
   const originalLangSmithKey = process.env.LANGSMITH_API_KEY;
+  const originalLangSmithEndpoint = process.env.LANGSMITH_ENDPOINT;
+  const originalLangSmithProject = process.env.LANGSMITH_PROJECT;
   const originalLangSmithTracing = process.env.LANGSMITH_TRACING;
+  const originalLangChainKey = process.env.LANGCHAIN_API_KEY;
+  const originalLangChainProject = process.env.LANGCHAIN_PROJECT;
   const originalLangChainTracing = process.env.LANGCHAIN_TRACING_V2;
   const originalAppLangSmithKey = process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_API_KEY;
+  const originalAppLangSmithEndpoint = process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_ENDPOINT;
+  const originalAppLangSmithProject = process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_PROJECT;
   const originalAppLangSmithTracing = process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_TRACING;
+  const originalBraintrustKey = process.env.BRAINTRUST_API_KEY;
+  const originalBraintrustProject = process.env.BRAINTRUST_PROJECT;
+  const originalBraintrustTracing = process.env.BRAINTRUST_TRACING;
+  const originalAppBraintrustKey = process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_API_KEY;
+  const originalAppBraintrustAppUrl = process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_APP_URL;
+  const originalAppBraintrustProject = process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_PROJECT;
+  const originalAppBraintrustTracing = process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_TRACING;
 
   beforeEach(() => {
     process.env.OPENAI_API_KEY = "test-key";
@@ -23,10 +36,23 @@ describe("extractLabel", () => {
     delete process.env.GEMINI_API_KEY_MAX;
     delete process.env.GEMINI_API_KEY_TURKEY;
     delete process.env.LANGSMITH_API_KEY;
+    delete process.env.LANGSMITH_ENDPOINT;
+    delete process.env.LANGSMITH_PROJECT;
     delete process.env.LANGSMITH_TRACING;
+    delete process.env.LANGCHAIN_API_KEY;
+    delete process.env.LANGCHAIN_PROJECT;
     delete process.env.LANGCHAIN_TRACING_V2;
     delete process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_API_KEY;
+    delete process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_ENDPOINT;
+    delete process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_PROJECT;
     delete process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_TRACING;
+    delete process.env.BRAINTRUST_API_KEY;
+    delete process.env.BRAINTRUST_PROJECT;
+    delete process.env.BRAINTRUST_TRACING;
+    delete process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_API_KEY;
+    delete process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_APP_URL;
+    delete process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_PROJECT;
+    delete process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_TRACING;
   });
 
   afterEach(() => {
@@ -45,14 +71,40 @@ describe("extractLabel", () => {
     else delete process.env.VISION_PROVIDER;
     if (originalLangSmithKey) process.env.LANGSMITH_API_KEY = originalLangSmithKey;
     else delete process.env.LANGSMITH_API_KEY;
+    if (originalLangSmithEndpoint) process.env.LANGSMITH_ENDPOINT = originalLangSmithEndpoint;
+    else delete process.env.LANGSMITH_ENDPOINT;
+    if (originalLangSmithProject) process.env.LANGSMITH_PROJECT = originalLangSmithProject;
+    else delete process.env.LANGSMITH_PROJECT;
     if (originalLangSmithTracing) process.env.LANGSMITH_TRACING = originalLangSmithTracing;
     else delete process.env.LANGSMITH_TRACING;
+    if (originalLangChainKey) process.env.LANGCHAIN_API_KEY = originalLangChainKey;
+    else delete process.env.LANGCHAIN_API_KEY;
+    if (originalLangChainProject) process.env.LANGCHAIN_PROJECT = originalLangChainProject;
+    else delete process.env.LANGCHAIN_PROJECT;
     if (originalLangChainTracing) process.env.LANGCHAIN_TRACING_V2 = originalLangChainTracing;
     else delete process.env.LANGCHAIN_TRACING_V2;
     if (originalAppLangSmithKey) process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_API_KEY = originalAppLangSmithKey;
     else delete process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_API_KEY;
+    if (originalAppLangSmithEndpoint) process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_ENDPOINT = originalAppLangSmithEndpoint;
+    else delete process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_ENDPOINT;
+    if (originalAppLangSmithProject) process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_PROJECT = originalAppLangSmithProject;
+    else delete process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_PROJECT;
     if (originalAppLangSmithTracing) process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_TRACING = originalAppLangSmithTracing;
     else delete process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_TRACING;
+    if (originalBraintrustKey) process.env.BRAINTRUST_API_KEY = originalBraintrustKey;
+    else delete process.env.BRAINTRUST_API_KEY;
+    if (originalBraintrustProject) process.env.BRAINTRUST_PROJECT = originalBraintrustProject;
+    else delete process.env.BRAINTRUST_PROJECT;
+    if (originalBraintrustTracing) process.env.BRAINTRUST_TRACING = originalBraintrustTracing;
+    else delete process.env.BRAINTRUST_TRACING;
+    if (originalAppBraintrustKey) process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_API_KEY = originalAppBraintrustKey;
+    else delete process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_API_KEY;
+    if (originalAppBraintrustAppUrl) process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_APP_URL = originalAppBraintrustAppUrl;
+    else delete process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_APP_URL;
+    if (originalAppBraintrustProject) process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_PROJECT = originalAppBraintrustProject;
+    else delete process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_PROJECT;
+    if (originalAppBraintrustTracing) process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_TRACING = originalAppBraintrustTracing;
+    else delete process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_TRACING;
   });
 
   it("normalizes provider confidence and common warning OCR typos", async () => {
@@ -133,6 +185,81 @@ describe("extractLabel", () => {
     });
 
     expect(extraction.governmentWarning).toBe(titleCaseWarning);
+  });
+
+  it("wraps provider vision calls in a LangSmith trace when tracing is enabled", async () => {
+    process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_API_KEY = "lsv2-test-secret";
+    process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_PROJECT = "alcohol-label-verifier-test";
+    process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_TRACING = "true";
+    process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_API_KEY = "bt-test-secret";
+    process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_APP_URL = "https://braintrust-app.test";
+    process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_PROJECT = "alcohol-label-verifier-test";
+    process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_TRACING = "true";
+    process.env.LANGSMITH_ENDPOINT = "https://langsmith.test";
+
+    const fetchMock = vi.fn(async (url: string | URL | Request) => {
+      const href = typeof url === "string" ? url : url instanceof URL ? url.href : url.url;
+      if (href.startsWith("https://langsmith.test")) {
+        return new Response(JSON.stringify({}), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+      if (href.endsWith("/api/apikey/login")) {
+        return new Response(
+          JSON.stringify({ org_info: [{ id: "org-id", name: "org-name", api_url: "https://braintrust-api.test" }] }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      if (href.endsWith("/api/project/register")) {
+        return new Response(
+          JSON.stringify({ project: { id: "project-id", name: "alcohol-label-verifier-test" }, project_url: "https://braintrust-app.test/app/org-name/p/project-id" }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      if (href.startsWith("https://braintrust-app.test") || href.startsWith("https://braintrust-api.test")) {
+        return new Response(JSON.stringify({}), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+
+      return new Response(
+        JSON.stringify({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  labelText: `Old Cypress Distillery\nKentucky Straight Bourbon Whiskey\n45% Alc./Vol.\n750 mL\nOld Cypress Distillery, Louisville, KY\n${GOVERNMENT_WARNING_TEXT}`,
+                  brandName: "Old Cypress Distillery",
+                  classType: "Kentucky Straight Bourbon Whiskey",
+                  alcoholContent: "45% Alc./Vol.",
+                  netContents: "750 mL",
+                  governmentWarning: GOVERNMENT_WARNING_TEXT,
+                  bottlerAddress: "Old Cypress Distillery, Louisville, KY",
+                  countryOfOrigin: "",
+                  confidence: 0.95,
+                  notes: [],
+                }),
+              },
+            },
+          ],
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await extractLabel({
+      fileName: "traced-label.jpg",
+      mimeType: "image/jpeg",
+      dataUrl: "data:image/jpeg;base64,test",
+    });
+
+    const calls = fetchMock.mock.calls.map(([url]) => (typeof url === "string" ? url : url instanceof URL ? url.href : url.url));
+    expect(calls.some((url) => url.includes("api.openai.com/v1/chat/completions"))).toBe(true);
+    expect(calls.some((url) => url.startsWith("https://langsmith.test/runs"))).toBe(true);
+    expect(calls.some((url) => url.startsWith("https://braintrust-api.test/logs3"))).toBe(true);
+    expect(process.env.LANGSMITH_API_KEY).toBe("lsv2-test-secret");
+    expect(process.env.LANGCHAIN_API_KEY).toBe("lsv2-test-secret");
+    expect(process.env.LANGSMITH_PROJECT).toBe("alcohol-label-verifier-test");
+    expect(process.env.LANGCHAIN_PROJECT).toBe("alcohol-label-verifier-test");
+    expect(process.env.BRAINTRUST_API_KEY).toBe("bt-test-secret");
+    expect(process.env.BRAINTRUST_PROJECT).toBe("alcohol-label-verifier-test");
   });
 
   it("can call the Gemini vision provider when configured", async () => {

@@ -64,11 +64,21 @@ GEMINI_API_KEY_MAX=
 GEMINI_API_KEY_TURKEY=
 GEMINI_VISION_MODEL=gemini-2.5-flash-lite
 LANGSMITH_API_KEY=
+LANGSMITH_ENDPOINT=
 LANGSMITH_TRACING=false
 LANGSMITH_PROJECT=alcohol-label-verifier
 ALCOHOL_LABEL_VERIFIER_LANGSMITH_API_KEY=
+ALCOHOL_LABEL_VERIFIER_LANGSMITH_ENDPOINT=
 ALCOHOL_LABEL_VERIFIER_LANGSMITH_TRACING=false
 ALCOHOL_LABEL_VERIFIER_LANGSMITH_PROJECT=alcohol-label-verifier
+BRAINTRUST_API_KEY=
+BRAINTRUST_APP_URL=
+BRAINTRUST_TRACING=true
+BRAINTRUST_PROJECT=alcohol-label-verifier
+ALCOHOL_LABEL_VERIFIER_BRAINTRUST_API_KEY=
+ALCOHOL_LABEL_VERIFIER_BRAINTRUST_APP_URL=
+ALCOHOL_LABEL_VERIFIER_BRAINTRUST_TRACING=true
+ALCOHOL_LABEL_VERIFIER_BRAINTRUST_PROJECT=alcohol-label-verifier
 VISION_MAX_OUTPUT_TOKENS=450
 OPENAI_API_KEY=
 OPENAI_VISION_MODEL=gpt-4.1-nano
@@ -79,7 +89,8 @@ OPENAI_VISION_MAX_OUTPUT_TOKENS=450
 
 If the configured provider key is missing, the app runs in text-only demo mode using the OCR/text fallback box. Gemini is the default provider; set one of `GEMINI_API_KEY`, `GEMINI_API_KEY_MAX`, `GEMINI_API_KEY_TURKEY`, or `GOOGLE_API_KEY`. Set `VISION_PROVIDER=openai` to use OpenAI instead.
 Set `ALCOHOL_LABEL_VERIFIER_LANGSMITH_API_KEY` and `ALCOHOL_LABEL_VERIFIER_LANGSMITH_TRACING=true` to trace sanitized vision extraction calls in LangSmith. Generic `LANGSMITH_*` variables still work as a fallback. Traces record provider/model/status and file metadata, not raw base64 label images or provider keys.
-Check `/api/health` to confirm whether the running local or production server sees the key; it reports `vision.configured`, `vision.provider`, the selected model, and LangSmith tracing status without exposing secrets.
+Set `ALCOHOL_LABEL_VERIFIER_BRAINTRUST_API_KEY` and `ALCOHOL_LABEL_VERIFIER_BRAINTRUST_TRACING=true` to also trace the same sanitized model calls in Braintrust. Generic `BRAINTRUST_*` variables still work as a fallback.
+Check `/api/health` to confirm whether the running local or production server sees the keys; it reports `vision.configured`, `vision.provider`, the selected model, and LangSmith/Braintrust tracing status without exposing secrets.
 The browser compresses uploaded/camera images to a bounded JPEG before verification so normal vision calls stay fast enough for reviewer use.
 
 ## Test and build

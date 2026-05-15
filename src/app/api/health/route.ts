@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { braintrustProject, isBraintrustConfigured, isBraintrustTracingEnabled } from "../../../lib/braintrust";
 import { isLangSmithConfigured, isLangSmithTracingEnabled, langSmithProject } from "../../../lib/langsmith";
 import { hasConfiguredVisionProvider, visionEndpoint, visionMode, visionModel, visionProvider } from "../../../lib/visionConfig";
 
@@ -18,6 +19,11 @@ export function GET() {
       configured: isLangSmithConfigured(),
       tracingEnabled: isLangSmithTracingEnabled(),
       project: langSmithProject(),
+    },
+    braintrust: {
+      configured: isBraintrustConfigured(),
+      tracingEnabled: isBraintrustTracingEnabled(),
+      project: braintrustProject(),
     },
   });
 }
