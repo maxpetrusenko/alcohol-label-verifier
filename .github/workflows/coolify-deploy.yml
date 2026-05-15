@@ -48,4 +48,4 @@ jobs:
           chmod 600 ~/.ssh/coolify_deploy
           ssh-keyscan -H "$COOLIFY_SSH_HOST" >> ~/.ssh/known_hosts
           ssh -i ~/.ssh/coolify_deploy "$COOLIFY_SSH_USER@$COOLIFY_SSH_HOST" \
-            "curl -fsS -X POST 'http://127.0.0.1:8000/api/v1/deploy?uuid=$COOLIFY_APP_UUID&force=false' -H 'Authorization: Bearer $COOLIFY_TOKEN'"
+            "curl -fsS -X PATCH 'http://127.0.0.1:8000/api/v1/applications/$COOLIFY_APP_UUID' -H 'Authorization: Bearer $COOLIFY_TOKEN' -H 'Content-Type: application/json' --data '{\"docker_registry_image_name\":\"${IMAGE_NAME}\",\"docker_registry_image_tag\":\"${IMAGE_TAG}\"}' >/dev/null && curl -fsS -X POST 'http://127.0.0.1:8000/api/v1/deploy?uuid=$COOLIFY_APP_UUID&force=false' -H 'Authorization: Bearer $COOLIFY_TOKEN'"
