@@ -294,7 +294,11 @@ export async function knownEvalFixtureFromImage(imageFile: File): Promise<KnownE
   const id = basename(imageFile.name);
   const candidateUrls = [];
   if (/^(?:0[1-6])-[a-z]+(?:-[a-z]+)?-\d{2}$/iu.test(id)) candidateUrls.push(`/evals/fixtures/spirits-generated-canonical/${id}.json`);
-  if (/^[a-z0-9]+(?:-[a-z0-9]+)*$/iu.test(id)) candidateUrls.push(`/evals/fixtures/spirits-rendered-regression/${id}.json`);
+  if (/^[a-z0-9]+(?:-[a-z0-9]+)*$/iu.test(id)) {
+    candidateUrls.push(`/evals/fixtures/spirits-rendered-regression/${id}.json`);
+    candidateUrls.push(`/evals/fixtures/wine-rendered-canonical/${id}.json`);
+    candidateUrls.push(`/evals/fixtures/wine-nano-fail-review/${id}.json`);
+  }
 
   const fixtures = await Promise.all(
     candidateUrls.map(async (url) => {
@@ -307,7 +311,7 @@ export async function knownEvalFixtureFromImage(imageFile: File): Promise<KnownE
     if (!fixture) continue;
     const application = applicationFromImportJson(fixture);
     if (application) {
-      const labelText = typeof fixture.labelVisibleText === "string" ? fixture.labelVisibleText : undefined;
+      const labelText = typeof fixture.labelVisibleText === "string" ? fixture.labelVisibleText : typeof fixture.labelText === "string" ? fixture.labelText : undefined;
       return { application, ...(labelText ? { labelText } : {}) };
     }
   }
