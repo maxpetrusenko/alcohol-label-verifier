@@ -11,17 +11,6 @@ describe("extractLabel", () => {
   const originalProvider = process.env.VISION_PROVIDER;
   const originalVisionTimeout = process.env.VISION_TIMEOUT_MS;
   const originalVisionFallbackTimeout = process.env.VISION_FALLBACK_TIMEOUT_MS;
-  const originalLangSmithKey = process.env.LANGSMITH_API_KEY;
-  const originalLangSmithEndpoint = process.env.LANGSMITH_ENDPOINT;
-  const originalLangSmithProject = process.env.LANGSMITH_PROJECT;
-  const originalLangSmithTracing = process.env.LANGSMITH_TRACING;
-  const originalLangChainKey = process.env.LANGCHAIN_API_KEY;
-  const originalLangChainProject = process.env.LANGCHAIN_PROJECT;
-  const originalLangChainTracing = process.env.LANGCHAIN_TRACING_V2;
-  const originalAppLangSmithKey = process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_API_KEY;
-  const originalAppLangSmithEndpoint = process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_ENDPOINT;
-  const originalAppLangSmithProject = process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_PROJECT;
-  const originalAppLangSmithTracing = process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_TRACING;
   const originalBraintrustKey = process.env.BRAINTRUST_API_KEY;
   const originalBraintrustProject = process.env.BRAINTRUST_PROJECT;
   const originalBraintrustTracing = process.env.BRAINTRUST_TRACING;
@@ -39,17 +28,6 @@ describe("extractLabel", () => {
     delete process.env.GEMINI_API_KEY_TURKEY;
     delete process.env.VISION_TIMEOUT_MS;
     delete process.env.VISION_FALLBACK_TIMEOUT_MS;
-    delete process.env.LANGSMITH_API_KEY;
-    delete process.env.LANGSMITH_ENDPOINT;
-    delete process.env.LANGSMITH_PROJECT;
-    delete process.env.LANGSMITH_TRACING;
-    delete process.env.LANGCHAIN_API_KEY;
-    delete process.env.LANGCHAIN_PROJECT;
-    delete process.env.LANGCHAIN_TRACING_V2;
-    delete process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_API_KEY;
-    delete process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_ENDPOINT;
-    delete process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_PROJECT;
-    delete process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_TRACING;
     delete process.env.BRAINTRUST_API_KEY;
     delete process.env.BRAINTRUST_PROJECT;
     delete process.env.BRAINTRUST_TRACING;
@@ -77,28 +55,6 @@ describe("extractLabel", () => {
     else delete process.env.VISION_TIMEOUT_MS;
     if (originalVisionFallbackTimeout) process.env.VISION_FALLBACK_TIMEOUT_MS = originalVisionFallbackTimeout;
     else delete process.env.VISION_FALLBACK_TIMEOUT_MS;
-    if (originalLangSmithKey) process.env.LANGSMITH_API_KEY = originalLangSmithKey;
-    else delete process.env.LANGSMITH_API_KEY;
-    if (originalLangSmithEndpoint) process.env.LANGSMITH_ENDPOINT = originalLangSmithEndpoint;
-    else delete process.env.LANGSMITH_ENDPOINT;
-    if (originalLangSmithProject) process.env.LANGSMITH_PROJECT = originalLangSmithProject;
-    else delete process.env.LANGSMITH_PROJECT;
-    if (originalLangSmithTracing) process.env.LANGSMITH_TRACING = originalLangSmithTracing;
-    else delete process.env.LANGSMITH_TRACING;
-    if (originalLangChainKey) process.env.LANGCHAIN_API_KEY = originalLangChainKey;
-    else delete process.env.LANGCHAIN_API_KEY;
-    if (originalLangChainProject) process.env.LANGCHAIN_PROJECT = originalLangChainProject;
-    else delete process.env.LANGCHAIN_PROJECT;
-    if (originalLangChainTracing) process.env.LANGCHAIN_TRACING_V2 = originalLangChainTracing;
-    else delete process.env.LANGCHAIN_TRACING_V2;
-    if (originalAppLangSmithKey) process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_API_KEY = originalAppLangSmithKey;
-    else delete process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_API_KEY;
-    if (originalAppLangSmithEndpoint) process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_ENDPOINT = originalAppLangSmithEndpoint;
-    else delete process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_ENDPOINT;
-    if (originalAppLangSmithProject) process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_PROJECT = originalAppLangSmithProject;
-    else delete process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_PROJECT;
-    if (originalAppLangSmithTracing) process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_TRACING = originalAppLangSmithTracing;
-    else delete process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_TRACING;
     if (originalBraintrustKey) process.env.BRAINTRUST_API_KEY = originalBraintrustKey;
     else delete process.env.BRAINTRUST_API_KEY;
     if (originalBraintrustProject) process.env.BRAINTRUST_PROJECT = originalBraintrustProject;
@@ -275,21 +231,14 @@ describe("extractLabel", () => {
     expect(extraction.governmentWarning).toBe(titleCaseWarning);
   });
 
-  it("wraps provider vision calls in a LangSmith trace when tracing is enabled", async () => {
-    process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_API_KEY = "lsv2-test-secret";
-    process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_PROJECT = "alcohol-label-verifier-test";
-    process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_TRACING = "true";
+  it("wraps provider vision calls in a Braintrust trace when tracing is enabled", async () => {
     process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_API_KEY = "bt-test-secret";
     process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_APP_URL = "https://braintrust-app.test";
     process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_PROJECT = "alcohol-label-verifier-test";
     process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_TRACING = "true";
-    process.env.LANGSMITH_ENDPOINT = "https://langsmith.test";
 
     const fetchMock = vi.fn(async (url: string | URL | Request) => {
       const href = typeof url === "string" ? url : url instanceof URL ? url.href : url.url;
-      if (href.startsWith("https://langsmith.test")) {
-        return new Response(JSON.stringify({}), { status: 200, headers: { "Content-Type": "application/json" } });
-      }
       if (href.endsWith("/api/apikey/login")) {
         return new Response(
           JSON.stringify({ org_info: [{ id: "org-id", name: "org-name", api_url: "https://braintrust-api.test" }] }),
@@ -341,13 +290,8 @@ describe("extractLabel", () => {
     expect(fetchMock.mock.calls.some(([url]) => String(url).includes("api.openai.com/v1/chat/completions"))).toBe(true);
     await vi.waitFor(() => {
       const calls = fetchMock.mock.calls.map(([url]) => (typeof url === "string" ? url : url instanceof URL ? url.href : url.url));
-      expect(calls.some((url) => url.startsWith("https://langsmith.test/runs"))).toBe(true);
       expect(calls.some((url) => url.startsWith("https://braintrust-api.test/logs3"))).toBe(true);
     });
-    expect(process.env.LANGSMITH_API_KEY).toBe("lsv2-test-secret");
-    expect(process.env.LANGCHAIN_API_KEY).toBe("lsv2-test-secret");
-    expect(process.env.LANGSMITH_PROJECT).toBe("alcohol-label-verifier-test");
-    expect(process.env.LANGCHAIN_PROJECT).toBe("alcohol-label-verifier-test");
     expect(process.env.BRAINTRUST_API_KEY).toBe("bt-test-secret");
     expect(process.env.BRAINTRUST_PROJECT).toBe("alcohol-label-verifier-test");
   });

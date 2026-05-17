@@ -4,6 +4,43 @@ Read when checking whether the prototype satisfies the take-home prompt.
 
 Source requirement summary: [`requirements.md`](requirements.md)
 
+## Sample label + JSON fixtures
+
+Faheem’s shared dataset lives in [fsyeddev/ttb-label `evals/fixtures/generated`](https://github.com/fsyeddev/ttb-label/tree/main/evals/fixtures/generated). This repo vendors the same canonical pass/mismatch/noncompliant set under:
+
+| Location | Use |
+| --- | --- |
+| `public/evals/fixtures/spirits-generated-canonical/` | PNG + JSON pairs (`01-pass-01`, …), `manifest.json`, used by **Demo pass** / **Demo fail** |
+| `public/evals/fixtures/spirits-rendered-regression/` | Deterministic SVG/HTML regression set + `manifest.json` |
+| `public/evals/fixtures/stress-degraded-samples/` | Small committed degraded-photo samples |
+| `public/evals/fixtures/wine-rendered-canonical/` | Wine SVG fixtures |
+
+HTTP path (local or deployed): `/evals/fixtures/spirits-generated-canonical/<id>.json` and `.png`.
+
+Other team fixture sources for cross-checking:
+
+- [robin-raq/ttb-label-verifier](https://github.com/robin-raq/ttb-label-verifier) — `samples/`, mock-COLA queue fixtures
+- [gjw/colacop `fixtures/pairs`](https://github.com/gjw/colacop/tree/main/fixtures/pairs) — paired `.jpg` + `.json` (agave, rumble, …)
+- [PlntGoblin/Automated-Label-Review-Tool](https://github.com/PlntGoblin/Automated-Label-Review-Tool) — backend/frontend split, ADR-style docs
+
+## Peer prototypes (gaps to know)
+
+Compared to other take-home repos (May 2026). Not a scorecard — features we do not ship yet that evaluators may notice:
+
+| Capability | Faheem `ttb-label` | Raq `ttb-label-verifier` | Gabe `colacop` | Daniel `ALRT` | LabelCheck (this repo) |
+| --- | --- | --- | --- | --- | --- |
+| Mock COLA application queue | — | Yes (default screen) | Yes (queue + lifecycle) | — | **No** — reviewer form + demo fixtures only |
+| Batch ZIP + `manifest.csv` + SSE | — | Yes | Yes (watcher / upload) | — | **Partial** — up to 300 images in browser, 25-label API chunks; no ZIP manifest workflow |
+| README “deliverables” map for graders | Partial | **Strong** | **Strong** (facts → reqs pipeline) | **Strong** (ADR index) | **README matrix** + this file |
+| Explicit Layer 1 (regulation) vs Layer 2 (application) UI | Advisories in engine | Single compare pass | **Two layers + CFR rows** | Blind extract + deterministic compare | Single field-comparison table; CFR refs on checks |
+| Verifying / progress UI screenshot in README | Yes | SSE row progress | Queue lifecycle | — | Before/after JPEGs only |
+| Reviewer override audit (initials, persisted) | — | — | Per-finding adjudication UI | Initials on override | Approve/reject buttons; **no persisted audit trail** |
+| Semantic / fuzzy class-type list | Documented | — | — | Fuzzy warning | Normalization + rules; not full designation ontology |
+| CLI + OpenAPI agent surface | — | curl multipart | — | — | **Yes** (`labelcheck`, `docs/openapi.json`) |
+| Degraded-image eval harness | — | — | — | — | **Yes** (ImageMagick degrade + benchmarks) |
+
+Strengths relative to peers: blind extraction + deterministic rules (same family as ALRT), published CLI, large fixture/benchmark harness, live demo, Braintrust tracing hook.
+
 ## Current Position
 
 LabelCheck is a standalone review-assistant prototype. It is not a final compliance authority, a COLAs integration, or a production government system.
@@ -15,7 +52,8 @@ The implementation is strongest for distilled spirits. Wine and beer/malt bevera
 | Requirement | Current coverage | Evidence in repo | Remaining gap |
 | --- | --- | --- | --- |
 | Working prototype with accessible app | Implemented | `src/app/page.tsx`, `src/app/VerifierClient.tsx`, `README.md` live prototype link, `tests/e2e/labelcheck.spec.ts` | Keep production URL healthy and smoke-tested before handoff. |
-| Source code and setup docs | Implemented | `README.md`, `package.json`, `docs/API.md` | Keep README aligned with env vars and deployed provider mode. |
+| Source code and setup docs | Implemented | `README.md`, `package.json`, `docs/API.md`, deliverables table in README | Keep README aligned with env vars and deployed provider mode. |
+| README: approach, tools, assumptions, limitations | Implemented | `README.md` (Approach & assumptions), this matrix, `docs/decisions/` | Expand mock-COLA queue only if product scope grows. |
 | Standalone proof of concept, no COLAs integration | Implemented | `README.md`, `docs/PRESEARCH.md`, `docs/decisions/0006-defer-auth-audit-and-persistence.md` | Mock COLA queue is still a local product shape, not a real COLAs connection. |
 | Reviewer checks label artwork against application facts | Implemented | `src/app/VerifierClient.tsx`, `src/app/useVerifierController.tsx`, `src/app/api/verify/route.ts`, `src/lib/rules.ts`, `src/lib/applicationImport.ts` | CSV/JSON application imports support batch source facts; durable async queue/retry/resume remains future work. |
 | One review row maps to one isolated product/label image | Implemented as documented V1 boundary | `README.md`, `src/app/LabelStage.tsx`, `src/lib/rules.ts`, `src/lib/rules.test.ts` | Multi-product shelf/counter photos block with a target-isolation message; production would need target selection/crop confirmation before comparison. |

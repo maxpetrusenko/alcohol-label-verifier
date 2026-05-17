@@ -21,6 +21,7 @@
     "fixtures:nano": "node scripts/generate-nano-banana-fixtures.mjs",
     "fixtures:wine-nano": "node scripts/generate-wine-nano-fixtures.mjs",
     "demo:cli": "node scripts/demo-cli.mjs",
+    "screenshots:readme": "node scripts/capture-readme-screenshots.mjs",
     "pack:cli": "npm pack ./packages/labelcheck-cli --dry-run",
     "publish:cli": "npm publish ./packages/labelcheck-cli --access public",
     "fixtures:benchmark": "vitest run src/lib/htmlFixtureBenchmark.test.ts",
@@ -32,7 +33,6 @@
   },
   "dependencies": {
     "braintrust": "^3.10.0",
-    "langsmith": "^0.7.1",
     "lucide-react": "^1.14.0",
     "next": "16.2.6",
     "openai": "^6.37.0",

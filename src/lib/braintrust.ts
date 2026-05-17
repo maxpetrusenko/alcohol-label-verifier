@@ -1,5 +1,5 @@
 import { initLogger, type Logger } from "braintrust";
-import type { VisionTraceInput } from "./langsmith";
+import type { VisionTraceInput } from "./trace-types";
 
 let loggerCache: { key: string; logger: Logger<true> } | undefined;
 

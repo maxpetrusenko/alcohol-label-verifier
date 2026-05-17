@@ -79,11 +79,6 @@ Returns:
     "endpoint": "generateContent",
     "imageDetail": "low"
   },
-  "langsmith": {
-    "configured": true,
-    "tracingEnabled": true,
-    "project": "alcohol-label-verifier"
-  },
   "braintrust": {
     "configured": true,
     "tracingEnabled": true,

@@ -1,6 +1,6 @@
 import { withBraintrustTrace } from "./braintrust";
 export { buildExtractionGuidance } from "./extractionGuidance";
-import { withLangSmithTrace, type VisionTraceInput } from "./langsmith";
+import type { VisionTraceInput } from "./trace-types";
 import { extractionFromPlainText } from "./rules";
 import type { LabelExtraction } from "./types";
 
@@ -377,20 +377,9 @@ function traceInputForLabel(label: ExtractableLabel, provider: VisionProvider): 
 }
 
 async function callVisionWithTrace(provider: VisionProvider, apiKey: string, label: ExtractableLabel, prompt: string, dataUrl: string, timeoutMs: number) {
-  return withLangSmithTrace(
+  return withBraintrustTrace(
     traceInputForLabel(label, provider),
-    () =>
-      withBraintrustTrace(
-        traceInputForLabel(label, provider),
-        () => (provider === "gemini" ? callGeminiVision(apiKey, prompt, dataUrl, timeoutMs) : callOpenAiVision(apiKey, prompt, dataUrl, timeoutMs)),
-        ({ response }) => ({
-          provider,
-          model: selectedVisionModel(provider),
-          endpoint: selectedVisionEndpoint(provider),
-          status: response.status,
-          ok: response.ok,
-        }),
-      ),
+    () => (provider === "gemini" ? callGeminiVision(apiKey, prompt, dataUrl, timeoutMs) : callOpenAiVision(apiKey, prompt, dataUrl, timeoutMs)),
     ({ response }) => ({
       provider,
       model: selectedVisionModel(provider),
