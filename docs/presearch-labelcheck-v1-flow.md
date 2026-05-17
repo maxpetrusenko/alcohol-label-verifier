@@ -12,7 +12,7 @@ Build **TTB COLA Label Verifier** as a human in the loop discrepancy cockpit for
 
 AI-powered label verification tool for TTB compliance agents. Upload or select a label image and application data; the system checks that they match and meet COLA requirements under 27 CFR Part 5.
 
-Scope of this deployment: **distilled spirits only**. Wine and malt beverages are not implemented yet.
+Scope of this deployment: **distilled spirits first**. Wine and malt beverages use the shared field-matching flow with limited alcohol-content exception handling; deeper commodity-specific wine and malt beverage rules remain staged.
 
 The compliance engine surfaces advisories for four TTB rule areas:
 
@@ -21,7 +21,7 @@ The compliance engine surfaces advisories for four TTB rule areas:
 - Statement of composition: required for liqueurs, cordials, and specialty or flavored products under 27 CFR 5.39.
 - Non-standard production statements: terms like small batch, handcrafted, estate under 27 CFR 5.36.
 
-Live demo: not deployed yet. Current target is a local Next.js prototype, then a deployable URL.
+Live demo: <https://cola.maxpetrusenko.com>. Health check: `curl -fsS https://cola.maxpetrusenko.com/api/health`.
 
 The winning architecture is:
 
@@ -45,8 +45,8 @@ The take home doc has four non-negotiables:
 
 The current repo already has the right core wedge:
 
-- `src/app/page.tsx`: one page reviewer UI with source facts, image upload, text fallback, and result cards.
-- `src/app/api/verify/route.ts`: `POST /api/verify` route with Zod validation, OpenAI vision extraction when configured, and text fallback when not.
+- `src/app/page.tsx`, `src/app/VerifierClient.tsx`, `src/app/useVerifierController.tsx`: reviewer UI with source facts, image upload, demo flow, and result cards.
+- `src/app/api/verify/route.ts`: `POST /api/verify` route with Zod validation, Gemini vision extraction by default, optional OpenAI extraction, and text fallback when no provider is configured.
 - `src/lib/rules.ts`: deterministic comparison logic for brand, class/type, ABV/proof, net contents, warning, bottler, and origin.
 - `src/lib/rules.test.ts`: baseline rule coverage.
 
@@ -58,7 +58,7 @@ The new reference set changes the recommended V1 direction.
 
 | Reference | Strongest signal | Borrow | Avoid |
 | --- | --- | --- | --- |
-| fsyeddev/ttb-label | Fixture-driven demo with generated label image + JSON pairs and field-level results. | Use `evals/fixtures/generated` as sample data and eval corpus. Borrow JSON/CSV import and PASS/FAIL/REVIEW rows. | Do not make manual field entry feel like the primary TTB workflow. |
+| fsyeddev/ttb-label | Fixture-driven demo with generated label image + JSON pairs and field-level results. | Use `evals/fixtures/spirits-generated-canonical` as sample data and eval corpus. Borrow JSON/CSV import and PASS/FAIL/REVIEW rows. | Do not make manual field entry feel like the primary TTB workflow. |
 | robin-raq/ttb-label-verifier | Mock COLA queue as default screen. Real agents review queued applications; they do not type every fact. | Make queue-first the main demo. Keep Single Label and Batch as secondary tabs. | Do not apply one shared form to many different labels. Each row needs its own source facts. |
 | PlntGoblin/Automated-Label-Review-Tool | Blind extraction plus deterministic comparison. | AI reads only the label image. Code compares extracted evidence to application facts. | Do not show expected facts to the model during extraction; it can anchor the model. |
 
@@ -198,7 +198,7 @@ Three concrete cases:
 
 Picture sources:
 
-- Prototype: use generated fixture pairs under `/evals/fixtures/generated`: image + JSON + expected behavior.
+- Prototype: use generated fixture pairs under `/evals/fixtures/spirits-generated-canonical`: image + JSON + expected behavior.
 - Real TTB flow: images already come with COLA applications; future integration would prefill source facts and attached images from COLAs.
 - Fallback: reviewer manually enters fields, uploads CSV, or pastes OCR/text when no queue/fixture is available.
 

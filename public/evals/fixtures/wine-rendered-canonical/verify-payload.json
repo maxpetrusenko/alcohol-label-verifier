@@ -1,0 +1,62 @@
+{
+  "application": {
+    "brandName": "SILVER RIDGE CELLARS",
+    "classType": "Red Wine",
+    "alcoholContent": "13.5% Alc./Vol.",
+    "netContents": "750 mL",
+    "bottlerAddress": "Silver Ridge Cellars, Sonoma, CA",
+    "countryOfOrigin": "United States",
+    "beverageKind": "wine",
+    "imported": false
+  },
+  "labels": [
+    {
+      "labelId": "wine-pass-01",
+      "fileName": "wine-pass-01.png",
+      "mimeType": "text/plain",
+      "text": "BRAND NAME: SILVER RIDGE CELLARS\nRed Wine\nCalifornia\nVintage 2023\n13.5% Alc./Vol.\n750 mL\nContains sulfites.\nProduced and bottled by Silver Ridge Cellars, Sonoma, CA\nGOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.",
+      "application": {
+        "brandName": "SILVER RIDGE CELLARS",
+        "classType": "Red Wine",
+        "alcoholContent": "13.5% Alc./Vol.",
+        "netContents": "750 mL",
+        "bottlerAddress": "Silver Ridge Cellars, Sonoma, CA",
+        "countryOfOrigin": "United States",
+        "beverageKind": "wine",
+        "imported": false
+      }
+    },
+    {
+      "labelId": "wine-warning-01",
+      "fileName": "wine-warning-01.png",
+      "mimeType": "text/plain",
+      "text": "BRAND NAME: HARBOR GLEN VINEYARDS\nTable Wine\nOregon\nVintage 2022\n750 mL\nContains sulfites.\nProduced and bottled by Harbor Glen Vineyards, Dundee, OR\nGOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.\nVisual note: glare over the Government Warning makes exact statutory punctuation uncertain.",
+      "application": {
+        "brandName": "HARBOR GLEN VINEYARDS",
+        "classType": "Table Wine",
+        "alcoholContent": "",
+        "netContents": "750 mL",
+        "bottlerAddress": "Harbor Glen Vineyards, Dundee, OR",
+        "countryOfOrigin": "United States",
+        "beverageKind": "wine",
+        "imported": false
+      }
+    },
+    {
+      "labelId": "wine-fail-01",
+      "fileName": "wine-fail-01.png",
+      "mimeType": "text/plain",
+      "text": "BRAND NAME: LAURENT HILL\nWhite Wine\nProduct of France\nVintage 2023\n12.5% Alc./Vol.\n750 mL\nContains sulfites.\nImported by Northstar Imports, New York, NY\nGOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.",
+      "application": {
+        "brandName": "LANTERN HILL",
+        "classType": "White Wine",
+        "alcoholContent": "12.5% Alc./Vol.",
+        "netContents": "750 mL",
+        "bottlerAddress": "Northstar Imports, New York, NY",
+        "countryOfOrigin": "Italy",
+        "beverageKind": "wine",
+        "imported": true
+      }
+    }
+  ]
+}

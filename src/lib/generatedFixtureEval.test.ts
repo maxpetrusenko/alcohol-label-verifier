@@ -11,7 +11,7 @@ import {
 import type { FsyedGeneratedFixtureJson } from "./applicationImport";
 
 const repoRoot = process.cwd();
-const generatedDir = join(repoRoot, "public/evals/fixtures/generated");
+const generatedDir = join(repoRoot, "public/evals/fixtures/spirits-generated-canonical");
 const reportPath = "/tmp/labelcheck-fsyed-fixture-eval.json";
 
 function readJson<T>(path: string) {

@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "good__fail__skew__l01__rotate-p090__src-02-mismatch-01__454",
+  "sourceId": "02-mismatch-01",
+  "title": "JSON wrong brand name, label correct (perspective-skew, level 1, sideways)",
+  "photoQuality": "good",
+  "variant": "perspective-skew",
+  "degradationFamily": "perspective-skew",
+  "severityLevel": 1,
+  "orientation": "sideways",
+  "angleDegrees": 90,
+  "sourceImage": "public/evals/fixtures/spirits-generated-canonical/02-mismatch-01.png",
+  "image": "public/evals/fixtures/stress-degraded-generated/good__fail__skew__l01__rotate-p090__src-02-mismatch-01__454.jpg",
+  "imageHash": "a160be10fbdf469b",
+  "form_data": {
+    "brand_name": "Wrong Brand Name",
+    "class_type": "Tennessee Whiskey",
+    "abv": "40% Alc./Vol.",
+    "net_contents": "750 mL",
+    "bottler_name": "Smoky Hollow Distillery",
+    "bottler_address": "Nashville, TN",
+    "country_of_origin": "",
+    "is_import": false
+  },
+  "image_prompt": "Photorealistic square glass bottle with a black and white classic label. Verbatim text to include exactly: 'Smoky Hollow', 'Tennessee Whiskey', '40% Alc./Vol.', '750 mL', 'Distilled and bottled by Smoky Hollow Distillery, Nashville, TN'. Include a separate paragraph in small print: 'GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.'",
+  "expectedSourceBehavior": "FAIL on cross-validation (Brand mismatch)",
+  "expectedDecision": "rejected",
+  "expectedProblemChecks": [],
+  "extractionConfidence": 0.82,
+  "visualObservation": "Readable photo: label is slightly off-square but text remains legible. Camera orientation is sideways (90 degrees)."
+}

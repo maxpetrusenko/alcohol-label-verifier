@@ -23,7 +23,11 @@ function reportLangSmithError(action: string, error: unknown) {
   console.warn(`LangSmith ${action} failed: ${error instanceof Error ? error.message : "unknown error"}`);
 }
 
-export function langSmithApiKey() {
+function runInBackground(action: string, task: () => Promise<void>) {
+  void task().catch((error) => reportLangSmithError(action, error));
+}
+
+function langSmithApiKey() {
   return firstNonEmpty(
     process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_API_KEY,
     process.env.LANGSMITH_API_KEY,
@@ -31,11 +35,11 @@ export function langSmithApiKey() {
   );
 }
 
-export function langSmithApiUrl() {
+function langSmithApiUrl() {
   return firstNonEmpty(process.env.ALCOHOL_LABEL_VERIFIER_LANGSMITH_ENDPOINT, process.env.LANGSMITH_ENDPOINT);
 }
 
-export function syncLangSmithRuntimeEnv() {
+function syncLangSmithRuntimeEnv() {
   const apiKey = langSmithApiKey();
   const apiUrl = langSmithApiUrl();
   const project = langSmithProject();
@@ -87,7 +91,7 @@ export async function withLangSmithTrace<T>(
   const client = new Client({
     apiKey,
     ...(langSmithApiUrl() ? { apiUrl: langSmithApiUrl() } : {}),
-    blockOnRootRunFinalization: true,
+    blockOnRootRunFinalization: false,
     fetchImplementation: globalThis.fetch,
   });
   const runTree = new RunTree({
@@ -105,34 +109,17 @@ export async function withLangSmithTrace<T>(
     inputs: input,
   });
 
-  let posted = false;
-  try {
-    await runTree.postRun();
-    posted = true;
-  } catch (error) {
-    reportLangSmithError("run creation", error);
-  }
-
   try {
     const value = await run();
-    if (posted) {
-      await runTree.end(summarize(value));
-      try {
-        await runTree.patchRun();
-      } catch (error) {
-        reportLangSmithError("run update", error);
-      }
-    }
+    runInBackground("run update", () => runTree.postRun().then(() => runTree.end(summarize(value))).then(() => runTree.patchRun()));
     return value;
   } catch (error) {
-    if (posted) {
-      await runTree.end(undefined, error instanceof Error ? error.message : "unknown model call error");
-      try {
-        await runTree.patchRun();
-      } catch (patchError) {
-        reportLangSmithError("run error update", patchError);
-      }
-    }
+    runInBackground("run error update", () =>
+      runTree
+        .postRun()
+        .then(() => runTree.end(undefined, error instanceof Error ? error.message : "unknown model call error"))
+        .then(() => runTree.patchRun()),
+    );
     throw error;
   }
 }

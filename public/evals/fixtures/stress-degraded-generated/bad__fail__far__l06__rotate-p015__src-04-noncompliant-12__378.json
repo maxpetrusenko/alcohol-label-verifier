@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "bad__fail__far__l06__rotate-p015__src-04-noncompliant-12__378",
+  "sourceId": "04-noncompliant-12",
+  "title": "Non-compliant matching JSON: missing state of distillation on Straight Bourbon (distance-downsample, level 6, tilt-right)",
+  "photoQuality": "bad",
+  "variant": "distance-downsample",
+  "degradationFamily": "distance-downsample",
+  "severityLevel": 6,
+  "orientation": "tilt-right",
+  "angleDegrees": 15,
+  "sourceImage": "public/evals/fixtures/spirits-generated-canonical/04-noncompliant-12.png",
+  "image": "public/evals/fixtures/stress-degraded-generated/bad__fail__far__l06__rotate-p015__src-04-noncompliant-12__378.jpg",
+  "imageHash": "ccbb21e3a015c40f",
+  "form_data": {
+    "brand_name": "Iron Horse",
+    "class_type": "Straight Bourbon Whiskey",
+    "abv": "45% Alc./Vol.",
+    "net_contents": "750 mL",
+    "bottler_name": "Iron Horse Distillers",
+    "bottler_address": "Chicago, IL",
+    "country_of_origin": "",
+    "is_import": false,
+    "reason": "Straight whiskies require a state of distillation on the label."
+  },
+  "image_prompt": "Photorealistic clear glass bottle with a vintage train-themed label. Verbatim text to include exactly: 'Iron Horse', 'Straight Bourbon Whiskey', '45% Alc./Vol.', '750 mL', 'Bottled by Iron Horse Distillers, Chicago, IL'. Include a separate paragraph in small print: 'GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.'",
+  "expectedSourceBehavior": "FAIL compliance with reason provided",
+  "expectedDecision": "rejected",
+  "expectedProblemChecks": [],
+  "extractionConfidence": 0.72,
+  "visualObservation": "Visual note: label was photographed from too far away with moderate downsampling. Camera orientation is tilt-right (15 degrees)."
+}

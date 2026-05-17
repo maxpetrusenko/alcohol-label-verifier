@@ -23,14 +23,18 @@ function requestWithLabels(labels: unknown[]) {
 
 describe("POST /api/verify", () => {
   const originalApiKey = process.env.OPENAI_API_KEY;
+  const originalProvider = process.env.VISION_PROVIDER;
 
   beforeEach(() => {
     delete process.env.OPENAI_API_KEY;
+    delete process.env.VISION_PROVIDER;
   });
 
   afterEach(() => {
     if (originalApiKey) process.env.OPENAI_API_KEY = originalApiKey;
     else delete process.env.OPENAI_API_KEY;
+    if (originalProvider) process.env.VISION_PROVIDER = originalProvider;
+    else delete process.env.VISION_PROVIDER;
   });
 
   it("returns one result per submitted batch label", async () => {
@@ -136,6 +140,36 @@ describe("POST /api/verify", () => {
     expect(data.results[0].checks.find((check: { id: string }) => check.id === "target-isolation")).toMatchObject({
       status: "fail",
     });
+  });
+
+  it("keeps a rejected review result when image extraction fails", async () => {
+    process.env.OPENAI_API_KEY = "test-key";
+    process.env.VISION_PROVIDER = "openai";
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async () => {
+      throw new Error("provider unavailable    with noisy whitespace");
+    };
+
+    try {
+      const response = await POST(
+        requestWithLabels([
+          {
+            labelId: "image-only",
+            fileName: "front.jpg",
+            mimeType: "image/jpeg",
+            dataUrl: "data:image/jpeg;base64,test",
+          },
+        ]),
+      );
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.results[0].decision).toBe("rejected");
+      expect(data.results[0].extraction.confidence).toBe(0);
+      expect(data.results[0].extraction.notes[0]).toBe("Extraction failed for this label: provider unavailable with noisy whitespace");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 
   it("rejects batches over the configured per-request label limit", async () => {

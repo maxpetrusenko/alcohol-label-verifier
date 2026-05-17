@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "wine-generated-warning-fail-01",
+  "title": "Generated wine warning text fail",
+  "provider": "gemini",
+  "model": "gemini-2.5-flash-image",
+  "mimeType": "image/png",
+  "image": "public/evals/fixtures/wine-nano-fail-review/wine-generated-warning-fail-01.png",
+  "imageHash": "518e107267a22cbf",
+  "expectedDecision": "rejected",
+  "expectedProblemChecks": [
+    "government-warning"
+  ],
+  "application": {
+    "brandName": "HARBOR GLEN VINEYARDS",
+    "classType": "Table Wine",
+    "alcoholContent": "",
+    "netContents": "750 mL",
+    "bottlerAddress": "Harbor Glen Vineyards, Dundee, OR",
+    "countryOfOrigin": "United States",
+    "beverageKind": "wine",
+    "imported": false
+  },
+  "visualObservation": "AI-generated wine bottle with materially incomplete or garbled Government Warning; expected rejection.",
+  "prompt": "Generate a realistic photo of one isolated real glass wine bottle, slightly imperfect but usable reviewer photo. Single bottle only. No real brands. Back label has mild glare over part of the Government Warning and slight perspective angle, but most text remains readable. Do not add extra products.\n\nFront label:\nBRAND: HARBOR GLEN VINEYARDS\nCLASS/TYPE: Table Wine\nAPPELLATION: Oregon\nVINTAGE: 2022\n\nBack label:\n750 mL\nContains sulfites.\nProduced and bottled by Harbor Glen Vineyards, Dundee, OR\nGOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.\n\nImportant: Do not show a numeric alcohol content statement. This is intentional because Table Wine can stand in for 7-14% wine alcohol statement in this test, but the glare should make exact warning verification uncertain.",
+  "providerText": [],
+  "caveat": "AI-generated wine demo/eval visual. Verify text manually before treating as deterministic legal-text ground truth."
+}

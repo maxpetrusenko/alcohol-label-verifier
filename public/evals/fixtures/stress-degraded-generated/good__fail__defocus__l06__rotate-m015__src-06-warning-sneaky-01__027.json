@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "good__fail__defocus__l06__rotate-m015__src-06-warning-sneaky-01__027",
+  "sourceId": "06-warning-sneaky-01",
+  "title": "Sneaky warning: 'could cause' instead of 'may cause' (defocus-blur, level 6, tilt-left)",
+  "photoQuality": "good",
+  "variant": "defocus-blur",
+  "degradationFamily": "defocus-blur",
+  "severityLevel": 6,
+  "orientation": "tilt-left",
+  "angleDegrees": -15,
+  "sourceImage": "public/evals/fixtures/spirits-generated-canonical/06-warning-sneaky-01.png",
+  "image": "public/evals/fixtures/stress-degraded-generated/good__fail__defocus__l06__rotate-m015__src-06-warning-sneaky-01__027.jpg",
+  "imageHash": "0e4af9f8a3de3af4",
+  "form_data": {
+    "brand_name": "Maple Ridge",
+    "class_type": "Bourbon Whiskey",
+    "abv": "40% Alc./Vol.",
+    "net_contents": "750 mL",
+    "bottler_name": "Ridge Distilling",
+    "bottler_address": "Burlington, VT",
+    "country_of_origin": "",
+    "is_import": false
+  },
+  "image_prompt": "Photorealistic glass bottle with a woodgrain textured label. Verbatim text to include exactly: 'Maple Ridge', 'Bourbon Whiskey', '40% Alc./Vol.', '750 mL', 'Distilled and bottled by Ridge Distilling, Burlington, VT'. Include a separate paragraph in small print: 'GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and could cause health problems.'",
+  "expectedSourceBehavior": "FAIL compliance (Exact warning text mismatch)",
+  "expectedDecision": "rejected",
+  "expectedProblemChecks": [],
+  "extractionConfidence": 0.72,
+  "visualObservation": "Readable photo: focus is slightly soft but label text remains legible. Camera orientation is tilt-left (-15 degrees)."
+}

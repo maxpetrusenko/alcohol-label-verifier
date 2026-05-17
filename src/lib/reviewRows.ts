@@ -63,15 +63,22 @@ export function coreReviewRows(result: VerificationResult): ReviewRow[] {
     return check ? [toReviewRow(check, result.extraction)] : [];
   });
   const primaryIds = new Set(PRIMARY_CHECK_IDS);
-  const blockingSupplementalRows = result.checks
-    .filter((check) => !primaryIds.has(check.id as (typeof PRIMARY_CHECK_IDS)[number]) && check.severity === "blocking")
-    .map((check) => toReviewRow(check, result.extraction));
+  const blockingSupplementalRows: ReviewRow[] = [];
+  for (const check of result.checks) {
+    if (!primaryIds.has(check.id as (typeof PRIMARY_CHECK_IDS)[number]) && check.severity === "blocking") {
+      blockingSupplementalRows.push(toReviewRow(check, result.extraction));
+    }
+  }
   return [...primaryRows, ...blockingSupplementalRows];
 }
 
 export function supplementalReviewRows(result: VerificationResult): ReviewRow[] {
   const primaryIds = new Set(PRIMARY_CHECK_IDS);
-  return result.checks
-    .filter((check) => !primaryIds.has(check.id as (typeof PRIMARY_CHECK_IDS)[number]) && check.severity !== "blocking")
-    .map((check) => toReviewRow(check, result.extraction));
+  const rows: ReviewRow[] = [];
+  for (const check of result.checks) {
+    if (!primaryIds.has(check.id as (typeof PRIMARY_CHECK_IDS)[number]) && check.severity !== "blocking") {
+      rows.push(toReviewRow(check, result.extraction));
+    }
+  }
+  return rows;
 }

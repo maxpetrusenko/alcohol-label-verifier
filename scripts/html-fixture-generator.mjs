@@ -63,7 +63,7 @@ function defineCase(id, title, kind, overrides = {}) {
   };
 }
 
-export const fixtureDefinitions = [
+const fixtureDefinitions = [
   defineCase("clean-pass", "Clean pass", "clean-pass"),
   defineCase("imported-spirits-pass", "Imported spirits pass", "imported-pass", {
     application: importedApplication,
@@ -188,7 +188,7 @@ function labelTextElements(testCase) {
     .join("\n  ");
 }
 
-export function renderSvg(testCase) {
+function renderSvg(testCase) {
   const filter = variantFilter(testCase.variant);
   return `<svg xmlns="http://www.w3.org/2000/svg" width="420" height="280" viewBox="0 0 420 280" role="img" aria-label="${escapeXml(testCase.title)}">
   <defs>
@@ -207,7 +207,7 @@ export function renderSvg(testCase) {
 `;
 }
 
-export function renderHtml(testCase, svgFileName) {
+function renderHtml(testCase, svgFileName) {
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -232,7 +232,7 @@ export function renderHtml(testCase, svgFileName) {
 `;
 }
 
-export function serializeCase(testCase, svg, html) {
+function serializeCase(testCase, svg, html) {
   return {
     schemaVersion: OUTPUT_VERSION,
     id: testCase.id,
@@ -253,7 +253,7 @@ export function serializeCase(testCase, svg, html) {
   };
 }
 
-export function buildFixtureArtifacts(testCase) {
+function buildFixtureArtifacts(testCase) {
   const svg = renderSvg(testCase);
   const html = renderHtml(testCase, `${testCase.id}.svg`);
   return {

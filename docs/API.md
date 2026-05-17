@@ -23,25 +23,41 @@ The API does not verify font size, boldness, contrast, same-field-of-vision layo
 
 The API also does not provide authentication, RBAC, audit logs, retention/deletion policy, encrypted persistence, COLAs integration, final reviewer disposition, FedRAMP/ATO assurance, or approved government model-hosting guarantees.
 
-Vision mode depends on the configured provider key and outbound network access. Gemini is the default provider; OpenAI is available with `VISION_PROVIDER=openai`. If provider secrets are missing or blocked, the API falls back to text-only extraction behavior. Uploaded image data is sent to the configured model provider when vision mode is active.
+Vision mode depends on the configured provider key and outbound network access. Gemini is the default provider; OpenAI is available with `VISION_PROVIDER=openai`. If provider secrets are missing or blocked, the API falls back to text-only extraction behavior. Uploaded image data is sent to the configured model provider when vision mode is active. Provider calls use `VISION_TIMEOUT_MS` with a default of `2500` ms. If the opposite provider key is configured, a timeout retries once with `VISION_FALLBACK_TIMEOUT_MS`, default `1500` ms; otherwise the API returns a fast extraction failure instead of blocking the reviewer.
 
 ## CLI
 
 The CLI is a thin HTTP client over `/api/v1/*`.
 
 ```bash
+npx labelcheck health
+npx labelcheck verify input.json
+npx labelcheck extract label.png
+npx labelcheck export verify-response.json --format json
+npx labelcheck export verify-response.json --format csv
+```
+
+The published CLI defaults to `https://cola.maxpetrusenko.com`. For local development or private deployments:
+
+```bash
 LABELCHECK_BASE_URL=http://localhost:3000 labelcheck health
-LABELCHECK_BASE_URL=http://localhost:3000 labelcheck verify input.json
-LABELCHECK_BASE_URL=http://localhost:3000 labelcheck extract label.png
-LABELCHECK_BASE_URL=http://localhost:3000 labelcheck export verify-response.json --format json
-LABELCHECK_BASE_URL=http://localhost:3000 labelcheck export verify-response.json --format csv
+labelcheck verify input.json --base-url http://localhost:3000
 ```
 
 For local development without installing the package:
 
 ```bash
-node bin/labelcheck.mjs health
+LABELCHECK_BASE_URL=http://localhost:3000 node bin/labelcheck.mjs health
 ```
+
+For an agent-safe local smoke demo:
+
+```bash
+npm run demo:cli
+npm run demo:cli -- --base-url https://cola.maxpetrusenko.com --no-start
+```
+
+The demo reuses a running LabelCheck server when available, or starts one for the default local URL. It creates fixture-backed input under `/tmp`, calls `health`, `verify`, and `export`, writes the JSON/CSV artifacts, and exits non-zero if expected fixture decisions drift. Use `--no-start` for production so agents fail clearly instead of starting a local server.
 
 `verify` accepts the same batch JSON as `/api/v1/verify`, including up to 25 labels per request. Agents should chunk larger jobs into 25-label requests and preserve `labelId` values to join results back to source files.
 
@@ -56,17 +72,27 @@ Returns:
   "ok": true,
   "service": "alcohol-label-verifier",
   "vision": {
-    "configured": false,
-    "mode": "text-only-demo",
+    "configured": true,
+    "mode": "vision+rules",
     "provider": "gemini",
     "model": "gemini-2.5-flash-lite",
     "endpoint": "generateContent",
     "imageDetail": "low"
+  },
+  "langsmith": {
+    "configured": true,
+    "tracingEnabled": true,
+    "project": "alcohol-label-verifier"
+  },
+  "braintrust": {
+    "configured": true,
+    "tracingEnabled": true,
+    "project": "alcohol-label-verifier"
   }
 }
 ```
 
-Use `vision.configured` to verify local or production secret wiring without exposing provider secrets such as `OPENAI_API_KEY`, `GEMINI_API_KEY`, `GEMINI_API_KEY_MAX`, `GEMINI_API_KEY_TURKEY`, or `GOOGLE_API_KEY`.
+Use `vision.configured` and tracing booleans to verify local or production secret wiring without exposing provider secrets such as `OPENAI_API_KEY`, `GEMINI_API_KEY`, `GEMINI_API_KEY_MAX`, `GEMINI_API_KEY_TURKEY`, `GOOGLE_API_KEY`, or observability API keys.
 
 ### `POST /api/v1/extract`
 

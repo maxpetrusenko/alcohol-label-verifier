@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "bad__fail__blue__l08__rotate-p180__src-04-noncompliant-16__290",
+  "sourceId": "04-noncompliant-16",
+  "title": "Non-compliant matching JSON: bad production phrasing 'Vatted by' (blue-cast, level 8, upside-down)",
+  "photoQuality": "bad",
+  "variant": "blue-cast",
+  "degradationFamily": "blue-cast",
+  "severityLevel": 8,
+  "orientation": "upside-down",
+  "angleDegrees": 180,
+  "sourceImage": "public/evals/fixtures/spirits-generated-canonical/04-noncompliant-16.png",
+  "image": "public/evals/fixtures/stress-degraded-generated/bad__fail__blue__l08__rotate-p180__src-04-noncompliant-16__290.jpg",
+  "imageHash": "a6e4c3d9e6921c5c",
+  "form_data": {
+    "brand_name": "Old Cask",
+    "class_type": "Brandy",
+    "abv": "40% Alc./Vol.",
+    "net_contents": "750 mL",
+    "bottler_name": "Cask & Co.",
+    "bottler_address": "Fresno, CA",
+    "country_of_origin": "",
+    "is_import": false,
+    "reason": "Production statement uses unapproved phrasing 'Vatted by'."
+  },
+  "image_prompt": "Photorealistic amber glass bottle with a wood barrel textured label. Verbatim text to include exactly: 'Old Cask', 'Brandy', '40% Alc./Vol.', '750 mL', 'Vatted by Cask & Co., Fresno, CA'. Include a separate paragraph in small print: 'GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.'",
+  "expectedSourceBehavior": "FAIL compliance with reason provided",
+  "expectedDecision": "rejected",
+  "expectedProblemChecks": [],
+  "extractionConfidence": 0.6799999999999999,
+  "visualObservation": "Visual note: label photo has a severe blue phone-camera color cast. Camera orientation is upside-down (180 degrees). The photo is upside down and needs rotation before automated approval."
+}

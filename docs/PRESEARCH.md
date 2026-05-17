@@ -59,7 +59,7 @@ That points to a focused review assistant:
 The strongest direction signal is **queue-first review**, not blank form-first review.
 
 - Raq's `ttb-label-verifier`: best product shape. Default screen is a mock COLA queue; each row already has application facts and attached artwork. Borrow queue-first, single-label fallback, batch ZIP + manifest, SSE-style progress later.
-- fsyeddev's `ttb-label`: best fixture/eval source. Borrow generated label image plus JSON pairs from `evals/fixtures/generated`, import JSON/CSV, and field-level result/advisory UI.
+- fsyeddev's `ttb-label`: best fixture/eval source. Borrow generated label image plus JSON pairs from `evals/fixtures/spirits-generated-canonical`, import JSON/CSV, and field-level result/advisory UI.
 - PlntGoblin's ALRT: best architecture decision. Borrow blind extraction: model sees only label artwork; deterministic code compares extracted evidence to expected application facts.
 - External products: borrow visual report patterns from COLAClear, LabelScreener, Label Score AI, Esko Comply, and ENTR Proofing, but do not copy broad platform scope.
 
@@ -74,7 +74,7 @@ reviewer = final authority
 
 ## Current Repo Grounding
 
-- `src/app/page.tsx`: reviewer surface with source facts, upload, text fallback, result cards, per-label navigation, decision counts, active result focus, 300-label browser batches, and beverage-profile selection.
+- `src/app/page.tsx`, `src/app/VerifierClient.tsx`, `src/app/useVerifierController.tsx`: reviewer surface with source facts, upload, demo flow, result cards, per-label navigation, decision counts, active result focus, 300-label browser batches, and beverage-profile selection.
 - `src/app/api/verify/route.ts`: server-side verification route with validation, vision extraction, and text fallback.
 - `src/app/api/v1/*`: versioned machine/API aliases for health, extract, verify, and export.
 - `src/lib/rules.ts`: deterministic matching spine for brand, class/type, ABV/proof, net contents, warning, bottler, origin, image quality, and low-confidence review gates.
@@ -82,7 +82,7 @@ reviewer = final authority
 - `src/lib/rules.test.ts`: baseline regression tests for normalization, ABV mismatch, and warning failures.
 - `src/lib/htmlFixtureBenchmark.ts`: local benchmark harness for generated HTML/SVG fixtures.
 - `scripts/html-fixture-generator.mjs`: deterministic fixture generator for clean pass, mismatch, warning, and bad-photo cases.
-- `public/evals/fixtures/html-generated/manifest.json`: committed local fixture corpus for CI-friendly regression checks.
+- `public/evals/fixtures/spirits-rendered-regression/manifest.json`: committed local fixture corpus for CI-friendly regression checks.
 - `docs/decisions`: accepted ADRs for blind extraction, deterministic rules, human review, API/CLI/OpenAPI surface, fixture benchmarks, and deferred auth/audit/persistence.
 
 Next implementation should extend those files, not introduce a separate workflow framework.
@@ -111,7 +111,7 @@ V1 currently has:
 
 - demo text, copied fsyed fixtures, and deterministic local HTML/SVG fixtures for source application facts
 - generated degraded-photo fixtures for local eval reporting, ignored by git to avoid committing hundreds of binaries
-- opt-in generated scene-photo fixtures under `public/evals/fixtures/nano-banana-generated/` for edge-case demos
+- opt-in generated scene-photo fixtures under `public/evals/fixtures/stress-nano-scenes/` for edge-case demos
 - blind extraction or text fallback for observed label evidence
 - one or more label inputs through multi-file upload or folder/image drag and drop, capped at 300 browser labels and 25 labels per API request
 - bounded parallel batch verification, defaulting to 3 labels in flight and accepting API options up to 10

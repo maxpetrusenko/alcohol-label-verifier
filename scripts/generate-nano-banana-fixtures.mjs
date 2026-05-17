@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 
 const DEFAULT_MODEL = "gemini-2.5-flash-image";
-const DEFAULT_OUT_DIR = "public/evals/fixtures/nano-banana-generated";
+const DEFAULT_OUT_DIR = "public/evals/fixtures/stress-nano-scenes";
 
 const SCENES = [
   {

@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "wine-generated-review-01",
+  "title": "Generated wine review case",
+  "provider": "gemini",
+  "model": "gemini-2.5-flash-image",
+  "mimeType": "image/png",
+  "image": "public/evals/fixtures/wine-nano-fail-review/wine-generated-review-01.png",
+  "imageHash": "6dab4aacad8ec38b",
+  "expectedDecision": "needs_review",
+  "expectedProblemChecks": [
+    "alcohol-content",
+    "net-contents",
+    "bottler-address"
+  ],
+  "application": {
+    "brandName": "SILVER RIDGE CELLARS",
+    "classType": "Red Wine",
+    "alcoholContent": "13.5% Alc./Vol.",
+    "netContents": "750 mL",
+    "bottlerAddress": "Silver Ridge Cellars, Sonoma, CA",
+    "countryOfOrigin": "United States",
+    "beverageKind": "wine",
+    "imported": false
+  },
+  "visualObservation": "AI-generated wine bottle with visibly garbled compliance text; expected reviewer attention, not approval.",
+  "prompt": "Generate a realistic studio photo of one isolated real glass wine bottle, front and back labels both visible, no real brands, no logos from existing wineries, no extra bottles, no hands, no shelf. Product should look like a premium California red wine.\n\nThe label text must be crisp, readable, and exactly consistent with this JSON application record. Do not add contradictory text.\n\nFront label:\nBRAND: SILVER RIDGE CELLARS\nCLASS/TYPE: Red Wine\nAPPELLATION: California\nVINTAGE: 2023\n\nBack label:\nAlc. 13.5% By Vol.\n750 mL\nContains sulfites.\nProduced and bottled by Silver Ridge Cellars, Sonoma, CA\nGOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.",
+  "providerText": [
+    "Here's the studio photo of the wine bottle with the specified labels:\n"
+  ],
+  "caveat": "AI-generated wine demo/eval visual. Verify text manually before treating as deterministic legal-text ground truth."
+}

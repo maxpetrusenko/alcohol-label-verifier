@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "nano-scene-covered-pouring-label",
+  "title": "Pouring bottle with hand covering label",
+  "provider": "gemini",
+  "model": "gemini-2.5-flash-image",
+  "mimeType": "image/png",
+  "image": "public/evals/fixtures/stress-nano-scenes/nano-scene-covered-pouring-label.png",
+  "imageHash": "ea889eb256ff0b2a",
+  "expectedDecision": "needs_review",
+  "expectedProblemChecks": [
+    "image-quality"
+  ],
+  "visualObservation": "AI-generated scene: a foreground hand and pouring angle cover the bottle label, so required label facts cannot be verified from this photo.",
+  "prompt": "Photorealistic close-up of an adult hand pouring amber distilled liquor from a bottle into a tasting glass on a kitchen counter. The hand and pouring angle cover most of the bottle label; only a small blank cream label edge is visible. No real brand names. Natural window light, shallow depth of field, realistic glass and liquid.",
+  "providerText": [],
+  "caveat": "AI-generated demo/eval visual. Do not use as deterministic legal-text ground truth; generated label text may be inaccurate."
+}

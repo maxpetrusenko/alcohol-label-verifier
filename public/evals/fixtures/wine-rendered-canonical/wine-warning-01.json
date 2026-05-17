@@ -1,0 +1,27 @@
+{
+  "id": "wine-warning-01",
+  "title": "Harbor Glen Vineyards",
+  "image": "public/evals/fixtures/wine-rendered-canonical/wine-warning-01.png",
+  "svg": "public/evals/fixtures/wine-rendered-canonical/wine-warning-01.svg",
+  "expectedDecision": "needs_review",
+  "expectedProblemChecks": [
+    "image-quality"
+  ],
+  "application": {
+    "brandName": "HARBOR GLEN VINEYARDS",
+    "classType": "Table Wine",
+    "alcoholContent": "",
+    "netContents": "750 mL",
+    "bottlerAddress": "Harbor Glen Vineyards, Dundee, OR",
+    "countryOfOrigin": "United States",
+    "beverageKind": "wine",
+    "imported": false
+  },
+  "labelText": "BRAND NAME: HARBOR GLEN VINEYARDS\nTable Wine\nOregon\nVintage 2022\n750 mL\nContains sulfites.\nProduced and bottled by Harbor Glen Vineyards, Dundee, OR\nGOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.\nVisual note: glare over the Government Warning makes exact statutory punctuation uncertain.",
+  "visualObservation": "Deterministic synthetic wine label with glare over the warning area.",
+  "sourceBaseDownloads": [
+    "/Users/maxpetrusenko/Downloads/labelcheck-wine-fixtures/downloaded-bases/four-bottles-with-blank-labels.svg",
+    "/Users/maxpetrusenko/Downloads/labelcheck-wine-fixtures/downloaded-bases/draw-french-wine-bottle.png",
+    "/Users/maxpetrusenko/Downloads/labelcheck-wine-fixtures/downloaded-bases/mde-botella.png"
+  ]
+}

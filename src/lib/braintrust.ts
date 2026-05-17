@@ -1,7 +1,7 @@
 import { initLogger, type Logger } from "braintrust";
 import type { VisionTraceInput } from "./langsmith";
 
-let loggerCache: { key: string; logger: Logger<false> } | undefined;
+let loggerCache: { key: string; logger: Logger<true> } | undefined;
 
 function truthy(value: string | undefined): boolean {
   return /^(1|true|yes|on)$/iu.test(value ?? "");
@@ -15,7 +15,15 @@ function reportBraintrustError(action: string, error: unknown) {
   console.warn(`Braintrust ${action} failed: ${error instanceof Error ? error.message : "unknown error"}`);
 }
 
-export function braintrustApiKey() {
+function flushInBackground(logger: Logger<true> | undefined, span: ReturnType<Logger<true>["startSpan"]> | undefined) {
+  if (!span) return;
+  void span
+    .flush()
+    .then(() => logger?.flush())
+    .catch((error) => reportBraintrustError("flush", error));
+}
+
+function braintrustApiKey() {
   return firstNonEmpty(process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_API_KEY, process.env.BRAINTRUST_API_KEY);
 }
 
@@ -23,11 +31,11 @@ export function braintrustProject() {
   return firstNonEmpty(process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_PROJECT, process.env.BRAINTRUST_PROJECT) ?? "alcohol-label-verifier";
 }
 
-export function braintrustAppUrl() {
+function braintrustAppUrl() {
   return firstNonEmpty(process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_APP_URL, process.env.BRAINTRUST_APP_URL);
 }
 
-export function syncBraintrustRuntimeEnv() {
+function syncBraintrustRuntimeEnv() {
   const apiKey = braintrustApiKey();
   const project = braintrustProject();
   const appUrl = braintrustAppUrl();
@@ -59,7 +67,7 @@ function braintrustLogger() {
     projectName: braintrustProject(),
     apiKey,
     ...(braintrustAppUrl() ? { appUrl: braintrustAppUrl() } : {}),
-    asyncFlush: false,
+    asyncFlush: true,
     setCurrent: false,
     fetch: globalThis.fetch,
     onFlushError: (error) => reportBraintrustError("flush", error),
@@ -102,16 +110,14 @@ export async function withBraintrustTrace<T>(
     if (span) {
       span.log({ output: summarize(value) });
       span.end();
-      await span.flush();
-      await logger?.flush();
+      flushInBackground(logger, span);
     }
     return value;
   } catch (error) {
     if (span) {
       span.log({ error: error instanceof Error ? error.message : "unknown model call error" });
       span.end();
-      await span.flush();
-      await logger?.flush();
+      flushInBackground(logger, span);
     }
     throw error;
   }

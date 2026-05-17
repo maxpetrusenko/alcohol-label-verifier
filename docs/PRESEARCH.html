@@ -427,7 +427,7 @@
           </div>
           <div class="grid-3" style="margin-top:18px">
             <div class="card"><h3>ADRs added</h3><p><a href="decisions/0001-blind-extraction.md">Blind extraction</a>, <a href="decisions/0002-deterministic-rules.md">deterministic rules</a>, human review, tool surface, fixture benchmarks, and deferred production scope.</p></div>
-            <div class="card"><h3>Fixtures built</h3><p><a href="../scripts/html-fixture-generator.mjs">Generator</a>, <a href="../public/evals/fixtures/html-generated/manifest.json">nine-case manifest</a>, degraded-photo generator, and benchmark harnesses now turn research examples into repeatable checks.</p></div>
+            <div class="card"><h3>Fixtures built</h3><p><a href="../scripts/html-fixture-generator.mjs">Generator</a>, <a href="../public/evals/fixtures/spirits-rendered-regression/manifest.json">nine-case manifest</a>, degraded-photo generator, and benchmark harnesses now turn research examples into repeatable checks.</p></div>
             <div class="card"><h3>Reviewer UX built</h3><p>The current screen supports demo, fixture, upload, text fallback, small batch review, image-quality gating, decision counts, and exportable packets.</p></div>
           </div>
         </div>
@@ -505,7 +505,7 @@
         <thead><tr><th>Reference</th><th>What it does</th><th>Lesson for LabelCheck</th></tr></thead>
         <tbody>
           <tr><td>Raq TTB Label Verifier</td><td>Mock COLA queue, single-label fallback, batch tab with one source record per label.</td><td>Make queue-first the main flow. Do not make typing facts the primary experience.</td></tr>
-          <tr><td>fsyeddev TTB Label</td><td>Generated image + JSON fixture corpus, JSON/CSV import, field-level result cards.</td><td>Use fixtures from <code>/evals/fixtures/generated</code> to power demos and tests.</td></tr>
+          <tr><td>fsyeddev TTB Label</td><td>Generated image + JSON fixture corpus, JSON/CSV import, field-level result cards.</td><td>Use fixtures from <code>/evals/fixtures/spirits-generated-canonical</code> to power demos and tests.</td></tr>
           <tr><td>PlntGoblin ALRT</td><td>Blind extraction followed by deterministic comparison and human override.</td><td>Do not show expected facts to AI during label extraction.</td></tr>
           <tr><td>TTB COLAs Online</td><td>Official submission system for COLA applications, status tracking, application detail, and label image upload.</td><td>Our prototype should mirror the mental model: source application facts plus uploaded label images. It should not replace COLAs.</td></tr>
           <tr><td>LabelScreener</td><td>Uploads packaging artwork and product specs, then returns pass/fail/needs-review checks against data and regulations.</td><td>Spec sheet equals source of truth. For us, the source of truth is the COLA/application record.</td></tr>
@@ -528,7 +528,7 @@
       </div>
       <h3>Where pictures come from</h3>
       <ol class="flow-list">
-        <li><div><h3>Prototype path</h3><p>Use fixture pairs from <code>/evals/fixtures/generated</code>: label image, JSON form data, and expected behavior.</p></div></li>
+        <li><div><h3>Prototype path</h3><p>Use fixture pairs from <code>/evals/fixtures/spirits-generated-canonical</code>: label image, JSON form data, and expected behavior.</p></div></li>
         <li><div><h3>Real TTB path</h3><p>Label images already arrive as part of a COLA application. A future integration would prefill source facts and attached images from COLAs.</p></div></li>
         <li><div><h3>Camera path</h3><p>Camera captures one label at a time through browser camera permission on localhost or HTTPS. Desktop upload and folder drop remain the batch paths.</p></div></li>
         <li><div><h3>Fallback path</h3><p>If no queue row exists, reviewer imports JSON/CSV or manually enters fields. If model calls are blocked, reviewer pastes OCR/text.</p></div></li>
@@ -560,7 +560,7 @@ Result:
       </div>
       <div class="grid-3" style="margin-top:18px">
         <div class="card"><h3>API surface</h3><p><code>/api/v1/health</code>, <code>/api/v1/extract</code>, <code>/api/v1/verify</code>, and <code>/api/v1/export</code> are the machine-facing contract. UI scraping is not the integration path.</p></div>
-        <div class="card"><h3>Fixture surface</h3><p><code>scripts/html-fixture-generator.mjs</code> writes reproducible SVG, HTML, JSON, and manifest files under <code>public/evals/fixtures/html-generated</code>.</p></div>
+        <div class="card"><h3>Fixture surface</h3><p><code>scripts/html-fixture-generator.mjs</code> writes reproducible SVG, HTML, JSON, and manifest files under <code>public/evals/fixtures/spirits-rendered-regression</code>.</p></div>
         <div class="card"><h3>Benchmark surface</h3><p><code>src/lib/htmlFixtureBenchmark.ts</code> and <code>src/lib/degradedFixtureBenchmark.ts</code> run fixture ground truth through the local rule engine and report gaps without a model API.</p></div>
       </div>
       <pre>Browser -> POST /api/verify -> Extractor -> RuleGraph -> Review result
@@ -1390,7 +1390,7 @@ npm run build</pre>
       "id": "public-fixtures",
       "kind": "data",
       "title": "Fixture assets",
-      "path": "public/evals/fixtures/generated",
+      "path": "public/evals/fixtures/spirits-generated-canonical",
       "summary": "PNG and JSON pairs copied from fsyeddev/ttb-label for demo, regression, and eval coverage.",
       "x": 6.5,
       "y": 2.25,
@@ -1669,7 +1669,7 @@ npm run build</pre>
           "to": "public-fixtures",
           "kind": "client",
           "label": "fetch PNG",
-          "payload": "public/evals/fixtures/generated/{fixture}.png is fetched as a Blob."
+          "payload": "public/evals/fixtures/spirits-generated-canonical/{fixture}.png is fetched as a Blob."
         },
         {
           "from": "public-fixtures",

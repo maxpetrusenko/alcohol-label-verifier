@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "bad__fail__defocus__l06__rotate-p090__src-06-warning-sneaky-03__029",
+  "sourceId": "06-warning-sneaky-03",
+  "title": "Sneaky warning: 'a Surgeon General' instead of 'the Surgeon General' (defocus-blur, level 6, sideways)",
+  "photoQuality": "bad",
+  "variant": "defocus-blur",
+  "degradationFamily": "defocus-blur",
+  "severityLevel": 6,
+  "orientation": "sideways",
+  "angleDegrees": 90,
+  "sourceImage": "public/evals/fixtures/spirits-generated-canonical/06-warning-sneaky-03.png",
+  "image": "public/evals/fixtures/stress-degraded-generated/bad__fail__defocus__l06__rotate-p090__src-06-warning-sneaky-03__029.jpg",
+  "imageHash": "a3754c46ebaddde6",
+  "form_data": {
+    "brand_name": "Velvet Sky",
+    "class_type": "Vodka",
+    "abv": "40% Alc./Vol.",
+    "net_contents": "750 mL",
+    "bottler_name": "Sky Spirits",
+    "bottler_address": "Los Angeles, CA",
+    "country_of_origin": "",
+    "is_import": false
+  },
+  "image_prompt": "Photorealistic tall sleek bottle with a dark blue velvet label. Verbatim text to include exactly: 'Velvet Sky', 'Vodka', '40% Alc./Vol.', '750 mL', 'Produced and bottled by Sky Spirits, Los Angeles, CA'. Include a separate paragraph in small print: 'GOVERNMENT WARNING: (1) According to a Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.'",
+  "expectedSourceBehavior": "FAIL compliance (Exact warning text mismatch)",
+  "expectedDecision": "rejected",
+  "expectedProblemChecks": [],
+  "extractionConfidence": 0.72,
+  "visualObservation": "Visual note: label photo has moderate defocus blur. Camera orientation is sideways (90 degrees). The photo is sideways and may need rotation before automated approval."
+}

@@ -8,12 +8,22 @@ export async function mapWithConcurrency<T, R>(
   const workerCount = Math.min(concurrency, items.length);
 
   await Promise.all(
-    Array.from({ length: workerCount }, async () => {
-      while (cursor < items.length) {
-        const index = cursor;
-        cursor += 1;
-        results[index] = await mapper(items[index], index);
-      }
+    Array.from({ length: workerCount }, () => {
+      return new Promise<void>((resolve, reject) => {
+        const runNext = () => {
+          if (cursor >= items.length) {
+            resolve();
+            return;
+          }
+          const index = cursor;
+          cursor += 1;
+          mapper(items[index], index).then((value) => {
+            results[index] = value;
+            runNext();
+          }, reject);
+        };
+        runNext();
+      });
     }),
   );
 

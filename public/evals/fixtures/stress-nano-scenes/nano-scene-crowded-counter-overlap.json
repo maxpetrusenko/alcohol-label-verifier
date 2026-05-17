@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "nano-scene-crowded-counter-overlap",
+  "title": "Crowded counter with overlapping bottles",
+  "provider": "gemini",
+  "model": "gemini-2.5-flash-image",
+  "mimeType": "image/png",
+  "image": "public/evals/fixtures/stress-nano-scenes/nano-scene-crowded-counter-overlap.png",
+  "imageHash": "301c03f67b2e54ab",
+  "expectedDecision": "needs_review",
+  "expectedProblemChecks": [
+    "image-quality"
+  ],
+  "visualObservation": "AI-generated scene: multiple overlapping bottles and glare mean the app should ask the reviewer to isolate the product or split the photo into separate labels.",
+  "prompt": "Photorealistic crowded tasting counter with four distilled spirits bottles overlapping each other, some labels blocked by bottle shoulders, a small tasting glass and corks nearby, mixed glare on glass. No real brand names, no people, no faces, no hands. The photo should look like a casual phone snapshot rather than a clean product shot.",
+  "providerText": [],
+  "caveat": "AI-generated demo/eval visual. Do not use as deterministic legal-text ground truth; generated label text may be inaccurate."
+}

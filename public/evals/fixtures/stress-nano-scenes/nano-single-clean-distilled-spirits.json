@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "nano-single-clean-distilled-spirits",
+  "title": "Clean single distilled spirits bottle",
+  "provider": "gemini",
+  "model": "gemini-2.5-flash-image",
+  "mimeType": "image/png",
+  "image": "public/evals/fixtures/stress-nano-scenes/nano-single-clean-distilled-spirits.png",
+  "imageHash": "3f8ae8671101db1c",
+  "expectedDecision": "needs_review",
+  "expectedProblemChecks": [
+    "image-quality"
+  ],
+  "visualObservation": "AI-generated clean single-bottle control. Use as demo visual only because generated label text may not be legally exact.",
+  "prompt": "Photorealistic clean product photo of one distilled spirits bottle, centered, straight-on, no hand, no other bottles, label large and visible. Use a fictional brand only, avoid real brands. Label should include generic bourbon styling, 45% Alc./Vol., 750 mL, and a government warning block, but do not use any trademarked text.",
+  "providerText": [
+    "Here's an image of a distilled spirits bottle, centered, straight-on, with a visible label and a fictional brand, as you requested. "
+  ],
+  "caveat": "AI-generated demo/eval visual. Do not use as deterministic legal-text ground truth; generated label text may be inaccurate."
+}

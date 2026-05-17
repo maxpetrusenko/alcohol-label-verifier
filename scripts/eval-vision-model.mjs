@@ -2,7 +2,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, extname, join } from "node:path";
 
-const GENERATED_DIR = "public/evals/fixtures/generated";
+const GENERATED_DIR = "public/evals/fixtures/spirits-generated-canonical";
 const DEFAULT_LIMIT = 10;
 const DEFAULT_OUT = "/tmp/labelcheck-vision-model-eval.json";
 

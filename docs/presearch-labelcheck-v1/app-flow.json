@@ -110,7 +110,7 @@
       "id": "public-fixtures",
       "kind": "data",
       "title": "Fixture assets",
-      "path": "public/evals/fixtures/generated",
+      "path": "public/evals/fixtures/spirits-generated-canonical",
       "summary": "PNG and JSON pairs copied from fsyeddev/ttb-label for demo, regression, and eval coverage.",
       "x": 6.5,
       "y": 2.25,
@@ -389,7 +389,7 @@
           "to": "public-fixtures",
           "kind": "client",
           "label": "fetch PNG",
-          "payload": "public/evals/fixtures/generated/{fixture}.png is fetched as a Blob."
+          "payload": "public/evals/fixtures/spirits-generated-canonical/{fixture}.png is fetched as a Blob."
         },
         {
           "from": "public-fixtures",

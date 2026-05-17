@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "good__pass__bright__l01__rotate-m015__src-01-pass-02__152",
+  "sourceId": "01-pass-02",
+  "title": "Clean, fully compliant imported Scotch Whisky (overexposed, level 1, tilt-left)",
+  "photoQuality": "good",
+  "variant": "overexposed",
+  "degradationFamily": "overexposed",
+  "severityLevel": 1,
+  "orientation": "tilt-left",
+  "angleDegrees": -15,
+  "sourceImage": "public/evals/fixtures/spirits-generated-canonical/01-pass-02.png",
+  "image": "public/evals/fixtures/stress-degraded-generated/good__pass__bright__l01__rotate-m015__src-01-pass-02__152.jpg",
+  "imageHash": "7c8223ab3534c43f",
+  "form_data": {
+    "brand_name": "Highland Crest",
+    "class_type": "Scotch Whisky",
+    "abv": "40% Alc./Vol.",
+    "net_contents": "700 mL",
+    "bottler_name": "Highland Crest Distillers",
+    "bottler_address": "Glasgow, Scotland",
+    "country_of_origin": "Scotland",
+    "is_import": true
+  },
+  "image_prompt": "Photorealistic Scotch bottle with a classy, minimalist white and silver label. Verbatim text to include exactly: 'Highland Crest', 'Scotch Whisky', '40% Alc./Vol.', '700 mL', 'Imported by Highland Crest Imports, New York, NY', 'Product of Scotland'. Include a separate paragraph in small print: 'GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.'",
+  "expectedSourceBehavior": "All 8 fields PASS, 0 advisories, overall PASS",
+  "expectedDecision": "approved",
+  "expectedProblemChecks": [],
+  "extractionConfidence": 0.84,
+  "visualObservation": "Readable photo: bright lighting but label text remains legible. Camera orientation is tilt-left (-15 degrees)."
+}

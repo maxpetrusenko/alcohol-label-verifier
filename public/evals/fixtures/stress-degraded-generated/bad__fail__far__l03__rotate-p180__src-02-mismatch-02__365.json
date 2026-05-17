@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "bad__fail__far__l03__rotate-p180__src-02-mismatch-02__365",
+  "sourceId": "02-mismatch-02",
+  "title": "JSON wrong class type, label correct (distance-downsample, level 3, upside-down)",
+  "photoQuality": "bad",
+  "variant": "distance-downsample",
+  "degradationFamily": "distance-downsample",
+  "severityLevel": 3,
+  "orientation": "upside-down",
+  "angleDegrees": 180,
+  "sourceImage": "public/evals/fixtures/spirits-generated-canonical/02-mismatch-02.png",
+  "image": "public/evals/fixtures/stress-degraded-generated/bad__fail__far__l03__rotate-p180__src-02-mismatch-02__365.jpg",
+  "imageHash": "acd645430f5bd8a2",
+  "form_data": {
+    "brand_name": "Silver Crest",
+    "class_type": "Gin",
+    "abv": "40% Alc./Vol.",
+    "net_contents": "750 mL",
+    "bottler_name": "Silver Crest Spirits",
+    "bottler_address": "Seattle, WA",
+    "country_of_origin": "",
+    "is_import": false
+  },
+  "image_prompt": "Photorealistic tall cylindrical bottle with a crisp, modern silver label. Verbatim text to include exactly: 'Silver Crest', 'Vodka', '40% Alc./Vol.', '750 mL', 'Distilled and bottled by Silver Crest Spirits, Seattle, WA'. Include a separate paragraph in small print: 'GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.'",
+  "expectedSourceBehavior": "FAIL on cross-validation (Class mismatch)",
+  "expectedDecision": "rejected",
+  "expectedProblemChecks": [],
+  "extractionConfidence": 0.78,
+  "visualObservation": "Visual note: label was photographed from too far away with mild downsampling. Camera orientation is upside-down (180 degrees). The photo is upside down and needs rotation before automated approval."
+}

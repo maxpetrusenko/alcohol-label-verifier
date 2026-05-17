@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "nano-scene-many-bottles-storage",
+  "title": "Many distilled liquor bottles in storage",
+  "provider": "gemini",
+  "model": "gemini-2.5-flash-image",
+  "mimeType": "image/png",
+  "image": "public/evals/fixtures/stress-nano-scenes/nano-scene-many-bottles-storage.png",
+  "imageHash": "04eb243bd739d048",
+  "expectedDecision": "needs_review",
+  "expectedProblemChecks": [
+    "image-quality"
+  ],
+  "visualObservation": "AI-generated scene: many alcohol bottles are visible in one storage photo, so the target label is not isolated enough for automated comparison.",
+  "prompt": "Photorealistic product photo in a liquor storage room: many distilled spirits bottles on wooden shelves, labels facing different directions, some labels partly readable, one bourbon bottle in front but not clearly isolated. Warm cellar lighting, realistic glass reflections, no real brand names, no people. The scene should make it ambiguous which one bottle should be verified.",
+  "providerText": [],
+  "caveat": "AI-generated demo/eval visual. Do not use as deterministic legal-text ground truth; generated label text may be inaccurate."
+}

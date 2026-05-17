@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "bad__fail__skew__l09__rotate-p090__src-04-noncompliant-01__494",
+  "sourceId": "04-noncompliant-01",
+  "title": "Non-compliant matching JSON: bottle size 400 mL (perspective-skew, level 9, sideways)",
+  "photoQuality": "bad",
+  "variant": "perspective-skew",
+  "degradationFamily": "perspective-skew",
+  "severityLevel": 9,
+  "orientation": "sideways",
+  "angleDegrees": 90,
+  "sourceImage": "public/evals/fixtures/spirits-generated-canonical/04-noncompliant-01.png",
+  "image": "public/evals/fixtures/stress-degraded-generated/bad__fail__skew__l09__rotate-p090__src-04-noncompliant-01__494.jpg",
+  "imageHash": "4477fa84050186ea",
+  "form_data": {
+    "brand_name": "Amber Wave",
+    "class_type": "Bourbon Whiskey",
+    "abv": "40% Alc./Vol.",
+    "net_contents": "400 mL",
+    "bottler_name": "Wave Distillers",
+    "bottler_address": "Omaha, NE",
+    "country_of_origin": "",
+    "is_import": false,
+    "reason": "400 mL is not an approved TTB standard fill size."
+  },
+  "image_prompt": "Photorealistic medium glass bottle with a rustic orange label. Verbatim text to include exactly: 'Amber Wave', 'Bourbon Whiskey', '40% Alc./Vol.', '400 mL', 'Distilled and bottled by Wave Distillers, Omaha, NE'. Include a separate paragraph in small print: 'GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.'",
+  "expectedSourceBehavior": "FAIL compliance with reason provided",
+  "expectedDecision": "rejected",
+  "expectedProblemChecks": [],
+  "extractionConfidence": 0.6599999999999999,
+  "visualObservation": "Visual note: label photo has severe perspective skew. Camera orientation is sideways (90 degrees). The photo is sideways and may need rotation before automated approval."
+}

@@ -4,8 +4,8 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node
 import { basename, join, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 
-const GENERATED_DIR = "public/evals/fixtures/generated";
-const OUT_DIR = "public/evals/fixtures/degraded-generated";
+const GENERATED_DIR = "public/evals/fixtures/spirits-generated-canonical";
+const OUT_DIR = "public/evals/fixtures/stress-degraded-generated";
 const DEFAULT_SEED = 20260514;
 
 const DEGRADATION_FAMILIES = [

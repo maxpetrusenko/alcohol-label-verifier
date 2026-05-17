@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "good__fail__bright__l03__rotate-000__src-03-noncompliant-03__161",
+  "sourceId": "03-noncompliant-03",
+  "title": "Label non-compliant: missing composition statement on liqueur (overexposed, level 3, upright)",
+  "photoQuality": "good",
+  "variant": "overexposed",
+  "degradationFamily": "overexposed",
+  "severityLevel": 3,
+  "orientation": "upright",
+  "angleDegrees": 0,
+  "sourceImage": "public/evals/fixtures/spirits-generated-canonical/03-noncompliant-03.png",
+  "image": "public/evals/fixtures/stress-degraded-generated/good__fail__bright__l03__rotate-000__src-03-noncompliant-03__161.jpg",
+  "imageHash": "a516bcc5adccdf94",
+  "form_data": {
+    "brand_name": "Fireglow",
+    "class_type": "Cinnamon Liqueur",
+    "abv": "33% Alc./Vol.",
+    "net_contents": "750 mL",
+    "bottler_name": "Fireglow Spirits",
+    "bottler_address": "Austin, TX",
+    "country_of_origin": "",
+    "is_import": false
+  },
+  "image_prompt": "Photorealistic clear bottle filled with red liquid, featuring a fiery modern label. Verbatim text to include exactly: 'Fireglow', 'Cinnamon Liqueur', '33% Alc./Vol.', '750 mL', 'Produced and bottled by Fireglow Spirits, Austin, TX'. (Note: strictly no composition statement included). Include a separate paragraph in small print: 'GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.'",
+  "expectedSourceBehavior": "FAIL compliance (Missing statement of composition)",
+  "expectedDecision": "rejected",
+  "expectedProblemChecks": [],
+  "extractionConfidence": 0.78,
+  "visualObservation": "Readable photo: bright lighting but label text remains legible. Camera orientation is upright (0 degrees)."
+}

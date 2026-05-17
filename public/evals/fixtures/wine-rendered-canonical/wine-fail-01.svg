@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1800" viewBox="0 0 1400 1800">
+  <defs>
+    <linearGradient id="glass" x1="0" x2="1">
+      <stop offset="0" stop-color="#130b0e"/>
+      <stop offset="0.22" stop-color="#d9c878"/>
+      <stop offset="0.52" stop-color="#12090c"/>
+      <stop offset="0.78" stop-color="#d9c878"/>
+      <stop offset="1" stop-color="#090406"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" x2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="0.4" stop-color="#ffffff" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="28" stdDeviation="24" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+  <rect width="1400" height="1800" fill="#f4f1eb"/>
+  <ellipse cx="700" cy="1670" rx="285" ry="54" fill="#c9c1b4" opacity="0.45"/>
+  <g filter="url(#softShadow)">
+    <path d="M565 260 C565 220 835 220 835 260 L835 520 C835 610 930 690 930 880 L930 1580 C930 1655 470 1655 470 1580 L470 880 C470 690 565 610 565 520 Z" fill="url(#glass)"/>
+    <rect x="585" y="90" width="230" height="300" rx="60" fill="url(#glass)"/>
+    <rect x="570" y="90" width="260" height="76" rx="34" fill="#243829"/>
+    <rect x="570" y="165" width="260" height="40" fill="#d1b76b"/>
+    <path d="M556 345 C595 384 805 384 844 345 L844 425 C805 463 595 463 556 425 Z" fill="#18170f" opacity="0.55"/>
+    <path d="M540 355 C578 392 822 392 860 355" fill="none" stroke="#cab276" stroke-width="9" opacity="0.8"/>
+    <rect x="437" y="470" width="526" height="640" rx="26" fill="#f4ead5" stroke="#bda76a" stroke-width="7"/>
+    <rect x="459" y="492" width="482" height="596" rx="16" fill="none" stroke="#d5c18a" stroke-width="3"/>
+    <text x="700" y="535" text-anchor="middle" font-family="Georgia, serif" font-size="44" fill="#352716">LAURENT HILL</text>
+    <text x="700" y="605" text-anchor="middle" font-family="Georgia, serif" font-size="31" fill="#231f18">BRAND NAME: LAURENT HILL</text>
+<text x="700" y="646" text-anchor="middle" font-family="Georgia, serif" font-size="31" fill="#231f18">White Wine</text>
+<text x="700" y="687" text-anchor="middle" font-family="Georgia, serif" font-size="31" fill="#231f18">Product of France</text>
+<text x="700" y="728" text-anchor="middle" font-family="Georgia, serif" font-size="31" fill="#231f18">Vintage 2023</text>
+<text x="700" y="769" text-anchor="middle" font-family="Georgia, serif" font-size="31" fill="#231f18">12.5% Alc./Vol.</text>
+<text x="700" y="810" text-anchor="middle" font-family="Georgia, serif" font-size="31" fill="#231f18">750 mL</text>
+<text x="700" y="851" text-anchor="middle" font-family="Georgia, serif" font-size="31" fill="#231f18">Contains sulfites.</text>
+<text x="700" y="892" text-anchor="middle" font-family="Georgia, serif" font-size="31" fill="#231f18">Imported by Northstar Imports, New York, NY</text>
+<text x="700" y="933" text-anchor="middle" font-family="Georgia, serif" font-size="22" fill="#231f18">GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink</text>
+<text x="700" y="957" text-anchor="middle" font-family="Georgia, serif" font-size="22" fill="#231f18">alcoholic beverages during pregnancy because of the risk of birth defects. (2)</text>
+<text x="700" y="981" text-anchor="middle" font-family="Georgia, serif" font-size="22" fill="#231f18">Consumption of alcoholic beverages impairs your ability to drive a car or operate</text>
+<text x="700" y="1005" text-anchor="middle" font-family="Georgia, serif" font-size="22" fill="#231f18">machinery, and may cause health problems.</text>
+    
+    <path d="M533 415 C495 590 510 1270 505 1540" stroke="url(#shine)" stroke-width="58" opacity="0.42"/>
+    <path d="M805 420 C865 720 858 1260 844 1530" stroke="url(#shine)" stroke-width="42" opacity="0.28"/>
+  </g>
+</svg>

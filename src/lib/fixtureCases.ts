@@ -1,7 +1,7 @@
 import { applicationFromFsyedFixture, type FsyedGeneratedFixtureJson } from "./applicationImport";
 import type { ApplicationData, VerificationDecision } from "./types";
 
-const GENERATED_FIXTURE_PUBLIC_PATH = "/evals/fixtures/generated";
+const GENERATED_FIXTURE_PUBLIC_PATH = "/evals/fixtures/spirits-generated-canonical";
 
 export type FixtureCategory = "pass" | "mismatch" | "label_noncompliant" | "matching_noncompliant" | "warning_bad" | "warning_sneaky";
 
@@ -18,7 +18,7 @@ export type FixtureCase = {
   application: ApplicationData;
   source: {
     repository: "fsyeddev-ttb-label";
-    sourceDirectory: "evals/fixtures/generated";
+    sourceDirectory: "evals/fixtures/spirits-generated-canonical";
     fixtureId: string;
   };
   caveat?: string;
@@ -52,7 +52,7 @@ function defineFixtureCase(
     application: applicationFromFsyedFixture(raw),
     source: {
       repository: "fsyeddev-ttb-label",
-      sourceDirectory: "evals/fixtures/generated",
+      sourceDirectory: "evals/fixtures/spirits-generated-canonical",
       fixtureId: id,
     },
     ...(caveat ? { caveat } : {}),
@@ -65,7 +65,7 @@ const GOVERNMENT_WARNING_TEXT =
 /*
  * Fixture attribution:
  * Generated label images and JSON form records copied from
- * /Users/maxpetrusenko/Desktop/Projects/oss/fsyeddev-ttb-label/evals/fixtures/generated.
+ * /Users/maxpetrusenko/Desktop/Projects/oss/fsyeddev-ttb-label/evals/fixtures/spirits-generated-canonical.
  * The upstream per-case JSON is application/form data; label-visible text is in the PNG
  * and in manifest.json image prompts, so OCR/vision extraction is still needed for UI runs.
  */

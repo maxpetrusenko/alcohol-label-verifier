@@ -1,0 +1,29 @@
+{
+  "name": "labelcheck",
+  "version": "0.1.0",
+  "description": "CLI for LabelCheck alcohol label verification.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "bin": {
+    "labelcheck": "bin/labelcheck.mjs"
+  },
+  "files": [
+    "bin",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "alcohol",
+    "label",
+    "verification",
+    "ttb",
+    "compliance",
+    "cli"
+  ],
+  "homepage": "https://cola.maxpetrusenko.com"
+}

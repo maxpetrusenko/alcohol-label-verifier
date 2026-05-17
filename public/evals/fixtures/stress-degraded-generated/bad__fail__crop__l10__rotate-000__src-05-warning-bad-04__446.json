@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "bad__fail__crop__l10__rotate-000__src-05-warning-bad-04__446",
+  "sourceId": "05-warning-bad-04",
+  "title": "Government warning completely wrong wording (crop-occlusion, level 10, upright)",
+  "photoQuality": "bad",
+  "variant": "crop-occlusion",
+  "degradationFamily": "crop-occlusion",
+  "severityLevel": 10,
+  "orientation": "upright",
+  "angleDegrees": 0,
+  "sourceImage": "public/evals/fixtures/spirits-generated-canonical/05-warning-bad-04.png",
+  "image": "public/evals/fixtures/stress-degraded-generated/bad__fail__crop__l10__rotate-000__src-05-warning-bad-04__446.jpg",
+  "imageHash": "57062f3b6939bf5f",
+  "form_data": {
+    "brand_name": "Winter Sky",
+    "class_type": "Vodka",
+    "abv": "40% Alc./Vol.",
+    "net_contents": "750 mL",
+    "bottler_name": "Sky Distilling",
+    "bottler_address": "Fargo, ND",
+    "country_of_origin": "",
+    "is_import": false
+  },
+  "image_prompt": "Photorealistic tall frosted bottle with a starry night label. Verbatim text to include exactly: 'Winter Sky', 'Vodka', '40% Alc./Vol.', '750 mL', 'Produced and bottled by Sky Distilling, Fargo, ND'. Include a separate paragraph in small print: 'GOVERNMENT WARNING: Drinking alcohol is harmful to your health and impairs driving. Pregnant women should not drink.'",
+  "expectedSourceBehavior": "FAIL compliance (Non-statutory warning text)",
+  "expectedDecision": "rejected",
+  "expectedProblemChecks": [],
+  "extractionConfidence": 0.6399999999999999,
+  "visualObservation": "Visual note: label photo has severe cropping or partial occlusion. Camera orientation is upright (0 degrees)."
+}

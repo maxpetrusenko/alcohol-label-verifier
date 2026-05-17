@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "bad__review__scene-crowded-counter__src-02-mismatch-01__003",
+  "sourceId": "02-mismatch-01",
+  "title": "Crowded counter with overlapping bottles",
+  "photoQuality": "bad",
+  "variant": "scene-crowded-counter",
+  "degradationFamily": "scene-crowded-counter",
+  "severityLevel": 8,
+  "orientation": "scene",
+  "angleDegrees": 0,
+  "sourceImage": "public/evals/fixtures/spirits-generated-canonical/02-mismatch-01.png",
+  "image": "public/evals/fixtures/stress-degraded-samples/bad__review__scene-crowded-counter__src-02-mismatch-01__003.jpg",
+  "imageHash": "73bcf090be0645e9",
+  "form_data": {
+    "brand_name": "Wrong Brand Name",
+    "class_type": "Tennessee Whiskey",
+    "abv": "40% Alc./Vol.",
+    "net_contents": "750 mL",
+    "bottler_name": "Smoky Hollow Distillery",
+    "bottler_address": "Nashville, TN",
+    "country_of_origin": "",
+    "is_import": false,
+    "description": "JSON wrong brand name, label correct",
+    "expected_behavior": "FAIL on cross-validation (Brand mismatch)"
+  },
+  "image_prompt": "Photorealistic square glass bottle with a black and white classic label. Verbatim text to include exactly: 'Smoky Hollow', 'Tennessee Whiskey', '40% Alc./Vol.', '750 mL', 'Distilled and bottled by Smoky Hollow Distillery, Nashville, TN'. Include a separate paragraph in small print: 'GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.'",
+  "expectedSourceBehavior": "FAIL on cross-validation (Brand mismatch)",
+  "expectedDecision": "needs_review",
+  "expectedProblemChecks": [
+    "image-quality"
+  ],
+  "extractionConfidence": 0.38,
+  "visualObservation": "Visual note: multiple bottles overlap on a counter with glare and mixed labels. The reviewer must isolate the product before comparison."
+}

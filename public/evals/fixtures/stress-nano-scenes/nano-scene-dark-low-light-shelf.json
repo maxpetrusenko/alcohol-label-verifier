@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "nano-scene-dark-low-light-shelf",
+  "title": "Dark shelf photo with multiple bottles",
+  "provider": "gemini",
+  "model": "gemini-2.5-flash-image",
+  "mimeType": "image/png",
+  "image": "public/evals/fixtures/stress-nano-scenes/nano-scene-dark-low-light-shelf.png",
+  "imageHash": "e54f3fa52ebb5450",
+  "expectedDecision": "needs_review",
+  "expectedProblemChecks": [
+    "image-quality"
+  ],
+  "visualObservation": "AI-generated scene: low light plus multiple bottles makes the target and required label text uncertain.",
+  "prompt": "Photorealistic low-light phone photo inside a dim bar shelf: several whiskey and gin bottles, dark shadows, reflections, one target-looking bottle near center with label too dark to read completely. No real brand names, no readable trademarked labels. Realistic camera noise and underexposure.",
+  "providerText": [
+    "Sure, here's an image for your compliance-review prototype: "
+  ],
+  "caveat": "AI-generated demo/eval visual. Do not use as deterministic legal-text ground truth; generated label text may be inaccurate."
+}

@@ -80,6 +80,8 @@ ALCOHOL_LABEL_VERIFIER_BRAINTRUST_APP_URL=
 ALCOHOL_LABEL_VERIFIER_BRAINTRUST_TRACING=true
 ALCOHOL_LABEL_VERIFIER_BRAINTRUST_PROJECT=alcohol-label-verifier
 VISION_MAX_OUTPUT_TOKENS=450
+VISION_TIMEOUT_MS=2500
+VISION_FALLBACK_TIMEOUT_MS=1500
 OPENAI_API_KEY=
 OPENAI_VISION_MODEL=gpt-4.1-nano
 OPENAI_VISION_ENDPOINT=chat_completions
@@ -88,6 +90,7 @@ OPENAI_VISION_MAX_OUTPUT_TOKENS=450
 ```
 
 If the configured provider key is missing, the app runs in text-only demo mode using the OCR/text fallback box. Gemini is the default provider; set one of `GEMINI_API_KEY`, `GEMINI_API_KEY_MAX`, `GEMINI_API_KEY_TURKEY`, or `GOOGLE_API_KEY`. Set `VISION_PROVIDER=openai` to use OpenAI instead.
+`VISION_TIMEOUT_MS` defaults to `2500`, so a stalled primary provider does not block the reviewer. If the opposite provider key is available, the app retries once with `VISION_FALLBACK_TIMEOUT_MS`, default `1500`; otherwise it returns a fast extraction failure instead of waiting 20-30 seconds.
 Set `ALCOHOL_LABEL_VERIFIER_LANGSMITH_API_KEY` and `ALCOHOL_LABEL_VERIFIER_LANGSMITH_TRACING=true` to trace sanitized vision extraction calls in LangSmith. Generic `LANGSMITH_*` variables still work as a fallback. Traces record provider/model/status and file metadata, not raw base64 label images or provider keys.
 Set `ALCOHOL_LABEL_VERIFIER_BRAINTRUST_API_KEY` and `ALCOHOL_LABEL_VERIFIER_BRAINTRUST_TRACING=true` to also trace the same sanitized model calls in Braintrust. Generic `BRAINTRUST_*` variables still work as a fallback.
 Check `/api/health` to confirm whether the running local or production server sees the keys; it reports `vision.configured`, `vision.provider`, the selected model, and LangSmith/Braintrust tracing status without exposing secrets.
@@ -97,9 +100,14 @@ The browser compresses uploaded/camera images to a bounded JPEG before verificat
 
 ```bash
 npm run test
+npm run test:coverage
+npm run test:e2e
 npm run lint
+npm run doctor:react
 npm run build
 ```
+
+`test:coverage` enforces 90% statements, functions, and lines coverage for `src/app/api` and `src/lib`, with branches currently held at the fixture-heavy baseline. `test:e2e` runs a Playwright Chromium smoke test against the reviewer UI and demo verification flow. CI installs Chromium and runs it alongside lint, unit/eval tests, React Doctor, and the production build.
 
 Run the copied fsyed generated fixture eval report:
 
@@ -107,7 +115,7 @@ Run the copied fsyed generated fixture eval report:
 npm run eval:fixtures
 ```
 
-This processes every generated fixture row in `public/evals/fixtures/generated/manifest.json` against the local deterministic rule engine and writes the gap report to `/tmp/labelcheck-fsyed-fixture-eval.json`.
+This processes every generated fixture row in `public/evals/fixtures/spirits-generated-canonical/manifest.json` against the local deterministic rule engine and writes the gap report to `/tmp/labelcheck-fsyed-fixture-eval.json`.
 
 Generate and benchmark the local deterministic HTML/SVG fixture set:
 
@@ -116,7 +124,7 @@ npm run fixtures:generate
 npm run fixtures:benchmark
 ```
 
-This writes no paid image-generation assets. It creates reproducible SVG, HTML, JSON, and manifest files in `public/evals/fixtures/html-generated/`, then runs the verifier over manifest ground truth with text extraction only. The benchmark report is written to `/tmp/labelcheck-html-fixture-benchmark.json`.
+This writes no paid image-generation assets. It creates reproducible SVG, HTML, JSON, and manifest files in `public/evals/fixtures/spirits-rendered-regression/`, then runs the verifier over manifest ground truth with text extraction only. The benchmark report is written to `/tmp/labelcheck-html-fixture-benchmark.json`.
 
 Generate and benchmark the degraded-photo eval set:
 
@@ -126,9 +134,9 @@ npm run fixtures:scenes
 npm run eval:degraded-fixtures
 ```
 
-`fixtures:degrade` uses ImageMagick locally to create the full seeded degraded set from copied fixture PNGs: defocus blur, motion blur, low light, overexposure, flash glare, blue cast, JPEG noise, distance/downsample, crop/occlusion, perspective skew, and camera viewpoint angles from top, bottom, inward, and outward label rotation across severity and camera orientation. `eval:degraded-fixtures` keeps the normal test gate fast by generating one representative image per degradation variant. Artifacts are local generated files under `public/evals/fixtures/degraded-generated/` or a temp directory and are ignored by git; the benchmark report is written to `/tmp/labelcheck-degraded-fixture-benchmark.json`.
+`fixtures:degrade` uses ImageMagick locally to create the full seeded degraded set from copied fixture PNGs: defocus blur, motion blur, low light, overexposure, flash glare, blue cast, JPEG noise, distance/downsample, crop/occlusion, perspective skew, and camera viewpoint angles from top, bottom, inward, and outward label rotation across severity and camera orientation. `eval:degraded-fixtures` keeps the normal test gate fast by generating one representative image per degradation variant. Artifacts are local generated files under `public/evals/fixtures/stress-degraded-generated/` or a temp directory and are ignored by git; the benchmark report is written to `/tmp/labelcheck-degraded-fixture-benchmark.json`.
 
-`fixtures:scenes` writes a small committed scene-photo sample set under `public/evals/fixtures/degraded-samples/`: many bottles in storage, oblique shelf rows, crowded counters, and a pouring/hand-covered label. These cases are expected to block with a clear target-isolation message because the label panel is not isolated. They are not field-matching ground truth fixtures.
+`fixtures:scenes` writes a small committed scene-photo sample set under `public/evals/fixtures/stress-degraded-samples/`: many bottles in storage, oblique shelf rows, crowded counters, and a pouring/hand-covered label. These cases are expected to block with a clear target-isolation message because the label panel is not isolated. They are not field-matching ground truth fixtures.
 
 Generate opt-in Nano Banana edge-case photos when you want fresh realistic demo images:
 
@@ -136,9 +144,9 @@ Generate opt-in Nano Banana edge-case photos when you want fresh realistic demo 
 npm run fixtures:nano
 ```
 
-This uses Gemini image generation with `GEMINI_API_KEY`, `GOOGLE_API_KEY`, `GEMINI_API_KEY_MAX`, or `GEMINI_API_KEY_TURKEY` and writes images plus metadata to `public/evals/fixtures/nano-banana-generated/`. It is intentionally outside CI because paid model calls and generated pixels are not deterministic. Use these images only for image-quality and target-ambiguity review behavior; generated label names and text may not match application facts and may not be legally exact. Use `GEMINI_IMAGE_MODEL=gemini-3-pro-image-preview npm run fixtures:nano` to try Nano Banana Pro when that model is available on the configured key.
+This uses Gemini image generation with `GEMINI_API_KEY`, `GOOGLE_API_KEY`, `GEMINI_API_KEY_MAX`, or `GEMINI_API_KEY_TURKEY` and writes images plus metadata to `public/evals/fixtures/stress-nano-scenes/`. It is intentionally outside CI because paid model calls and generated pixels are not deterministic. Use these images only for image-quality and target-ambiguity review behavior; generated label names and text may not match application facts and may not be legally exact. Use `GEMINI_IMAGE_MODEL=gemini-3-pro-image-preview npm run fixtures:nano` to try Nano Banana Pro when that model is available on the configured key.
 
-A small reviewable subset is committed under `public/evals/fixtures/degraded-samples/`. Sample filenames encode photo quality, expected outcome, degradation family, severity, rotation, and source fixture, for example `bad__review__flash__l09__rotate-p015__src-01-pass-03__243.jpg`.
+A small reviewable subset is committed under `public/evals/fixtures/stress-degraded-samples/`. Sample filenames encode photo quality, expected outcome, degradation family, severity, rotation, and source fixture, for example `bad__review__flash__l09__rotate-p015__src-01-pass-03__243.jpg`.
 
 The deterministic and degraded benchmarks prove the rule engine and image-quality gates behave reproducibly. A claim that the live vision model recognizes labels correctly should be backed by a separate opt-in vision eval run with the configured provider key, because CI intentionally avoids paid model calls.
 
@@ -222,6 +230,33 @@ LABELCHECK_BASE_URL=http://localhost:3000 node bin/labelcheck.mjs extract label.
 LABELCHECK_BASE_URL=http://localhost:3000 node bin/labelcheck.mjs export verify-response.json --format csv
 ```
 
+Public CLI package:
+
+```bash
+npx labelcheck health
+npx labelcheck verify input.json
+npx labelcheck extract label.png
+npx labelcheck export verify-response.json --format csv
+```
+
+The published package is `labelcheck@0.1.0`. It defaults to `https://cola.maxpetrusenko.com`. Set `LABELCHECK_BASE_URL` or pass `--base-url` for local/private servers.
+
+Published CLI smoke test:
+
+```bash
+npx -y labelcheck@0.1.0 health
+npm run demo:cli -- --base-url https://cola.maxpetrusenko.com --no-start
+```
+
+Agent/local demo:
+
+```bash
+npm run demo:cli
+npm run demo:cli -- --base-url https://cola.maxpetrusenko.com --no-start
+```
+
+The demo script reuses an existing LabelCheck server when it finds one, otherwise starts `next dev` for the default local URL. It writes a fixture-backed verify payload, CLI response, and CSV review packet to `/tmp` and fails if the fixture decisions drift. Agents should use `--no-start` for the deployed app so the command fails clearly if production is unavailable.
+
 Example `POST /api/verify` call:
 
 ```bash
@@ -256,10 +291,10 @@ Future-proofing rules for tool integrations:
 - Preserve per-label results in batch requests so one bad label does not fail the whole batch.
 - Return structured errors with stable codes before exposing this as a public or cross-tool API.
 
-Planned agent/tool surface:
+Agent/tool surface:
 
 - Shared Zod schemas exported from `src/lib` and mirrored in [`docs/openapi.json`](docs/openapi.json).
-- A thin CLI wrapper, for example `labelcheck verify input.json`, using the same HTTP contract.
+- A thin CLI wrapper, `node bin/labelcheck.mjs`, using the same HTTP contract.
 - Optional MCP or workflow-agent adapters built on top of the CLI/API, not beside it.
 
 See [`docs/API.md`](docs/API.md) for the current tool integration contract.

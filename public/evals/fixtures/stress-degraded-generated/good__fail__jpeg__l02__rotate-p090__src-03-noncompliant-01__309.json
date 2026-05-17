@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "good__fail__jpeg__l02__rotate-p090__src-03-noncompliant-01__309",
+  "sourceId": "03-noncompliant-01",
+  "title": "Label non-compliant: non-approved bottle size (800 mL) (jpeg-noise, level 2, sideways)",
+  "photoQuality": "good",
+  "variant": "jpeg-noise",
+  "degradationFamily": "jpeg-noise",
+  "severityLevel": 2,
+  "orientation": "sideways",
+  "angleDegrees": 90,
+  "sourceImage": "public/evals/fixtures/spirits-generated-canonical/03-noncompliant-01.png",
+  "image": "public/evals/fixtures/stress-degraded-generated/good__fail__jpeg__l02__rotate-p090__src-03-noncompliant-01__309.jpg",
+  "imageHash": "d397c3dfa1978204",
+  "form_data": {
+    "brand_name": "Crestview",
+    "class_type": "Vodka",
+    "abv": "40% Alc./Vol.",
+    "net_contents": "800 mL",
+    "bottler_name": "Crestview Spirits",
+    "bottler_address": "Denver, CO",
+    "country_of_origin": "",
+    "is_import": false
+  },
+  "image_prompt": "Photorealistic frosted bottle with a crisp white label. Verbatim text to include exactly: 'Crestview', 'Vodka', '40% Alc./Vol.', '800 mL', 'Distilled and bottled by Crestview Spirits, Denver, CO'. Include a separate paragraph in small print: 'GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.'",
+  "expectedSourceBehavior": "FAIL compliance (Net contents 800 mL not approved)",
+  "expectedDecision": "rejected",
+  "expectedProblemChecks": [],
+  "extractionConfidence": 0.7999999999999999,
+  "visualObservation": "Readable photo: minor compression texture but label text remains legible. Camera orientation is sideways (90 degrees)."
+}

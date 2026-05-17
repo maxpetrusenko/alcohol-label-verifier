@@ -5,8 +5,8 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
-const GENERATED_DIR = "public/evals/fixtures/generated";
-const OUT_DIR = "public/evals/fixtures/degraded-samples";
+const GENERATED_DIR = "public/evals/fixtures/spirits-generated-canonical";
+const OUT_DIR = "public/evals/fixtures/stress-degraded-samples";
 const SCENE_SIZE = "1024x683";
 
 function hasMagick() {

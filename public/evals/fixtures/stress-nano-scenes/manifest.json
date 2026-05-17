@@ -1,0 +1,116 @@
+[
+  {
+    "schemaVersion": 1,
+    "id": "nano-scene-many-bottles-storage",
+    "title": "Many distilled liquor bottles in storage",
+    "provider": "gemini",
+    "model": "gemini-2.5-flash-image",
+    "mimeType": "image/png",
+    "image": "public/evals/fixtures/stress-nano-scenes/nano-scene-many-bottles-storage.png",
+    "imageHash": "04eb243bd739d048",
+    "expectedDecision": "needs_review",
+    "expectedProblemChecks": [
+      "image-quality"
+    ],
+    "visualObservation": "AI-generated scene: many alcohol bottles are visible in one storage photo, so the target label is not isolated enough for automated comparison.",
+    "prompt": "Photorealistic product photo in a liquor storage room: many distilled spirits bottles on wooden shelves, labels facing different directions, some labels partly readable, one bourbon bottle in front but not clearly isolated. Warm cellar lighting, realistic glass reflections, no real brand names, no people. The scene should make it ambiguous which one bottle should be verified.",
+    "providerText": [],
+    "caveat": "AI-generated demo/eval visual. Do not use as deterministic legal-text ground truth; generated label text may be inaccurate."
+  },
+  {
+    "schemaVersion": 1,
+    "id": "nano-scene-covered-pouring-label",
+    "title": "Pouring bottle with hand covering label",
+    "provider": "gemini",
+    "model": "gemini-2.5-flash-image",
+    "mimeType": "image/png",
+    "image": "public/evals/fixtures/stress-nano-scenes/nano-scene-covered-pouring-label.png",
+    "imageHash": "ea889eb256ff0b2a",
+    "expectedDecision": "needs_review",
+    "expectedProblemChecks": [
+      "image-quality"
+    ],
+    "visualObservation": "AI-generated scene: a foreground hand and pouring angle cover the bottle label, so required label facts cannot be verified from this photo.",
+    "prompt": "Photorealistic close-up of an adult hand pouring amber distilled liquor from a bottle into a tasting glass on a kitchen counter. The hand and pouring angle cover most of the bottle label; only a small blank cream label edge is visible. No real brand names. Natural window light, shallow depth of field, realistic glass and liquid.",
+    "providerText": [],
+    "caveat": "AI-generated demo/eval visual. Do not use as deterministic legal-text ground truth; generated label text may be inaccurate."
+  },
+  {
+    "schemaVersion": 1,
+    "id": "nano-scene-top-down-glare",
+    "title": "Top-down bottle angle with glare",
+    "provider": "gemini",
+    "model": "gemini-2.5-flash-image",
+    "mimeType": "image/png",
+    "image": "public/evals/fixtures/stress-nano-scenes/nano-scene-top-down-glare.png",
+    "imageHash": "7aaa32346c0d2555",
+    "expectedDecision": "needs_review",
+    "expectedProblemChecks": [
+      "image-quality"
+    ],
+    "visualObservation": "AI-generated scene: top-down viewpoint and sun glare obscure the front label, so the reviewer should request a clearer isolated label image.",
+    "prompt": "Photorealistic phone photo of a single distilled spirits bottle photographed from directly above and slightly toward the neck, so the front label is foreshortened and angled away from camera. The bottle lies on a bright bar counter with strong sun glare crossing the label, and label text is partly washed out. No real brand names, no people. High realism.",
+    "providerText": [
+      "Here is a photorealistic phone photo of a single distilled spirits bottle, photographed from directly above and slightly toward the neck, with the front label foreshortened and angled away from the camera. The bottle lies on a bright bar counter with strong sun glare crossing the label, and label text is partly washed out.\n\n"
+    ],
+    "caveat": "AI-generated demo/eval visual. Do not use as deterministic legal-text ground truth; generated label text may be inaccurate."
+  },
+  {
+    "schemaVersion": 1,
+    "id": "nano-scene-dark-low-light-shelf",
+    "title": "Dark shelf photo with multiple bottles",
+    "provider": "gemini",
+    "model": "gemini-2.5-flash-image",
+    "mimeType": "image/png",
+    "image": "public/evals/fixtures/stress-nano-scenes/nano-scene-dark-low-light-shelf.png",
+    "imageHash": "e54f3fa52ebb5450",
+    "expectedDecision": "needs_review",
+    "expectedProblemChecks": [
+      "image-quality"
+    ],
+    "visualObservation": "AI-generated scene: low light plus multiple bottles makes the target and required label text uncertain.",
+    "prompt": "Photorealistic low-light phone photo inside a dim bar shelf: several whiskey and gin bottles, dark shadows, reflections, one target-looking bottle near center with label too dark to read completely. No real brand names, no readable trademarked labels. Realistic camera noise and underexposure.",
+    "providerText": [
+      "Sure, here's an image for your compliance-review prototype: "
+    ],
+    "caveat": "AI-generated demo/eval visual. Do not use as deterministic legal-text ground truth; generated label text may be inaccurate."
+  },
+  {
+    "schemaVersion": 1,
+    "id": "nano-scene-crowded-counter-overlap",
+    "title": "Crowded counter with overlapping bottles",
+    "provider": "gemini",
+    "model": "gemini-2.5-flash-image",
+    "mimeType": "image/png",
+    "image": "public/evals/fixtures/stress-nano-scenes/nano-scene-crowded-counter-overlap.png",
+    "imageHash": "301c03f67b2e54ab",
+    "expectedDecision": "needs_review",
+    "expectedProblemChecks": [
+      "image-quality"
+    ],
+    "visualObservation": "AI-generated scene: multiple overlapping bottles and glare mean the app should ask the reviewer to isolate the product or split the photo into separate labels.",
+    "prompt": "Photorealistic crowded tasting counter with four distilled spirits bottles overlapping each other, some labels blocked by bottle shoulders, a small tasting glass and corks nearby, mixed glare on glass. No real brand names, no people, no faces, no hands. The photo should look like a casual phone snapshot rather than a clean product shot.",
+    "providerText": [],
+    "caveat": "AI-generated demo/eval visual. Do not use as deterministic legal-text ground truth; generated label text may be inaccurate."
+  },
+  {
+    "schemaVersion": 1,
+    "id": "nano-single-clean-distilled-spirits",
+    "title": "Clean single distilled spirits bottle",
+    "provider": "gemini",
+    "model": "gemini-2.5-flash-image",
+    "mimeType": "image/png",
+    "image": "public/evals/fixtures/stress-nano-scenes/nano-single-clean-distilled-spirits.png",
+    "imageHash": "3f8ae8671101db1c",
+    "expectedDecision": "needs_review",
+    "expectedProblemChecks": [
+      "image-quality"
+    ],
+    "visualObservation": "AI-generated clean single-bottle control. Use as demo visual only because generated label text may not be legally exact.",
+    "prompt": "Photorealistic clean product photo of one distilled spirits bottle, centered, straight-on, no hand, no other bottles, label large and visible. Use a fictional brand only, avoid real brands. Label should include generic bourbon styling, 45% Alc./Vol., 750 mL, and a government warning block, but do not use any trademarked text.",
+    "providerText": [
+      "Here's an image of a distilled spirits bottle, centered, straight-on, with a visible label and a fictional brand, as you requested. "
+    ],
+    "caveat": "AI-generated demo/eval visual. Do not use as deterministic legal-text ground truth; generated label text may be inaccurate."
+  }
+]

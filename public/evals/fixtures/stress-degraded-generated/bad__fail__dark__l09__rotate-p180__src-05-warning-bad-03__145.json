@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "bad__fail__dark__l09__rotate-p180__src-05-warning-bad-03__145",
+  "sourceId": "05-warning-bad-03",
+  "title": "Government warning partial (first sentence only) (low-light, level 9, upside-down)",
+  "photoQuality": "bad",
+  "variant": "low-light",
+  "degradationFamily": "low-light",
+  "severityLevel": 9,
+  "orientation": "upside-down",
+  "angleDegrees": 180,
+  "sourceImage": "public/evals/fixtures/spirits-generated-canonical/05-warning-bad-03.png",
+  "image": "public/evals/fixtures/stress-degraded-generated/bad__fail__dark__l09__rotate-p180__src-05-warning-bad-03__145.jpg",
+  "imageHash": "e0cfaa390ebc45de",
+  "form_data": {
+    "brand_name": "Silver Anchor",
+    "class_type": "Rum",
+    "abv": "40% Alc./Vol.",
+    "net_contents": "750 mL",
+    "bottler_name": "Anchor Bay Spirits",
+    "bottler_address": "Newport, RI",
+    "country_of_origin": "",
+    "is_import": false
+  },
+  "image_prompt": "Photorealistic clear glass bottle with a nautical silver label. Verbatim text to include exactly: 'Silver Anchor', 'Rum', '40% Alc./Vol.', '750 mL', 'Distilled and bottled by Anchor Bay Spirits, Newport, RI'. Include a separate paragraph in small print: 'GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects.'",
+  "expectedSourceBehavior": "FAIL compliance (Incomplete government warning)",
+  "expectedDecision": "rejected",
+  "expectedProblemChecks": [],
+  "extractionConfidence": 0.6599999999999999,
+  "visualObservation": "Visual note: label photo is severe underexposed and noisy. Camera orientation is upside-down (180 degrees). The photo is upside down and needs rotation before automated approval."
+}

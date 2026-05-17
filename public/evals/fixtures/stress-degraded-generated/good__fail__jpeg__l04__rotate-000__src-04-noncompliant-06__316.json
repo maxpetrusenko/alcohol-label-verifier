@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "good__fail__jpeg__l04__rotate-000__src-04-noncompliant-06__316",
+  "sourceId": "04-noncompliant-06",
+  "title": "Non-compliant matching JSON: missing age statement on Bourbon (jpeg-noise, level 4, upright)",
+  "photoQuality": "good",
+  "variant": "jpeg-noise",
+  "degradationFamily": "jpeg-noise",
+  "severityLevel": 4,
+  "orientation": "upright",
+  "angleDegrees": 0,
+  "sourceImage": "public/evals/fixtures/spirits-generated-canonical/04-noncompliant-06.png",
+  "image": "public/evals/fixtures/stress-degraded-generated/good__fail__jpeg__l04__rotate-000__src-04-noncompliant-06__316.jpg",
+  "imageHash": "cfac4865c5562083",
+  "form_data": {
+    "brand_name": "Young Buck",
+    "class_type": "Bourbon Whiskey",
+    "abv": "40% Alc./Vol.",
+    "net_contents": "750 mL",
+    "bottler_name": "Buck Distillers",
+    "bottler_address": "Louisville, KY",
+    "country_of_origin": "",
+    "is_import": false,
+    "reason": "Whisky aged under 4 years requires an age statement on the label."
+  },
+  "image_prompt": "Photorealistic clear bottle with a deer-themed label. Verbatim text to include exactly: 'Young Buck', 'Bourbon Whiskey', '40% Alc./Vol.', '750 mL', 'Distilled and bottled by Buck Distillers, Louisville, KY'. Include a separate paragraph in small print: 'GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.'",
+  "expectedSourceBehavior": "FAIL compliance with reason provided",
+  "expectedDecision": "rejected",
+  "expectedProblemChecks": [],
+  "extractionConfidence": 0.76,
+  "visualObservation": "Readable photo: minor compression texture but label text remains legible. Camera orientation is upright (0 degrees)."
+}

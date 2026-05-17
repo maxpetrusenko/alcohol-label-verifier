@@ -1,0 +1,5 @@
+labelId,fileName,decision,score,passChecks,warningChecks,reviewChecks,failChecks,summary
+wine-pass-01,wine-pass-01.png,approved,100,6,0,0,0,All focused alcohol beverage label fields matched the application.
+wine-warning-01,wine-warning-01.png,needs_review,83,5,0,1,0,"No hard mismatch was found, but one or more label or application facts needs agent judgment."
+wine-fail-01,wine-fail-01.png,rejected,71,5,0,0,2,One or more required fields conflict with the application or mandatory warning requirements.
+

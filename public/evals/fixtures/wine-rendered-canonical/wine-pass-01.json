@@ -1,0 +1,25 @@
+{
+  "id": "wine-pass-01",
+  "title": "Silver Ridge Cellars",
+  "image": "public/evals/fixtures/wine-rendered-canonical/wine-pass-01.png",
+  "svg": "public/evals/fixtures/wine-rendered-canonical/wine-pass-01.svg",
+  "expectedDecision": "approved",
+  "expectedProblemChecks": [],
+  "application": {
+    "brandName": "SILVER RIDGE CELLARS",
+    "classType": "Red Wine",
+    "alcoholContent": "13.5% Alc./Vol.",
+    "netContents": "750 mL",
+    "bottlerAddress": "Silver Ridge Cellars, Sonoma, CA",
+    "countryOfOrigin": "United States",
+    "beverageKind": "wine",
+    "imported": false
+  },
+  "labelText": "BRAND NAME: SILVER RIDGE CELLARS\nRed Wine\nCalifornia\nVintage 2023\n13.5% Alc./Vol.\n750 mL\nContains sulfites.\nProduced and bottled by Silver Ridge Cellars, Sonoma, CA\nGOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.",
+  "visualObservation": "Deterministic synthetic wine label. Exact text rendered from JSON.",
+  "sourceBaseDownloads": [
+    "/Users/maxpetrusenko/Downloads/labelcheck-wine-fixtures/downloaded-bases/four-bottles-with-blank-labels.svg",
+    "/Users/maxpetrusenko/Downloads/labelcheck-wine-fixtures/downloaded-bases/draw-french-wine-bottle.png",
+    "/Users/maxpetrusenko/Downloads/labelcheck-wine-fixtures/downloaded-bases/mde-botella.png"
+  ]
+}

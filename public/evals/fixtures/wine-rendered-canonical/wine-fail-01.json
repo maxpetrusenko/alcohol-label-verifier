@@ -1,0 +1,28 @@
+{
+  "id": "wine-fail-01",
+  "title": "Laurent Hill",
+  "image": "public/evals/fixtures/wine-rendered-canonical/wine-fail-01.png",
+  "svg": "public/evals/fixtures/wine-rendered-canonical/wine-fail-01.svg",
+  "expectedDecision": "rejected",
+  "expectedProblemChecks": [
+    "brand-name",
+    "country-origin"
+  ],
+  "application": {
+    "brandName": "LANTERN HILL",
+    "classType": "White Wine",
+    "alcoholContent": "12.5% Alc./Vol.",
+    "netContents": "750 mL",
+    "bottlerAddress": "Northstar Imports, New York, NY",
+    "countryOfOrigin": "Italy",
+    "beverageKind": "wine",
+    "imported": true
+  },
+  "labelText": "BRAND NAME: LAURENT HILL\nWhite Wine\nProduct of France\nVintage 2023\n12.5% Alc./Vol.\n750 mL\nContains sulfites.\nImported by Northstar Imports, New York, NY\nGOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.",
+  "visualObservation": "Deterministic synthetic imported wine label intentionally mismatched against JSON.",
+  "sourceBaseDownloads": [
+    "/Users/maxpetrusenko/Downloads/labelcheck-wine-fixtures/downloaded-bases/four-bottles-with-blank-labels.svg",
+    "/Users/maxpetrusenko/Downloads/labelcheck-wine-fixtures/downloaded-bases/draw-french-wine-bottle.png",
+    "/Users/maxpetrusenko/Downloads/labelcheck-wine-fixtures/downloaded-bases/mde-botella.png"
+  ]
+}

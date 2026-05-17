@@ -1,0 +1,416 @@
+{
+  "results": [
+    {
+      "fileName": "wine-pass-01.png",
+      "decision": "approved",
+      "score": 100,
+      "elapsedMs": 1,
+      "extraction": {
+        "labelText": "BRAND NAME: SILVER RIDGE CELLARS\nRed Wine\nCalifornia\nVintage 2023\n13.5% Alc./Vol.\n750 mL\nContains sulfites.\nProduced and bottled by Silver Ridge Cellars, Sonoma, CA\nGOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.",
+        "brandName": "SILVER RIDGE CELLARS",
+        "classType": "Red Wine",
+        "alcoholContent": "13.5% Alc./Vol.",
+        "netContents": "750 mL",
+        "governmentWarning": "GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.",
+        "bottlerAddress": "Silver Ridge Cellars, Sonoma, CA",
+        "confidence": 0.72,
+        "notes": [
+          "Parsed from supplied text/OCR paste without calling a vision model."
+        ]
+      },
+      "checks": [
+        {
+          "id": "brand-name",
+          "label": "Brand name",
+          "status": "pass",
+          "severity": "blocking",
+          "requirementRef": {
+            "id": "ttb-brand-name",
+            "label": "Alcohol beverage brand name",
+            "source": "TTB beverage alcohol labeling guidance",
+            "url": "https://www.ttb.gov/regulated-commodities/beverage-alcohol/distilled-spirits/ds-labeling-home/ds-brand-name"
+          },
+          "expected": "SILVER RIDGE CELLARS",
+          "observed": "SILVER RIDGE CELLARS",
+          "rationale": "Matches after compliance-style normalization for case, punctuation, and apostrophes."
+        },
+        {
+          "id": "class-type",
+          "label": "Class / type designation",
+          "status": "pass",
+          "severity": "blocking",
+          "requirementRef": {
+            "id": "ttb-class-type",
+            "label": "Alcohol beverage class/type designation",
+            "source": "TTB beverage alcohol labeling guidance",
+            "url": "https://www.ttb.gov/regulated-commodities/beverage-alcohol/distilled-spirits/labeling"
+          },
+          "expected": "Red Wine",
+          "observed": "Red Wine",
+          "rationale": "Full class/type designation matches after normalization for case and punctuation."
+        },
+        {
+          "id": "alcohol-content",
+          "label": "Alcohol content / proof",
+          "status": "pass",
+          "severity": "blocking",
+          "requirementRef": {
+            "id": "ttb-alcohol-content",
+            "label": "Alcohol beverage alcohol content",
+            "source": "TTB commodity-specific alcohol content guidance",
+            "url": "https://www.ttb.gov/regulated-commodities/beverage-alcohol/distilled-spirits/ds-labeling-home/ds-alcohol-content"
+          },
+          "expected": "13.5% Alc./Vol.",
+          "observed": "13.5% Alc./Vol.",
+          "rationale": "The ABV/proof number on the label matches the application."
+        },
+        {
+          "id": "net-contents",
+          "label": "Net contents",
+          "status": "pass",
+          "severity": "blocking",
+          "requirementRef": {
+            "id": "ttb-net-contents",
+            "label": "Alcohol beverage net contents",
+            "source": "TTB beverage alcohol labeling guidance",
+            "url": "https://www.ttb.gov/ds-labeling-home/ds-net-contents"
+          },
+          "expected": "750 mL",
+          "observed": "750 mL",
+          "rationale": "Matches after compliance-style normalization for case, punctuation, and apostrophes."
+        },
+        {
+          "id": "government-warning",
+          "label": "Government health warning",
+          "status": "pass",
+          "severity": "blocking",
+          "requirementRef": {
+            "id": "ttb-health-warning",
+            "label": "Alcohol beverage health warning statement",
+            "source": "TTB distilled spirits health warning guidance",
+            "url": "https://www.ttb.gov/regulated-commodities/beverage-alcohol/distilled-spirits/ds-labeling-home/ds-health-warning"
+          },
+          "expected": "GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.",
+          "observed": "GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.",
+          "rationale": "Extracted label evidence includes the exact standard warning text and all-caps prefix."
+        },
+        {
+          "id": "bottler-address",
+          "label": "Bottler / producer / importer address",
+          "status": "pass",
+          "severity": "review",
+          "requirementRef": {
+            "id": "ttb-name-address",
+            "label": "Alcohol beverage bottler/importer name and address",
+            "source": "TTB beverage alcohol labeling guidance",
+            "url": "https://www.ttb.gov/regulated-commodities/beverage-alcohol/distilled-spirits/ds-labeling-home/ds-name-address"
+          },
+          "expected": "Silver Ridge Cellars, Sonoma, CA",
+          "observed": "Silver Ridge Cellars, Sonoma, CA",
+          "rationale": "Matches after compliance-style normalization for case, punctuation, and apostrophes."
+        }
+      ],
+      "summary": "All focused alcohol beverage label fields matched the application.",
+      "missingApplicationFacts": [],
+      "nextSteps": [
+        "No deterministic blockers found. Agent may approve if artwork and source record context look complete."
+      ],
+      "workflow": {
+        "comparisonSummary": "6 of 6 deterministic checks passed; 0 blocking mismatch(es), 0 review item(s), 0 warning(s), 0 missing application fact(s).",
+        "missingApplicationFacts": [],
+        "nextSteps": [
+          "No deterministic blockers found. Agent may approve if artwork and source record context look complete."
+        ]
+      },
+      "labelId": "wine-pass-01"
+    },
+    {
+      "fileName": "wine-warning-01.png",
+      "decision": "needs_review",
+      "score": 83,
+      "elapsedMs": 2,
+      "extraction": {
+        "labelText": "BRAND NAME: HARBOR GLEN VINEYARDS\nTable Wine\nOregon\nVintage 2022\n750 mL\nContains sulfites.\nProduced and bottled by Harbor Glen Vineyards, Dundee, OR\nGOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.\nVisual note: glare over the Government Warning makes exact statutory punctuation uncertain.",
+        "brandName": "HARBOR GLEN VINEYARDS",
+        "classType": "Table Wine",
+        "netContents": "750 mL",
+        "governmentWarning": "GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.",
+        "bottlerAddress": "Harbor Glen Vineyards, Dundee, OR",
+        "confidence": 0.72,
+        "notes": [
+          "Parsed from supplied text/OCR paste without calling a vision model."
+        ]
+      },
+      "checks": [
+        {
+          "id": "brand-name",
+          "label": "Brand name",
+          "status": "pass",
+          "severity": "blocking",
+          "requirementRef": {
+            "id": "ttb-brand-name",
+            "label": "Alcohol beverage brand name",
+            "source": "TTB beverage alcohol labeling guidance",
+            "url": "https://www.ttb.gov/regulated-commodities/beverage-alcohol/distilled-spirits/ds-labeling-home/ds-brand-name"
+          },
+          "expected": "HARBOR GLEN VINEYARDS",
+          "observed": "HARBOR GLEN VINEYARDS",
+          "rationale": "Matches after compliance-style normalization for case, punctuation, and apostrophes."
+        },
+        {
+          "id": "class-type",
+          "label": "Class / type designation",
+          "status": "pass",
+          "severity": "blocking",
+          "requirementRef": {
+            "id": "ttb-class-type",
+            "label": "Alcohol beverage class/type designation",
+            "source": "TTB beverage alcohol labeling guidance",
+            "url": "https://www.ttb.gov/regulated-commodities/beverage-alcohol/distilled-spirits/labeling"
+          },
+          "expected": "Table Wine",
+          "observed": "Table Wine",
+          "rationale": "Full class/type designation matches after normalization for case and punctuation."
+        },
+        {
+          "id": "alcohol-content-profile",
+          "label": "Alcohol content / proof",
+          "status": "not_applicable",
+          "severity": "info",
+          "requirementRef": {
+            "id": "ttb-alcohol-content-profile",
+            "label": "Alcohol content profile",
+            "source": "TTB commodity-specific alcohol content rules",
+            "url": "https://www.ttb.gov/regulated-commodities/beverage-alcohol/distilled-spirits/labeling"
+          },
+          "expected": "Optional or conditional alcohol content for this beverage profile",
+          "rationale": "No source ABV/proof was supplied. V1 does not block wine or malt beverage reviews solely on missing alcohol content because those profiles have commodity-specific exceptions."
+        },
+        {
+          "id": "net-contents",
+          "label": "Net contents",
+          "status": "pass",
+          "severity": "blocking",
+          "requirementRef": {
+            "id": "ttb-net-contents",
+            "label": "Alcohol beverage net contents",
+            "source": "TTB beverage alcohol labeling guidance",
+            "url": "https://www.ttb.gov/ds-labeling-home/ds-net-contents"
+          },
+          "expected": "750 mL",
+          "observed": "750 mL",
+          "rationale": "Matches after compliance-style normalization for case, punctuation, and apostrophes."
+        },
+        {
+          "id": "government-warning",
+          "label": "Government health warning",
+          "status": "pass",
+          "severity": "blocking",
+          "requirementRef": {
+            "id": "ttb-health-warning",
+            "label": "Alcohol beverage health warning statement",
+            "source": "TTB distilled spirits health warning guidance",
+            "url": "https://www.ttb.gov/regulated-commodities/beverage-alcohol/distilled-spirits/ds-labeling-home/ds-health-warning"
+          },
+          "expected": "GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.",
+          "observed": "GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.",
+          "rationale": "Extracted label evidence includes the exact standard warning text and all-caps prefix."
+        },
+        {
+          "id": "image-quality",
+          "label": "Image quality",
+          "status": "needs_review",
+          "severity": "review",
+          "requirementRef": {
+            "id": "labelcheck-image-quality",
+            "label": "Image quality gate",
+            "source": "LabelCheck review workflow",
+            "url": "https://www.ttb.gov/regulated-commodities/beverage-alcohol/distilled-spirits/labeling"
+          },
+          "expected": "Readable label artwork",
+          "observed": "glare",
+          "rationale": "The label image appears degraded, so a clean automated approval would be unsafe even if extracted text matches.",
+          "guidance": "Ask for clearer artwork or manually inspect the affected label panel before final disposition."
+        },
+        {
+          "id": "bottler-address",
+          "label": "Bottler / producer / importer address",
+          "status": "pass",
+          "severity": "review",
+          "requirementRef": {
+            "id": "ttb-name-address",
+            "label": "Alcohol beverage bottler/importer name and address",
+            "source": "TTB beverage alcohol labeling guidance",
+            "url": "https://www.ttb.gov/regulated-commodities/beverage-alcohol/distilled-spirits/ds-labeling-home/ds-name-address"
+          },
+          "expected": "Harbor Glen Vineyards, Dundee, OR",
+          "observed": "Harbor Glen Vineyards, Dundee, OR",
+          "rationale": "Matches after compliance-style normalization for case, punctuation, and apostrophes."
+        }
+      ],
+      "summary": "No hard mismatch was found, but one or more label or application facts needs agent judgment.",
+      "missingApplicationFacts": [],
+      "nextSteps": [
+        "Review label evidence: Image quality. Ask for clearer artwork or manually inspect the affected label panel before final disposition."
+      ],
+      "workflow": {
+        "comparisonSummary": "5 of 6 deterministic checks passed; 0 blocking mismatch(es), 1 review item(s), 0 warning(s), 0 missing application fact(s).",
+        "missingApplicationFacts": [],
+        "nextSteps": [
+          "Review label evidence: Image quality. Ask for clearer artwork or manually inspect the affected label panel before final disposition."
+        ]
+      },
+      "labelId": "wine-warning-01"
+    },
+    {
+      "fileName": "wine-fail-01.png",
+      "decision": "rejected",
+      "score": 71,
+      "elapsedMs": 2,
+      "extraction": {
+        "labelText": "BRAND NAME: LAURENT HILL\nWhite Wine\nProduct of France\nVintage 2023\n12.5% Alc./Vol.\n750 mL\nContains sulfites.\nImported by Northstar Imports, New York, NY\nGOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.",
+        "brandName": "LAURENT HILL",
+        "classType": "White Wine",
+        "alcoholContent": "12.5% Alc./Vol.",
+        "netContents": "750 mL",
+        "governmentWarning": "GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.",
+        "bottlerAddress": "Northstar Imports, New York, NY",
+        "countryOfOrigin": "France",
+        "confidence": 0.72,
+        "notes": [
+          "Parsed from supplied text/OCR paste without calling a vision model."
+        ]
+      },
+      "checks": [
+        {
+          "id": "brand-name",
+          "label": "Brand name",
+          "status": "fail",
+          "severity": "blocking",
+          "requirementRef": {
+            "id": "ttb-brand-name",
+            "label": "Alcohol beverage brand name",
+            "source": "TTB beverage alcohol labeling guidance",
+            "url": "https://www.ttb.gov/regulated-commodities/beverage-alcohol/distilled-spirits/ds-labeling-home/ds-brand-name"
+          },
+          "expected": "LANTERN HILL",
+          "observed": "LAURENT HILL",
+          "rationale": "Expected application value was not found on the label.",
+          "guidance": "Request a corrected label or corrected application record so the brand names agree."
+        },
+        {
+          "id": "class-type",
+          "label": "Class / type designation",
+          "status": "pass",
+          "severity": "blocking",
+          "requirementRef": {
+            "id": "ttb-class-type",
+            "label": "Alcohol beverage class/type designation",
+            "source": "TTB beverage alcohol labeling guidance",
+            "url": "https://www.ttb.gov/regulated-commodities/beverage-alcohol/distilled-spirits/labeling"
+          },
+          "expected": "White Wine",
+          "observed": "White Wine",
+          "rationale": "Full class/type designation matches after normalization for case and punctuation."
+        },
+        {
+          "id": "alcohol-content",
+          "label": "Alcohol content / proof",
+          "status": "pass",
+          "severity": "blocking",
+          "requirementRef": {
+            "id": "ttb-alcohol-content",
+            "label": "Alcohol beverage alcohol content",
+            "source": "TTB commodity-specific alcohol content guidance",
+            "url": "https://www.ttb.gov/regulated-commodities/beverage-alcohol/distilled-spirits/ds-labeling-home/ds-alcohol-content"
+          },
+          "expected": "12.5% Alc./Vol.",
+          "observed": "12.5% Alc./Vol.",
+          "rationale": "The ABV/proof number on the label matches the application."
+        },
+        {
+          "id": "net-contents",
+          "label": "Net contents",
+          "status": "pass",
+          "severity": "blocking",
+          "requirementRef": {
+            "id": "ttb-net-contents",
+            "label": "Alcohol beverage net contents",
+            "source": "TTB beverage alcohol labeling guidance",
+            "url": "https://www.ttb.gov/ds-labeling-home/ds-net-contents"
+          },
+          "expected": "750 mL",
+          "observed": "750 mL",
+          "rationale": "Matches after compliance-style normalization for case, punctuation, and apostrophes."
+        },
+        {
+          "id": "government-warning",
+          "label": "Government health warning",
+          "status": "pass",
+          "severity": "blocking",
+          "requirementRef": {
+            "id": "ttb-health-warning",
+            "label": "Alcohol beverage health warning statement",
+            "source": "TTB distilled spirits health warning guidance",
+            "url": "https://www.ttb.gov/regulated-commodities/beverage-alcohol/distilled-spirits/ds-labeling-home/ds-health-warning"
+          },
+          "expected": "GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.",
+          "observed": "GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.",
+          "rationale": "Extracted label evidence includes the exact standard warning text and all-caps prefix."
+        },
+        {
+          "id": "bottler-address",
+          "label": "Bottler / producer / importer address",
+          "status": "pass",
+          "severity": "review",
+          "requirementRef": {
+            "id": "ttb-name-address",
+            "label": "Alcohol beverage bottler/importer name and address",
+            "source": "TTB beverage alcohol labeling guidance",
+            "url": "https://www.ttb.gov/regulated-commodities/beverage-alcohol/distilled-spirits/ds-labeling-home/ds-name-address"
+          },
+          "expected": "Northstar Imports, New York, NY",
+          "observed": "Northstar Imports, New York, NY",
+          "rationale": "Matches after compliance-style normalization for case, punctuation, and apostrophes."
+        },
+        {
+          "id": "country-origin",
+          "label": "Country of origin",
+          "status": "fail",
+          "severity": "blocking",
+          "requirementRef": {
+            "id": "ttb-country-origin",
+            "label": "Imported alcohol beverage country of origin",
+            "source": "TTB beverage alcohol import labeling guidance",
+            "url": "https://www.ttb.gov/regulated-commodities/beverage-alcohol/distilled-spirits/labeling"
+          },
+          "expected": "Italy",
+          "observed": "France",
+          "rationale": "The import country on the label does not match the application.",
+          "guidance": "Request a corrected label or corrected application record so the country of origin agrees."
+        }
+      ],
+      "summary": "One or more required fields conflict with the application or mandatory warning requirements.",
+      "missingApplicationFacts": [],
+      "nextSteps": [
+        "Resolve blocking mismatch: Brand name. Request a corrected label or corrected application record so the brand names agree.",
+        "Resolve blocking mismatch: Country of origin. Request a corrected label or corrected application record so the country of origin agrees."
+      ],
+      "workflow": {
+        "comparisonSummary": "5 of 7 deterministic checks passed; 2 blocking mismatch(es), 0 review item(s), 0 warning(s), 0 missing application fact(s).",
+        "missingApplicationFacts": [],
+        "nextSteps": [
+          "Resolve blocking mismatch: Brand name. Request a corrected label or corrected application record so the brand names agree.",
+          "Resolve blocking mismatch: Country of origin. Request a corrected label or corrected application record so the country of origin agrees."
+        ]
+      },
+      "labelId": "wine-fail-01"
+    }
+  ],
+  "meta": {
+    "requestId": "385aba56-35a2-4626-bf25-66a70dadea53",
+    "count": 3,
+    "elapsedMs": 2,
+    "mode": "vision+rules"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "bad__fail__far__l10__rotate-p180__src-03-noncompliant-02__400",
+  "sourceId": "03-noncompliant-02",
+  "title": "Label non-compliant: missing age statement on young whisky (distance-downsample, level 10, upside-down)",
+  "photoQuality": "bad",
+  "variant": "distance-downsample",
+  "degradationFamily": "distance-downsample",
+  "severityLevel": 10,
+  "orientation": "upside-down",
+  "angleDegrees": 180,
+  "sourceImage": "public/evals/fixtures/spirits-generated-canonical/03-noncompliant-02.png",
+  "image": "public/evals/fixtures/stress-degraded-generated/bad__fail__far__l10__rotate-p180__src-03-noncompliant-02__400.jpg",
+  "imageHash": "41cfaada2e8dec8c",
+  "form_data": {
+    "brand_name": "River Run",
+    "class_type": "Straight Bourbon Whiskey",
+    "abv": "40% Alc./Vol.",
+    "net_contents": "750 mL",
+    "bottler_name": "River Run Distilling",
+    "bottler_address": "Frankfort, KY",
+    "country_of_origin": "",
+    "is_import": false
+  },
+  "image_prompt": "Photorealistic glass bottle with a classic vintage label. Verbatim text to include exactly: 'River Run', 'Straight Bourbon Whiskey', '40% Alc./Vol.', '750 mL', 'Distilled and bottled by River Run Distilling, Frankfort, KY'. (Note: strictly no age statement included). Include a separate paragraph in small print: 'GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.'",
+  "expectedSourceBehavior": "FAIL compliance (Missing age statement for whisky under 4 years)",
+  "expectedDecision": "rejected",
+  "expectedProblemChecks": [],
+  "extractionConfidence": 0.6399999999999999,
+  "visualObservation": "Visual note: label was photographed from too far away with severe downsampling. Camera orientation is upside-down (180 degrees). The photo is upside down and needs rotation before automated approval."
+}

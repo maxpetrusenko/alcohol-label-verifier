@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "good__pass__jpeg__l01__rotate-p015__src-01-pass-03__303",
+  "sourceId": "01-pass-03",
+  "title": "Clean, fully compliant Vodka (jpeg-noise, level 1, tilt-right)",
+  "photoQuality": "good",
+  "variant": "jpeg-noise",
+  "degradationFamily": "jpeg-noise",
+  "severityLevel": 1,
+  "orientation": "tilt-right",
+  "angleDegrees": 15,
+  "sourceImage": "public/evals/fixtures/spirits-generated-canonical/01-pass-03.png",
+  "image": "public/evals/fixtures/stress-degraded-generated/good__pass__jpeg__l01__rotate-p015__src-01-pass-03__303.jpg",
+  "imageHash": "4261fb4fc5583d21",
+  "form_data": {
+    "brand_name": "Frostweaver",
+    "class_type": "Vodka",
+    "abv": "40% Alc./Vol.",
+    "net_contents": "1000 mL",
+    "bottler_name": "Frostweaver Spirits",
+    "bottler_address": "Denver, CO",
+    "country_of_origin": "",
+    "is_import": false
+  },
+  "image_prompt": "Photorealistic frosted glass bottle with an icy blue and white modern label. Verbatim text to include exactly: 'Frostweaver', 'Vodka', '40% Alc./Vol.', '1000 mL', 'Produced and bottled by Frostweaver Spirits, Denver, CO'. Include a separate paragraph in small print: 'GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.'",
+  "expectedSourceBehavior": "All 8 fields PASS, 0 advisories, overall PASS",
+  "expectedDecision": "approved",
+  "expectedProblemChecks": [],
+  "extractionConfidence": 0.84,
+  "visualObservation": "Readable photo: minor compression texture but label text remains legible. Camera orientation is tilt-right (15 degrees)."
+}

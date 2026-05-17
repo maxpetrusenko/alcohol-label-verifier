@@ -38,7 +38,7 @@ export type GeneratedFixtureEvalReport = {
   results: GeneratedFixtureEvalResult[];
 };
 
-export function expectedDecisionFromBehavior(expectedBehavior: string): VerificationDecision {
+function expectedDecisionFromBehavior(expectedBehavior: string): VerificationDecision {
   const normalized = expectedBehavior.toLowerCase();
   if (/\boverall\s+pass\b|\bpass\b/u.test(normalized) && !/\bfail\b/u.test(normalized)) return "approved";
   if (/\breview\b/u.test(normalized)) return "needs_review";
@@ -69,6 +69,14 @@ export function evaluateGeneratedFixture(testCase: GeneratedFixtureEvalCase): Ge
   const extraction = extractionFromPlainText(labelText);
   const result = verifyLabel(applicationFromFsyedFixture(testCase.formData), extraction, `${testCase.id}.png`);
   const expectedDecision = expectedDecisionFromBehavior(testCase.manifest.expected_behavior);
+  const failedChecks: string[] = [];
+  const reviewChecks: string[] = [];
+  const warningChecks: string[] = [];
+  for (const check of result.checks) {
+    if (check.status === "fail") failedChecks.push(check.id);
+    if (check.status === "needs_review") reviewChecks.push(check.id);
+    if (check.status === "warning") warningChecks.push(check.id);
+  }
 
   return {
     id: testCase.id,
@@ -78,9 +86,9 @@ export function evaluateGeneratedFixture(testCase: GeneratedFixtureEvalCase): Ge
     actualDecision: result.decision,
     matched: result.decision === expectedDecision,
     score: result.score,
-    failedChecks: result.checks.filter((check) => check.status === "fail").map((check) => check.id),
-    reviewChecks: result.checks.filter((check) => check.status === "needs_review").map((check) => check.id),
-    warningChecks: result.checks.filter((check) => check.status === "warning").map((check) => check.id),
+    failedChecks,
+    reviewChecks,
+    warningChecks,
     labelText,
   };
 }

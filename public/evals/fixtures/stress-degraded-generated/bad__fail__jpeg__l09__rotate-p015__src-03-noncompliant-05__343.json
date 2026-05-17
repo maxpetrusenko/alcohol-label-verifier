@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "bad__fail__jpeg__l09__rotate-p015__src-03-noncompliant-05__343",
+  "sourceId": "03-noncompliant-05",
+  "title": "Label non-compliant: bad production phrasing (jpeg-noise, level 9, tilt-right)",
+  "photoQuality": "bad",
+  "variant": "jpeg-noise",
+  "degradationFamily": "jpeg-noise",
+  "severityLevel": 9,
+  "orientation": "tilt-right",
+  "angleDegrees": 15,
+  "sourceImage": "public/evals/fixtures/spirits-generated-canonical/03-noncompliant-05.png",
+  "image": "public/evals/fixtures/stress-degraded-generated/bad__fail__jpeg__l09__rotate-p015__src-03-noncompliant-05__343.jpg",
+  "imageHash": "ab83db0f5161574f",
+  "form_data": {
+    "brand_name": "Pine Valley",
+    "class_type": "Gin",
+    "abv": "43% Alc./Vol.",
+    "net_contents": "750 mL",
+    "bottler_name": "Pine Valley Co.",
+    "bottler_address": "Bend, OR",
+    "country_of_origin": "",
+    "is_import": false
+  },
+  "image_prompt": "Photorealistic green glass bottle with a forest-themed label. Verbatim text to include exactly: 'Pine Valley', 'Gin', '43% Alc./Vol.', '750 mL', 'Crafted by Pine Valley Co., Bend, OR'. Include a separate paragraph in small print: 'GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.'",
+  "expectedSourceBehavior": "FAIL compliance ('Crafted by' is non-standard phrasing)",
+  "expectedDecision": "rejected",
+  "expectedProblemChecks": [],
+  "extractionConfidence": 0.6599999999999999,
+  "visualObservation": "Visual note: label photo has severe compression artifacts and sensor noise. Camera orientation is tilt-right (15 degrees)."
+}

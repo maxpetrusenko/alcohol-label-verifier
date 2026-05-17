@@ -9,6 +9,8 @@ describe("extractLabel", () => {
   const originalGeminiMaxKey = process.env.GEMINI_API_KEY_MAX;
   const originalGeminiTurkeyKey = process.env.GEMINI_API_KEY_TURKEY;
   const originalProvider = process.env.VISION_PROVIDER;
+  const originalVisionTimeout = process.env.VISION_TIMEOUT_MS;
+  const originalVisionFallbackTimeout = process.env.VISION_FALLBACK_TIMEOUT_MS;
   const originalLangSmithKey = process.env.LANGSMITH_API_KEY;
   const originalLangSmithEndpoint = process.env.LANGSMITH_ENDPOINT;
   const originalLangSmithProject = process.env.LANGSMITH_PROJECT;
@@ -35,6 +37,8 @@ describe("extractLabel", () => {
     delete process.env.GEMINI_API_KEY;
     delete process.env.GEMINI_API_KEY_MAX;
     delete process.env.GEMINI_API_KEY_TURKEY;
+    delete process.env.VISION_TIMEOUT_MS;
+    delete process.env.VISION_FALLBACK_TIMEOUT_MS;
     delete process.env.LANGSMITH_API_KEY;
     delete process.env.LANGSMITH_ENDPOINT;
     delete process.env.LANGSMITH_PROJECT;
@@ -69,6 +73,10 @@ describe("extractLabel", () => {
     else delete process.env.GEMINI_API_KEY_TURKEY;
     if (originalProvider) process.env.VISION_PROVIDER = originalProvider;
     else delete process.env.VISION_PROVIDER;
+    if (originalVisionTimeout) process.env.VISION_TIMEOUT_MS = originalVisionTimeout;
+    else delete process.env.VISION_TIMEOUT_MS;
+    if (originalVisionFallbackTimeout) process.env.VISION_FALLBACK_TIMEOUT_MS = originalVisionFallbackTimeout;
+    else delete process.env.VISION_FALLBACK_TIMEOUT_MS;
     if (originalLangSmithKey) process.env.LANGSMITH_API_KEY = originalLangSmithKey;
     else delete process.env.LANGSMITH_API_KEY;
     if (originalLangSmithEndpoint) process.env.LANGSMITH_ENDPOINT = originalLangSmithEndpoint;
@@ -145,6 +153,86 @@ describe("extractLabel", () => {
 
     expect(extraction.confidence).toBe(0.95);
     expect(extraction.governmentWarning).toBe(GOVERNMENT_WARNING_TEXT);
+  });
+
+  it("can use the OpenAI responses endpoint", async () => {
+    process.env.OPENAI_VISION_ENDPOINT = "responses";
+    const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body));
+      expect(body.text.format.name).toBe("label_extraction");
+      expect(body.input[0].content[1].type).toBe("input_image");
+      return new Response(
+        JSON.stringify({
+          output_text: JSON.stringify({
+            labelText: `Responses Cellars\nRed Wine\n13.5% Alc./Vol.\n750 mL\n${GOVERNMENT_WARNING_TEXT}`,
+            brandName: "Responses Cellars",
+            classType: "Red Wine",
+            alcoholContent: "13.5% Alc./Vol.",
+            netContents: "750 mL",
+            governmentWarning: GOVERNMENT_WARNING_TEXT,
+            bottlerAddress: "",
+            countryOfOrigin: "",
+            confidence: 0.83,
+            notes: [],
+          }),
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const extraction = await extractLabel({
+      fileName: "responses-label.jpg",
+      mimeType: "image/jpeg",
+      dataUrl: "data:image/jpeg;base64,test",
+    });
+
+    expect(fetchMock.mock.calls[0]?.[0]).toBe("https://api.openai.com/v1/responses");
+    expect(extraction.brandName).toBe("Responses Cellars");
+    expect(extraction.classType).toBe("Red Wine");
+  });
+
+  it("returns fallback evidence when the provider rejects the request", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("rate limit exceeded", { status: 429 })),
+    );
+
+    const extraction = await extractLabel({
+      fileName: "provider-error.txt",
+      mimeType: "image/jpeg",
+      dataUrl: "data:image/jpeg;base64,test",
+      text: "Fallback Brand\nVodka\n40% Alc./Vol.\n750 mL",
+    });
+
+    expect(extraction.brandName).toBe("Fallback Brand");
+    expect(extraction.confidence).toBeGreaterThan(0);
+    expect(extraction.notes).toEqual(["Vision extraction failed with provider status 429: rate limit exceeded"]);
+  });
+
+  it("keeps fallback evidence when provider JSON cannot be parsed", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(
+          JSON.stringify({
+            choices: [{ message: { content: "not-json" } }],
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+      ),
+    );
+
+    const extraction = await extractLabel({
+      fileName: "bad-json.txt",
+      mimeType: "image/jpeg",
+      dataUrl: "data:image/jpeg;base64,test",
+      text: "Fallback Brand\nVodka\n40% Alc./Vol.\n750 mL",
+    });
+
+    expect(extraction.brandName).toBe("Fallback Brand");
+    expect(extraction.confidence).toBeGreaterThan(0);
+    expect(extraction.notes[0]).toMatch(/^Vision extraction returned unreadable JSON:/u);
   });
 
   it("preserves visible warning capitalization from raw label evidence", async () => {
@@ -250,10 +338,12 @@ describe("extractLabel", () => {
       dataUrl: "data:image/jpeg;base64,test",
     });
 
-    const calls = fetchMock.mock.calls.map(([url]) => (typeof url === "string" ? url : url instanceof URL ? url.href : url.url));
-    expect(calls.some((url) => url.includes("api.openai.com/v1/chat/completions"))).toBe(true);
-    expect(calls.some((url) => url.startsWith("https://langsmith.test/runs"))).toBe(true);
-    expect(calls.some((url) => url.startsWith("https://braintrust-api.test/logs3"))).toBe(true);
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes("api.openai.com/v1/chat/completions"))).toBe(true);
+    await vi.waitFor(() => {
+      const calls = fetchMock.mock.calls.map(([url]) => (typeof url === "string" ? url : url instanceof URL ? url.href : url.url));
+      expect(calls.some((url) => url.startsWith("https://langsmith.test/runs"))).toBe(true);
+      expect(calls.some((url) => url.startsWith("https://braintrust-api.test/logs3"))).toBe(true);
+    });
     expect(process.env.LANGSMITH_API_KEY).toBe("lsv2-test-secret");
     expect(process.env.LANGCHAIN_API_KEY).toBe("lsv2-test-secret");
     expect(process.env.LANGSMITH_PROJECT).toBe("alcohol-label-verifier-test");
@@ -270,6 +360,7 @@ describe("extractLabel", () => {
       const body = JSON.parse(String(init?.body));
       expect(body.contents[0].parts[1].inline_data.mime_type).toBe("image/jpeg");
       expect(body.generationConfig.responseMimeType).toBe("application/json");
+      expect(body.generationConfig.thinkingConfig).toEqual({ thinkingBudget: 0 });
       return new Response(
         JSON.stringify({
           candidates: [
@@ -309,6 +400,113 @@ describe("extractLabel", () => {
     expect(fetchMock.mock.calls[0]?.[0]).toContain("generativelanguage.googleapis.com");
     expect(extraction.brandName).toBe("Old Cypress Distillery");
     expect(extraction.confidence).toBe(0.64);
+  });
+
+  it("falls back to OpenAI when Gemini times out", async () => {
+    process.env.VISION_PROVIDER = "gemini";
+    process.env.GEMINI_API_KEY = "gemini-key";
+    process.env.VISION_TIMEOUT_MS = "1";
+    process.env.VISION_FALLBACK_TIMEOUT_MS = "100";
+    process.env.OPENAI_API_KEY = "openai-key";
+    const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+      if (url.includes("generativelanguage.googleapis.com")) {
+        return new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => {
+            reject(new DOMException("Aborted", "AbortError"));
+          });
+        });
+      }
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            choices: [
+              {
+                message: {
+                  content: JSON.stringify({
+                    labelText: "Backup Brand",
+                    brandName: "Backup Brand",
+                    classType: "",
+                    alcoholContent: "",
+                    netContents: "",
+                    governmentWarning: "",
+                    bottlerAddress: "",
+                    countryOfOrigin: "",
+                    confidence: 0.7,
+                    notes: [],
+                  }),
+                },
+              },
+            ],
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const extraction = await extractLabel({
+      fileName: "slow-label.jpg",
+      mimeType: "image/jpeg",
+      dataUrl: "data:image/jpeg;base64,test",
+    });
+
+    expect(fetchMock.mock.calls.map(([url]) => String(url))).toEqual([
+      expect.stringContaining("generativelanguage.googleapis.com"),
+      expect.stringContaining("api.openai.com/v1/chat/completions"),
+    ]);
+    expect(extraction.brandName).toBe("Backup Brand");
+    expect(extraction.notes[0]).toBe("gemini Vision extraction timed out after 1 ms.; retried with openai.");
+  });
+
+  it("reports both provider timeouts when primary and fallback fail", async () => {
+    process.env.VISION_PROVIDER = "gemini";
+    process.env.GEMINI_API_KEY = "gemini-key";
+    process.env.OPENAI_API_KEY = "openai-key";
+    process.env.VISION_TIMEOUT_MS = "1";
+    process.env.VISION_FALLBACK_TIMEOUT_MS = "1";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((_url: string, init?: RequestInit) => {
+        return new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => {
+            reject(new DOMException("Aborted", "AbortError"));
+          });
+        });
+      }),
+    );
+
+    await expect(
+      extractLabel({
+        fileName: "all-timeout.jpg",
+        mimeType: "image/jpeg",
+        dataUrl: "data:image/jpeg;base64,test",
+      }),
+    ).rejects.toThrow("gemini Vision extraction timed out after 1 ms.; retried with openai. openai Vision extraction timed out after 1 ms.");
+  });
+
+  it("fails fast when the vision provider exceeds the configured timeout without fallback", async () => {
+    process.env.VISION_PROVIDER = "gemini";
+    process.env.GEMINI_API_KEY = "gemini-key";
+    delete process.env.OPENAI_API_KEY;
+    process.env.VISION_TIMEOUT_MS = "1";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((_url: string, init?: RequestInit) => {
+        return new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => {
+            reject(new DOMException("Aborted", "AbortError"));
+          });
+        });
+      }),
+    );
+
+    await expect(
+      extractLabel({
+        fileName: "slow-label.jpg",
+        mimeType: "image/jpeg",
+        dataUrl: "data:image/jpeg;base64,test",
+      }),
+    ).rejects.toThrow("Vision extraction timed out after 1 ms.");
   });
 
   it("removes structured fields that are not present in raw extracted text", async () => {
@@ -403,7 +601,7 @@ describe("extractLabel", () => {
     process.env.VISION_PROVIDER = "gemini";
     process.env.GEMINI_API_KEY_MAX = "named-gemini-key";
     delete process.env.OPENAI_API_KEY;
-    const fetchMock = vi.fn(async () =>
+    const fetchMock = vi.fn<(input: string | URL | Request, init?: RequestInit) => Promise<Response>>(async () =>
       new Response(
         JSON.stringify({
           candidates: [

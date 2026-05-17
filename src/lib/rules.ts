@@ -311,7 +311,7 @@ export function normalizeForMatch(value: string | undefined | null): string {
     .trim();
 }
 
-export function similarity(a: string | undefined, b: string | undefined): number {
+function similarity(a: string | undefined, b: string | undefined): number {
   const left = normalizeForMatch(a);
   const right = normalizeForMatch(b);
   if (!left || !right) return 0;
@@ -326,7 +326,7 @@ export function similarity(a: string | undefined, b: string | undefined): number
   return intersection / union;
 }
 
-export function extractAlcoholNumbers(value: string | undefined): { abv?: number; proof?: number } {
+function extractAlcoholNumbers(value: string | undefined): { abv?: number; proof?: number } {
   const text = value ?? "";
   const abvMatch = text.match(/(\d+(?:\.\d+)?)\s*%\s*(?:alc\.?\s*\/\s*vol\.?|abv|alcohol\s+by\s+volume)?/i);
   const proofMatch = text.match(/(\d+(?:\.\d+)?)\s*proof/i);
@@ -334,10 +334,6 @@ export function extractAlcoholNumbers(value: string | undefined): { abv?: number
     abv: abvMatch ? Number(abvMatch[1]) : undefined,
     proof: proofMatch ? Number(proofMatch[1]) : undefined,
   };
-}
-
-export function formatStatus(status: CheckStatus): string {
-  return status === "not_applicable" ? "not applicable" : status.replace("_", " ");
 }
 
 function isBlank(value: string | undefined | null): boolean {
@@ -951,9 +947,10 @@ function structuredEvidenceCheck(extraction: LabelExtraction): VerificationCheck
     ["origin", extraction.countryOfOrigin],
     ["government warning", extraction.governmentWarning],
   ] as const;
-  const unsupported = fields
-    .filter(([, value]) => !isBlank(value) && !rawText.includes(normalizeForMatch(value)))
-    .map(([label]) => label);
+  const unsupported: string[] = [];
+  for (const [label, value] of fields) {
+    if (!isBlank(value) && rawText.split(normalizeForMatch(value)).length === 1) unsupported.push(label);
+  }
 
   if (!unsupported.length) return undefined;
 
@@ -1231,7 +1228,11 @@ export function verifyLabel(application: ApplicationData, extraction: LabelExtra
 }
 
 export function extractionFromPlainText(text: string): LabelExtraction {
-  const lines = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const lines: string[] = [];
+  for (const line of text.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (trimmed) lines.push(trimmed);
+  }
   const findLine = (patterns: RegExp[]) => lines.find((line) => patterns.some((pattern) => pattern.test(line)));
   const findClassLine = () => {
     const explicit = findLine([/^class\s*\/\s*type\s*:/i]);

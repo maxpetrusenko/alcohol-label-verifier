@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "good__fail__dark__l03__rotate-p090__src-05-warning-bad-02__114",
+  "sourceId": "05-warning-bad-02",
+  "title": "Government warning title case 'Government Warning' (low-light, level 3, sideways)",
+  "photoQuality": "good",
+  "variant": "low-light",
+  "degradationFamily": "low-light",
+  "severityLevel": 3,
+  "orientation": "sideways",
+  "angleDegrees": 90,
+  "sourceImage": "public/evals/fixtures/spirits-generated-canonical/05-warning-bad-02.png",
+  "image": "public/evals/fixtures/stress-degraded-generated/good__fail__dark__l03__rotate-p090__src-05-warning-bad-02__114.jpg",
+  "imageHash": "83cce18ef2e188ff",
+  "form_data": {
+    "brand_name": "Copper Fox",
+    "class_type": "Bourbon Whiskey",
+    "abv": "40% Alc./Vol.",
+    "net_contents": "750 mL",
+    "bottler_name": "Fox Distillers",
+    "bottler_address": "Lexington, KY",
+    "country_of_origin": "",
+    "is_import": false
+  },
+  "image_prompt": "Photorealistic amber glass bottle with a fox illustration label. Verbatim text to include exactly: 'Copper Fox', 'Bourbon Whiskey', '40% Alc./Vol.', '750 mL', 'Distilled and bottled by Fox Distillers, Lexington, KY'. Include a separate paragraph in small print: 'Government Warning: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.'",
+  "expectedSourceBehavior": "FAIL compliance (Government Warning not in ALL CAPS)",
+  "expectedDecision": "rejected",
+  "expectedProblemChecks": [],
+  "extractionConfidence": 0.78,
+  "visualObservation": "Readable photo: lighting is imperfect but label text remains legible. Camera orientation is sideways (90 degrees)."
+}

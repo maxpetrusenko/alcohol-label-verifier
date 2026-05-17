@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "good__pass__skew__l01__rotate-000__src-01-pass-01__451",
+  "sourceId": "01-pass-01",
+  "title": "Clean, fully compliant Kentucky Straight Bourbon (perspective-skew, level 1, upright)",
+  "photoQuality": "good",
+  "variant": "perspective-skew",
+  "degradationFamily": "perspective-skew",
+  "severityLevel": 1,
+  "orientation": "upright",
+  "angleDegrees": 0,
+  "sourceImage": "public/evals/fixtures/spirits-generated-canonical/01-pass-01.png",
+  "image": "public/evals/fixtures/stress-degraded-generated/good__pass__skew__l01__rotate-000__src-01-pass-01__451.jpg",
+  "imageHash": "f02babfbd654eaf4",
+  "form_data": {
+    "brand_name": "Old Cypress Distillery",
+    "class_type": "Kentucky Straight Bourbon Whiskey",
+    "abv": "45% Alc./Vol.",
+    "net_contents": "750 mL",
+    "bottler_name": "Old Cypress Distillery",
+    "bottler_address": "Louisville, KY",
+    "country_of_origin": "",
+    "is_import": false
+  },
+  "image_prompt": "Photorealistic image of a clear glass liquor bottle with a rectangular front label. Visual style: vintage bourbon label, gold and black, ornate typography. Verbatim text to include exactly: 'Old Cypress Distillery', 'Kentucky Straight Bourbon Whiskey', '45% Alc./Vol.', '750 mL', 'Distilled and bottled by Old Cypress Distillery, Louisville, KY'. Include a separate paragraph in small print: 'GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.'",
+  "expectedSourceBehavior": "All 8 fields PASS, 0 advisories, overall PASS",
+  "expectedDecision": "approved",
+  "expectedProblemChecks": [],
+  "extractionConfidence": 0.84,
+  "visualObservation": "Readable photo: label is slightly off-square but text remains legible. Camera orientation is upright (0 degrees)."
+}

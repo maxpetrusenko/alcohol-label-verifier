@@ -30,14 +30,15 @@ function withUploadQualityHint(extraction: LabelExtraction, fileName: string): L
   };
 }
 
-async function verifyOneLabel(application: ApplicationData, label: LabelInputPayload, index: number, batchStarted: number) {
+async function verifyOneLabel(application: ApplicationData, label: LabelInputPayload, index: number) {
+  const started = Date.now();
   const labelId = label.labelId ?? `${index + 1}-${label.fileName}`;
   const labelApplication = label.application ?? application;
 
   try {
     const extraction = withUploadQualityHint(await extractLabel(label), label.fileName);
     const result = verifyLabel(labelApplication, extraction, label.fileName);
-    return { ...result, labelId, elapsedMs: Date.now() - batchStarted };
+    return { ...result, labelId, elapsedMs: Date.now() - started };
   } catch (error) {
     const fallback = withUploadQualityHint(extractionFromPlainText(label.text ?? ""), label.fileName);
     const result = verifyLabel(
@@ -49,7 +50,7 @@ async function verifyOneLabel(application: ApplicationData, label: LabelInputPay
       },
       label.fileName,
     );
-    return { ...result, labelId, elapsedMs: Date.now() - batchStarted };
+    return { ...result, labelId, elapsedMs: Date.now() - started };
   }
 }
 
@@ -58,9 +59,7 @@ export async function POST(request: Request) {
   const requestId = makeRequestId();
   try {
     const payload = verifyRequestSchema.parse(await request.json());
-    const results = await mapWithConcurrency(payload.labels, payload.options?.maxConcurrency ?? 3, (label, index) =>
-      verifyOneLabel(payload.application, label, index, started),
-    );
+    const results = await mapWithConcurrency(payload.labels, payload.options?.maxConcurrency ?? 3, (label, index) => verifyOneLabel(payload.application, label, index));
 
     return NextResponse.json({
       results,

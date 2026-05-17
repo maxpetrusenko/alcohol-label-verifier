@@ -8,7 +8,7 @@ function argValue(name, fallback) {
   return process.argv[index + 1] ?? fallback;
 }
 
-const outDir = resolve(argValue("--out", "public/evals/fixtures/html-generated"));
+const outDir = resolve(argValue("--out", "public/evals/fixtures/spirits-rendered-regression"));
 const manifest = writeFixtures(outDir);
 
 console.log(`wrote ${manifest.length} deterministic fixtures to ${outDir}`);

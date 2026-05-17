@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "good__fail__blue__l04__rotate-p015__src-06-warning-sneaky-02__268",
+  "sourceId": "06-warning-sneaky-02",
+  "title": "Sneaky warning: missing numbered clause '(1)' (blue-cast, level 4, tilt-right)",
+  "photoQuality": "good",
+  "variant": "blue-cast",
+  "degradationFamily": "blue-cast",
+  "severityLevel": 4,
+  "orientation": "tilt-right",
+  "angleDegrees": 15,
+  "sourceImage": "public/evals/fixtures/spirits-generated-canonical/06-warning-sneaky-02.png",
+  "image": "public/evals/fixtures/stress-degraded-generated/good__fail__blue__l04__rotate-p015__src-06-warning-sneaky-02__268.jpg",
+  "imageHash": "eb1547ac4d654975",
+  "form_data": {
+    "brand_name": "Ironclad",
+    "class_type": "Rye Whiskey",
+    "abv": "45% Alc./Vol.",
+    "net_contents": "750 mL",
+    "bottler_name": "Ironclad Spirits",
+    "bottler_address": "Baltimore, MD",
+    "country_of_origin": "",
+    "is_import": false
+  },
+  "image_prompt": "Photorealistic dark glass bottle with a riveted metal style label. Verbatim text to include exactly: 'Ironclad', 'Rye Whiskey', '45% Alc./Vol.', '750 mL', 'Distilled and bottled by Ironclad Spirits, Baltimore, MD'. Include a separate paragraph in small print: 'GOVERNMENT WARNING: According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.'",
+  "expectedSourceBehavior": "FAIL compliance (Exact warning text mismatch)",
+  "expectedDecision": "rejected",
+  "expectedProblemChecks": [],
+  "extractionConfidence": 0.76,
+  "visualObservation": "Readable photo: cool phone-camera color balance but label text remains legible. Camera orientation is tilt-right (15 degrees)."
+}

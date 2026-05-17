@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "bad__fail__crop__l06__rotate-000__src-02-mismatch-03__426",
+  "sourceId": "02-mismatch-03",
+  "title": "JSON wrong ABV, label correct (crop-occlusion, level 6, upright)",
+  "photoQuality": "bad",
+  "variant": "crop-occlusion",
+  "degradationFamily": "crop-occlusion",
+  "severityLevel": 6,
+  "orientation": "upright",
+  "angleDegrees": 0,
+  "sourceImage": "public/evals/fixtures/spirits-generated-canonical/02-mismatch-03.png",
+  "image": "public/evals/fixtures/stress-degraded-generated/bad__fail__crop__l06__rotate-000__src-02-mismatch-03__426.jpg",
+  "imageHash": "393f90bfecd3c6c6",
+  "form_data": {
+    "brand_name": "Island Bounty",
+    "class_type": "Spiced Rum",
+    "abv": "35% Alc./Vol.",
+    "net_contents": "750 mL",
+    "bottler_name": "Island Bounty Co.",
+    "bottler_address": "Key West, FL",
+    "country_of_origin": "",
+    "is_import": false
+  },
+  "image_prompt": "Photorealistic dark glass rum bottle with a nautical, pirate-themed label. Verbatim text to include exactly: 'Island Bounty', 'Spiced Rum', 'Rum with natural spices', '40% Alc./Vol.', '750 mL', 'Produced and bottled by Island Bounty Co., Key West, FL'. Include a separate paragraph in small print: 'GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.'",
+  "expectedSourceBehavior": "FAIL on cross-validation (ABV mismatch)",
+  "expectedDecision": "rejected",
+  "expectedProblemChecks": [],
+  "extractionConfidence": 0.72,
+  "visualObservation": "Visual note: label photo has moderate cropping or partial occlusion. Camera orientation is upright (0 degrees)."
+}

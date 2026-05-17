@@ -40,10 +40,11 @@ function numberValue(value: unknown): number | undefined {
 }
 
 function firstString(record: Record<string, unknown>, keys: string[]): string {
+  const canonicalKeys = new Map(Object.keys(record).map((candidate) => [candidate.toLowerCase().trim(), candidate]));
   for (const key of keys) {
     const value = stringValue(record[key]);
     if (value.trim()) return value.trim();
-    const matchedKey = Object.keys(record).find((candidate) => candidate.toLowerCase().trim() === key.toLowerCase());
+    const matchedKey = canonicalKeys.get(key.toLowerCase());
     const matchedValue = matchedKey ? stringValue(record[matchedKey]) : "";
     if (matchedValue.trim()) return matchedValue.trim();
   }
@@ -72,7 +73,7 @@ function agedYearsFromRecord(record: Record<string, unknown>): number | undefine
   return undefined;
 }
 
-export function isJsonLikeUpload(file: { name: string; type: string }) {
+function isJsonLikeUpload(file: { name: string; type: string }) {
   return file.type === "application/json" || /\.json$/iu.test(file.name);
 }
 
@@ -144,6 +145,7 @@ function applicationFromCamelRecord(record: Record<string, unknown>): Applicatio
 
 export function applicationFromImportJson(value: unknown): ApplicationData | null {
   if (!isRecord(value)) return null;
+  if (isRecord(value.application)) return applicationFromImportJson(value.application);
   if (isRecord(value.form_data)) return applicationFromFsyedRecord(value.form_data);
   return applicationFromFsyedRecord(value) ?? applicationFromCamelRecord(value);
 }
@@ -226,16 +228,22 @@ function parseCsvRows(text: string): Record<string, string>[] {
 }
 
 export function applicationsFromCsvText(text: string, sourceName = "application.csv"): ImportedApplication[] {
-  return parseCsvRows(text)
-    .map((record, index) => importedApplicationFromRecord(record, sourceName, index + 2))
-    .filter((application): application is ImportedApplication => Boolean(application));
+  const applications: ImportedApplication[] = [];
+  parseCsvRows(text).forEach((record, index) => {
+    const application = importedApplicationFromRecord(record, sourceName, index + 2);
+    if (application) applications.push(application);
+  });
+  return applications;
 }
 
 export function applicationsFromImportJson(value: unknown, sourceName = "application.json"): ImportedApplication[] {
   if (Array.isArray(value)) {
-    return value
-      .map((record, index) => (isRecord(record) ? importedApplicationFromRecord(record, sourceName, index + 1) : null))
-      .filter((application): application is ImportedApplication => Boolean(application));
+    const applications: ImportedApplication[] = [];
+    value.forEach((record, index) => {
+      const application = isRecord(record) ? importedApplicationFromRecord(record, sourceName, index + 1) : null;
+      if (application) applications.push(application);
+    });
+    return applications;
   }
 
   if (!isRecord(value)) return [];

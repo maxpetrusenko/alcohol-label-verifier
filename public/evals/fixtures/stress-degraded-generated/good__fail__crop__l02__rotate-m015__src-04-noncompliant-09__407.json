@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "good__fail__crop__l02__rotate-m015__src-04-noncompliant-09__407",
+  "sourceId": "04-noncompliant-09",
+  "title": "Non-compliant matching JSON: missing statement of composition on Amaretto (crop-occlusion, level 2, tilt-left)",
+  "photoQuality": "good",
+  "variant": "crop-occlusion",
+  "degradationFamily": "crop-occlusion",
+  "severityLevel": 2,
+  "orientation": "tilt-left",
+  "angleDegrees": -15,
+  "sourceImage": "public/evals/fixtures/spirits-generated-canonical/04-noncompliant-09.png",
+  "image": "public/evals/fixtures/stress-degraded-generated/good__fail__crop__l02__rotate-m015__src-04-noncompliant-09__407.jpg",
+  "imageHash": "e9d9103167319e68",
+  "form_data": {
+    "brand_name": "Bella Notte",
+    "class_type": "Amaretto",
+    "abv": "28% Alc./Vol.",
+    "net_contents": "750 mL",
+    "bottler_name": "Bella Spirits",
+    "bottler_address": "New York, NY",
+    "country_of_origin": "",
+    "is_import": false,
+    "reason": "Liqueurs and specialty spirits require a statement of composition."
+  },
+  "image_prompt": "Photorealistic classic Italian-style curved bottle with a romantic gold and black label. Verbatim text to include exactly: 'Bella Notte', 'Amaretto', '28% Alc./Vol.', '750 mL', 'Produced and bottled by Bella Spirits, New York, NY'. Include a separate paragraph in small print: 'GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.'",
+  "expectedSourceBehavior": "FAIL compliance with reason provided",
+  "expectedDecision": "rejected",
+  "expectedProblemChecks": [],
+  "extractionConfidence": 0.7999999999999999,
+  "visualObservation": "Readable photo: full mandatory panel remains visible. Camera orientation is tilt-left (-15 degrees)."
+}

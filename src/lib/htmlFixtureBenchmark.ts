@@ -42,7 +42,7 @@ export type HtmlFixtureBenchmarkReport = {
   gaps: HtmlFixtureBenchmarkResult[];
 };
 
-export const htmlGeneratedFixtureDir = join(process.cwd(), "public/evals/fixtures/html-generated");
+export const htmlGeneratedFixtureDir = join(process.cwd(), "public/evals/fixtures/spirits-rendered-regression");
 
 export function loadHtmlGeneratedFixtures(dir = htmlGeneratedFixtureDir): HtmlGeneratedFixture[] {
   return JSON.parse(readFileSync(join(dir, "manifest.json"), "utf8")) as HtmlGeneratedFixture[];
@@ -55,7 +55,10 @@ export function benchmarkHtmlGeneratedFixture(fixture: HtmlGeneratedFixture): Ht
     confidence: fixture.extractionConfidence,
   };
   const result = verifyLabel(fixture.application, extraction, fixture.artifacts.svg);
-  const problemChecks = result.checks.filter((check) => check.status !== "pass").map((check) => check.id);
+  const problemChecks: string[] = [];
+  for (const check of result.checks) {
+    if (check.status !== "pass") problemChecks.push(check.id);
+  }
   const missingExpectedProblemChecks = fixture.expectedProblemChecks.filter((checkId) => !problemChecks.includes(checkId));
 
   return {

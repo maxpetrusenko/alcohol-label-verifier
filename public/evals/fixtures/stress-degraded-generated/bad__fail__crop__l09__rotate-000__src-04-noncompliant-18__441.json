@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "bad__fail__crop__l09__rotate-000__src-04-noncompliant-18__441",
+  "sourceId": "04-noncompliant-18",
+  "title": "Non-compliant matching JSON: fanciful name in class field 'Volcano Fire' (crop-occlusion, level 9, upright)",
+  "photoQuality": "bad",
+  "variant": "crop-occlusion",
+  "degradationFamily": "crop-occlusion",
+  "severityLevel": 9,
+  "orientation": "upright",
+  "angleDegrees": 0,
+  "sourceImage": "public/evals/fixtures/spirits-generated-canonical/04-noncompliant-18.png",
+  "image": "public/evals/fixtures/stress-degraded-generated/bad__fail__crop__l09__rotate-000__src-04-noncompliant-18__441.jpg",
+  "imageHash": "55970c7155d43625",
+  "form_data": {
+    "brand_name": "Lava Rock",
+    "class_type": "Volcano Fire",
+    "abv": "35% Alc./Vol.",
+    "net_contents": "750 mL",
+    "bottler_name": "Island Distillers",
+    "bottler_address": "Hilo, HI",
+    "country_of_origin": "",
+    "is_import": false,
+    "reason": "Fanciful or invented designations like 'Volcano Fire' are not approved classes."
+  },
+  "image_prompt": "Photorealistic dark textured glass bottle with a red and orange glowing label. Verbatim text to include exactly: 'Lava Rock', 'Volcano Fire', '35% Alc./Vol.', '750 mL', 'Produced and bottled by Island Distillers, Hilo, HI'. Include a separate paragraph in small print: 'GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.'",
+  "expectedSourceBehavior": "FAIL compliance with reason provided",
+  "expectedDecision": "rejected",
+  "expectedProblemChecks": [],
+  "extractionConfidence": 0.6599999999999999,
+  "visualObservation": "Visual note: label photo has severe cropping or partial occlusion. Camera orientation is upright (0 degrees)."
+}

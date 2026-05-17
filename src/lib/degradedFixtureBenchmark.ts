@@ -27,7 +27,7 @@ export type DegradedFixture = {
   visualObservation: string;
 };
 
-export type DegradedFixtureBenchmarkResult = {
+type DegradedFixtureBenchmarkResult = {
   id: string;
   sourceId: string;
   variant: string;
@@ -52,13 +52,13 @@ export type DegradedFixtureBenchmarkReport = {
   gaps: DegradedFixtureBenchmarkResult[];
 };
 
-export const degradedFixtureDir = join(process.cwd(), "public/evals/fixtures/degraded-generated");
+const degradedFixtureDir = join(process.cwd(), "public/evals/fixtures/stress-degraded-generated");
 
 export function loadDegradedFixtures(dir = degradedFixtureDir): DegradedFixture[] {
   return JSON.parse(readFileSync(join(dir, "manifest.json"), "utf8")) as DegradedFixture[];
 }
 
-export function benchmarkDegradedFixture(fixture: DegradedFixture): DegradedFixtureBenchmarkResult {
+function benchmarkDegradedFixture(fixture: DegradedFixture): DegradedFixtureBenchmarkResult {
   const labelText = [labelTextFromImagePrompt(fixture.image_prompt), fixture.visualObservation].filter(Boolean).join("\n");
   const extraction = {
     ...extractionFromPlainText(labelText),
@@ -66,7 +66,10 @@ export function benchmarkDegradedFixture(fixture: DegradedFixture): DegradedFixt
     notes: [fixture.visualObservation],
   };
   const result = verifyLabel(applicationFromFsyedFixture(fixture.form_data), extraction, fixture.image);
-  const problemChecks = result.checks.filter((check) => check.status !== "pass").map((check) => check.id);
+  const problemChecks: string[] = [];
+  for (const check of result.checks) {
+    if (check.status !== "pass") problemChecks.push(check.id);
+  }
   const missingExpectedProblemChecks = fixture.expectedProblemChecks.filter((checkId) => !problemChecks.includes(checkId));
 
   return {

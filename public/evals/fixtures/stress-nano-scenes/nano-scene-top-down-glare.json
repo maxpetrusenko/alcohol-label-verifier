@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "nano-scene-top-down-glare",
+  "title": "Top-down bottle angle with glare",
+  "provider": "gemini",
+  "model": "gemini-2.5-flash-image",
+  "mimeType": "image/png",
+  "image": "public/evals/fixtures/stress-nano-scenes/nano-scene-top-down-glare.png",
+  "imageHash": "7aaa32346c0d2555",
+  "expectedDecision": "needs_review",
+  "expectedProblemChecks": [
+    "image-quality"
+  ],
+  "visualObservation": "AI-generated scene: top-down viewpoint and sun glare obscure the front label, so the reviewer should request a clearer isolated label image.",
+  "prompt": "Photorealistic phone photo of a single distilled spirits bottle photographed from directly above and slightly toward the neck, so the front label is foreshortened and angled away from camera. The bottle lies on a bright bar counter with strong sun glare crossing the label, and label text is partly washed out. No real brand names, no people. High realism.",
+  "providerText": [
+    "Here is a photorealistic phone photo of a single distilled spirits bottle, photographed from directly above and slightly toward the neck, with the front label foreshortened and angled away from the camera. The bottle lies on a bright bar counter with strong sun glare crossing the label, and label text is partly washed out.\n\n"
+  ],
+  "caveat": "AI-generated demo/eval visual. Do not use as deterministic legal-text ground truth; generated label text may be inaccurate."
+}

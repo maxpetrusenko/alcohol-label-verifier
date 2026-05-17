@@ -1,4 +1,5 @@
 import { withBraintrustTrace } from "./braintrust";
+export { buildExtractionGuidance } from "./extractionGuidance";
 import { withLangSmithTrace, type VisionTraceInput } from "./langsmith";
 import { extractionFromPlainText } from "./rules";
 import type { LabelExtraction } from "./types";
@@ -9,6 +10,9 @@ export type ExtractableLabel = {
   dataUrl?: string;
   text?: string;
 };
+
+type VisionProvider = "gemini" | "openai";
+type VisionCallResult = Awaited<ReturnType<typeof callGeminiVision>>;
 
 const extractionSchema = {
   type: "object",
@@ -197,21 +201,49 @@ function parseMaxOutputTokens() {
   return Number.isFinite(value) && value > 0 ? value : 450;
 }
 
-function selectedVisionModel(provider: "gemini" | "openai") {
+function parsePositiveInt(value: string | undefined, fallback: number) {
+  const parsed = Number.parseInt(value ?? "", 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function parsePrimaryVisionTimeoutMs() {
+  return parsePositiveInt(process.env.VISION_TIMEOUT_MS, 2500);
+}
+
+function parseFallbackVisionTimeoutMs() {
+  return parsePositiveInt(process.env.VISION_FALLBACK_TIMEOUT_MS, 1500);
+}
+
+async function fetchWithVisionTimeout(url: string, init: RequestInit, timeoutMs: number) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error(`Vision extraction timed out after ${timeoutMs} ms.`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function selectedVisionModel(provider: VisionProvider) {
   return provider === "gemini" ? process.env.GEMINI_VISION_MODEL || "gemini-2.5-flash-lite" : process.env.OPENAI_VISION_MODEL || "gpt-4.1-nano";
 }
 
-function selectedVisionEndpoint(provider: "gemini" | "openai") {
+function selectedVisionEndpoint(provider: VisionProvider) {
   return provider === "gemini" ? "generateContent" : process.env.OPENAI_VISION_ENDPOINT || "chat_completions";
 }
 
-async function callOpenAiVision(apiKey: string, prompt: string, dataUrl: string) {
+async function callOpenAiVision(apiKey: string, prompt: string, dataUrl: string, timeoutMs = parsePrimaryVisionTimeoutMs()) {
   const model = selectedVisionModel("openai");
   const detail = process.env.OPENAI_IMAGE_DETAIL || "low";
   const maxOutputTokens = parseMaxOutputTokens();
 
   if (process.env.OPENAI_VISION_ENDPOINT === "responses") {
-    const response = await fetch("https://api.openai.com/v1/responses", {
+    const response = await fetchWithVisionTimeout("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -238,12 +270,12 @@ async function callOpenAiVision(apiKey: string, prompt: string, dataUrl: string)
           },
         },
       }),
-    });
+    }, timeoutMs);
 
     return { response, readText: readResponseText };
   }
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+  const response = await fetchWithVisionTimeout("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -270,17 +302,17 @@ async function callOpenAiVision(apiKey: string, prompt: string, dataUrl: string)
         },
       ],
     }),
-  });
+  }, timeoutMs);
 
   return { response, readText: readChatCompletionText };
 }
 
-async function callGeminiVision(apiKey: string, prompt: string, dataUrl: string) {
+async function callGeminiVision(apiKey: string, prompt: string, dataUrl: string, timeoutMs = parsePrimaryVisionTimeoutMs()) {
   const parsed = parseDataUrl(dataUrl);
   if (!parsed) throw new Error("Gemini vision requires a base64 data URL.");
   const model = selectedVisionModel("gemini");
   const maxOutputTokens = parseMaxOutputTokens();
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+  const response = await fetchWithVisionTimeout(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
     method: "POST",
     headers: {
       "x-goog-api-key": apiKey,
@@ -305,9 +337,12 @@ async function callGeminiVision(apiKey: string, prompt: string, dataUrl: string)
         responseJsonSchema: extractionSchema,
         maxOutputTokens,
         temperature: 0,
+        thinkingConfig: {
+          thinkingBudget: 0,
+        },
       },
     }),
-  });
+  }, timeoutMs);
 
   return { response, readText: readGeminiText };
 }
@@ -316,7 +351,19 @@ function geminiApiKey(): string | undefined {
   return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY_MAX || process.env.GEMINI_API_KEY_TURKEY;
 }
 
-function traceInputForLabel(label: ExtractableLabel, provider: "gemini" | "openai"): VisionTraceInput {
+function providerApiKey(provider: VisionProvider): string | undefined {
+  return provider === "gemini" ? geminiApiKey() : process.env.OPENAI_API_KEY;
+}
+
+function timeoutNote(error: unknown) {
+  return error instanceof Error && /timed out after \d+ ms/u.test(error.message) ? error.message : undefined;
+}
+
+function fallbackProvider(provider: VisionProvider): VisionProvider {
+  return provider === "gemini" ? "openai" : "gemini";
+}
+
+function traceInputForLabel(label: ExtractableLabel, provider: VisionProvider): VisionTraceInput {
   return {
     provider,
     model: selectedVisionModel(provider),
@@ -329,30 +376,13 @@ function traceInputForLabel(label: ExtractableLabel, provider: "gemini" | "opena
   };
 }
 
-export async function extractLabel(label: ExtractableLabel): Promise<LabelExtraction> {
-  const provider = process.env.VISION_PROVIDER === "openai" ? "openai" : "gemini";
-  const apiKey = provider === "gemini" ? geminiApiKey() : process.env.OPENAI_API_KEY;
-  const fallback = label.text ? extractionFromPlainText(label.text) : undefined;
-  if (!apiKey || !label.dataUrl) {
-    return fallback ?? extractionFromPlainText("");
-  }
-  const dataUrl = label.dataUrl;
-
-  const prompt = `You are a careful TTB alcohol-label extraction assistant.
-Extract only text and fields visible on the submitted label image. Do not decide compliance.
-Return strict JSON with labelText, brandName, classType, alcoholContent, netContents, governmentWarning, bottlerAddress, countryOfOrigin, confidence, notes. Keep labelText to required snippets only, max 600 characters.
-First assess whether the image contains exactly one isolated product label/bottle. If multiple bottles, multiple readable labels, a shelf/rack, a crowded counter, or no clear target product is visible, do not guess which product to verify. Leave fields empty unless a single target label is clearly isolated, set confidence low, and include the exact note "target label not isolated: multiple bottles or labels visible".
-Do not infer from bottle shape, common container sizes, common warning text, or product category. If a value is not readable in the image, leave that field empty and explain the visibility problem in notes.
-Every non-empty structured field must be copied from visible text also present in labelText. Do not return 750 mL, ABV/proof, government warning text, bottler address, or country of origin unless those characters are legible.
-Do not shorten or generalize class/type wording; preserve the full visible designation line when legible.
-Set governmentWarning only to the exact visible warning statement, including the leading "GOVERNMENT WARNING:" prefix when present. Preserve warning capitalization and punctuation when legible.`;
-
-  const { response, readText } = await withLangSmithTrace(
+async function callVisionWithTrace(provider: VisionProvider, apiKey: string, label: ExtractableLabel, prompt: string, dataUrl: string, timeoutMs: number) {
+  return withLangSmithTrace(
     traceInputForLabel(label, provider),
     () =>
       withBraintrustTrace(
         traceInputForLabel(label, provider),
-        () => (provider === "gemini" ? callGeminiVision(apiKey, prompt, dataUrl) : callOpenAiVision(apiKey, prompt, dataUrl)),
+        () => (provider === "gemini" ? callGeminiVision(apiKey, prompt, dataUrl, timeoutMs) : callOpenAiVision(apiKey, prompt, dataUrl, timeoutMs)),
         ({ response }) => ({
           provider,
           model: selectedVisionModel(provider),
@@ -369,6 +399,59 @@ Set governmentWarning only to the exact visible warning statement, including the
       ok: response.ok,
     }),
   );
+}
+
+async function callVisionWithTimeoutFallback(provider: VisionProvider, label: ExtractableLabel, prompt: string, dataUrl: string) {
+  const apiKey = providerApiKey(provider);
+  if (!apiKey) return { result: undefined, notes: [] };
+
+  const notes: string[] = [];
+  try {
+    return {
+      result: await callVisionWithTrace(provider, apiKey, label, prompt, dataUrl, parsePrimaryVisionTimeoutMs()),
+      notes,
+    };
+  } catch (error) {
+    const note = timeoutNote(error);
+    const backupProvider = fallbackProvider(provider);
+    const backupApiKey = providerApiKey(backupProvider);
+    if (!note || !backupApiKey) throw error;
+
+    notes.push(`${provider} ${note}; retried with ${backupProvider}.`);
+    try {
+      return {
+        result: await callVisionWithTrace(backupProvider, backupApiKey, label, prompt, dataUrl, parseFallbackVisionTimeoutMs()),
+        notes,
+      };
+    } catch (fallbackError) {
+      const fallbackNote = timeoutNote(fallbackError);
+      if (!fallbackNote) throw fallbackError;
+      notes.push(`${backupProvider} ${fallbackNote}.`);
+      throw new Error(notes.join(" "));
+    }
+  }
+}
+
+export async function extractLabel(label: ExtractableLabel): Promise<LabelExtraction> {
+  const provider: VisionProvider = process.env.VISION_PROVIDER === "openai" ? "openai" : "gemini";
+  const fallback = label.text ? extractionFromPlainText(label.text) : undefined;
+  if (!providerApiKey(provider) || !label.dataUrl) {
+    return fallback ?? extractionFromPlainText("");
+  }
+  const dataUrl = label.dataUrl;
+
+  const prompt = `You are a careful TTB alcohol-label extraction assistant.
+Extract only text and fields visible on the submitted label image. Do not decide compliance.
+Return strict JSON with labelText, brandName, classType, alcoholContent, netContents, governmentWarning, bottlerAddress, countryOfOrigin, confidence, notes. Keep labelText to required snippets only, max 600 characters.
+First assess whether the image contains exactly one isolated product label/bottle. If multiple bottles, multiple readable labels, a shelf/rack, a crowded counter, or no clear target product is visible, do not guess which product to verify. Leave fields empty unless a single target label is clearly isolated, set confidence low, and include the exact note "target label not isolated: multiple bottles or labels visible".
+Do not infer from bottle shape, common container sizes, common warning text, or product category. If a value is not readable in the image, leave that field empty and explain the visibility problem in notes.
+Every non-empty structured field must be copied from visible text also present in labelText. Do not return 750 mL, ABV/proof, government warning text, bottler address, or country of origin unless those characters are legible.
+Do not shorten or generalize class/type wording; preserve the full visible designation line when legible.
+Set governmentWarning only to the exact visible warning statement, including the leading "GOVERNMENT WARNING:" prefix when present. Preserve warning capitalization and punctuation when legible.`;
+
+  const { result, notes } = await callVisionWithTimeoutFallback(provider, label, prompt, dataUrl);
+  if (!result) return fallback ?? extractionFromPlainText("");
+  const { response, readText } = result as VisionCallResult;
 
   if (!response.ok) {
     const message = await response.text();
@@ -381,41 +464,13 @@ Set governmentWarning only to the exact visible warning statement, including the
 
   try {
     const data = await response.json();
-    return mergeExtraction(JSON.parse(readText(data) || "{}") as LabelExtraction, fallback);
+    const extraction = mergeExtraction(JSON.parse(readText(data) || "{}") as LabelExtraction, fallback);
+    return notes.length ? { ...extraction, notes: [...notes, ...extraction.notes] } : extraction;
   } catch (error) {
     return {
       ...(fallback ?? extractionFromPlainText("")),
       confidence: fallback?.confidence ?? 0,
-      notes: [`Vision extraction returned unreadable JSON: ${error instanceof Error ? error.message : "unknown parse error"}`],
+      notes: [...notes, `Vision extraction returned unreadable JSON: ${error instanceof Error ? error.message : "unknown parse error"}`],
     };
   }
-}
-
-export function buildExtractionGuidance(extraction: LabelExtraction) {
-  const found = [
-    extraction.brandName && "brand",
-    extraction.classType && "class/type",
-    extraction.alcoholContent && "ABV/proof",
-    extraction.netContents && "net contents",
-    extraction.governmentWarning && "government warning",
-  ].filter(Boolean);
-
-  const missing = [
-    !extraction.brandName && "brand",
-    !extraction.classType && "class/type",
-    !extraction.alcoholContent && "ABV/proof",
-    !extraction.netContents && "net contents",
-    !extraction.governmentWarning && "government warning",
-  ].filter(Boolean);
-
-  return {
-    title: missing.length ? "Photo read, but more evidence is needed" : "Photo read and ready to compare",
-    found,
-    missing,
-    nextSteps: [
-      "Confirm or import the COLA application facts for the same SKU.",
-      missing.length ? `Retake or add another panel if these fields are on the package: ${missing.join(", ")}.` : "Run comparison against the application record.",
-      "Use the rule results as a review aid; the human reviewer keeps final disposition.",
-    ],
-  };
 }

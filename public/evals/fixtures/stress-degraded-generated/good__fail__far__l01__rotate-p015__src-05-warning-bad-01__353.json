@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "good__fail__far__l01__rotate-p015__src-05-warning-bad-01__353",
+  "sourceId": "05-warning-bad-01",
+  "title": "Government warning completely missing (distance-downsample, level 1, tilt-right)",
+  "photoQuality": "good",
+  "variant": "distance-downsample",
+  "degradationFamily": "distance-downsample",
+  "severityLevel": 1,
+  "orientation": "tilt-right",
+  "angleDegrees": 15,
+  "sourceImage": "public/evals/fixtures/spirits-generated-canonical/05-warning-bad-01.png",
+  "image": "public/evals/fixtures/stress-degraded-generated/good__fail__far__l01__rotate-p015__src-05-warning-bad-01__353.jpg",
+  "imageHash": "aed5d4c82942322f",
+  "form_data": {
+    "brand_name": "Ghost Pine",
+    "class_type": "Gin",
+    "abv": "45% Alc./Vol.",
+    "net_contents": "750 mL",
+    "bottler_name": "Ghost Pine Spirits",
+    "bottler_address": "Savannah, GA",
+    "country_of_origin": "",
+    "is_import": false
+  },
+  "image_prompt": "Photorealistic clear glass bottle with a minimalist black and white label. Verbatim text to include exactly: 'Ghost Pine', 'Gin', '45% Alc./Vol.', '750 mL', 'Distilled and bottled by Ghost Pine Spirits, Savannah, GA'. (Note: strictly DO NOT include any government warning text).",
+  "expectedSourceBehavior": "FAIL compliance (Government warning missing)",
+  "expectedDecision": "rejected",
+  "expectedProblemChecks": [],
+  "extractionConfidence": 0.82,
+  "visualObservation": "Readable photo: label is smaller in frame but text remains legible. Camera orientation is tilt-right (15 degrees)."
+}

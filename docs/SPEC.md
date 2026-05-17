@@ -12,7 +12,7 @@ This spec is written for implementation in the current Next.js App Router applic
 
 Existing app capabilities observed in the repo:
 
-- UI: `src/app/page.tsx`
+- UI: `src/app/page.tsx`, `src/app/VerifierClient.tsx`, `src/app/useVerifierController.tsx`, and focused components under `src/app/`
   - Single-page form for application record fields.
   - Uploads image batches as base64 data URLs.
   - Supports pasted OCR/text fallback.
@@ -121,9 +121,9 @@ All functional changes in this phase must start with failing tests. The implemen
    - Mock model response success, malformed JSON, unavailable model, and low-confidence extraction.
    - Ensure the app never invents missing fields and records extraction errors as notes/warnings rather than crashing the batch.
 
-4. **UI behavior tests where practical**
-   - Add component or E2E coverage for file selection, text-only fallback, per-label results, final disposition selection, and export/copy summary actions.
-   - If no UI test framework is introduced, document manual test scripts in the PR and prioritize API/rule coverage.
+4. **UI behavior tests**
+   - Keep the Playwright E2E smoke test for the primary reviewer shell and demo result flow green.
+   - Expand E2E coverage for file selection, text-only fallback, per-label results, final disposition selection, and export/copy summary actions.
 
 5. **Regression fixtures**
    - Add small text fixtures for representative spirits/wine/beer labels.
@@ -554,7 +554,7 @@ Scope:
 
 Deliverables:
 
-- UI changes in `src/app/page.tsx` or split components.
+- UI changes in `src/app/page.tsx`, `src/app/VerifierClient.tsx`, `src/app/useVerifierController.tsx`, or focused components.
 - Manual QA script or UI tests if test framework is added.
 
 Acceptance:

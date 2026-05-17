@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "bad__fail__skew__l08__rotate-m015__src-02-mismatch-04__487",
+  "sourceId": "02-mismatch-04",
+  "title": "JSON wrong net contents, label correct (perspective-skew, level 8, tilt-left)",
+  "photoQuality": "bad",
+  "variant": "perspective-skew",
+  "degradationFamily": "perspective-skew",
+  "severityLevel": 8,
+  "orientation": "tilt-left",
+  "angleDegrees": -15,
+  "sourceImage": "public/evals/fixtures/spirits-generated-canonical/02-mismatch-04.png",
+  "image": "public/evals/fixtures/stress-degraded-generated/bad__fail__skew__l08__rotate-m015__src-02-mismatch-04__487.jpg",
+  "imageHash": "0f48f5804696198c",
+  "form_data": {
+    "brand_name": "Glacier Point",
+    "class_type": "Vodka",
+    "abv": "40% Alc./Vol.",
+    "net_contents": "1000 mL",
+    "bottler_name": "Glacier Distillers",
+    "bottler_address": "Anchorage, AK",
+    "country_of_origin": "",
+    "is_import": false
+  },
+  "image_prompt": "Photorealistic clear glass bottle with a minimalist ice-themed label. Verbatim text to include exactly: 'Glacier Point', 'Vodka', '40% Alc./Vol.', '750 mL', 'Distilled and bottled by Glacier Distillers, Anchorage, AK'. Include a separate paragraph in small print: 'GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.'",
+  "expectedSourceBehavior": "FAIL on cross-validation (Net contents mismatch)",
+  "expectedDecision": "rejected",
+  "expectedProblemChecks": [],
+  "extractionConfidence": 0.6799999999999999,
+  "visualObservation": "Visual note: label photo has severe perspective skew. Camera orientation is tilt-left (-15 degrees)."
+}

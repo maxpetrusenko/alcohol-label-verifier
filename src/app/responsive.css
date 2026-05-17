@@ -1,0 +1,78 @@
+@media (max-width: 1180px) {
+  .app-shell {
+    height: auto;
+    min-height: 100svh;
+    overflow: auto;
+  }
+
+  .verifier-screen {
+    height: auto;
+    grid-template-columns: 1fr;
+  }
+
+  .hero-panel {
+    height: auto;
+    min-height: 58svh;
+  }
+
+  .control-panel {
+    grid-template-rows: auto auto;
+  }
+}
+
+@media (max-width: 700px) {
+  .app-shell {
+    padding: 8px;
+  }
+
+  .verifier-screen {
+    gap: 8px;
+  }
+
+  .hero-panel,
+  .control-panel > section {
+    border-radius: 14px;
+    padding: 10px;
+  }
+
+  .topbar,
+  .photo-dock {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .fact-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .field-comparison-header {
+    grid-template-columns: 1fr;
+  }
+
+  .field-comparison-actions {
+    justify-content: stretch;
+  }
+
+  .inline-decision-actions {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .comparison-head {
+    display: none;
+  }
+
+  .comparison-row {
+    grid-template-columns: 1fr;
+    row-gap: 6px;
+  }
+
+  .comparison-row > span {
+    justify-self: start;
+  }
+
+  .hero-panel {
+    min-height: 64svh;
+  }
+
+}
