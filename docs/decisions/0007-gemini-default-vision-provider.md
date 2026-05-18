@@ -12,6 +12,7 @@ LabelCheck needs fast image-to-JSON extraction for reviewer uploads and future a
 - Optimized OpenAI `gpt-4.1-nano` with compressed JPEG input usually returned in about 2.0 to 2.6 seconds, but had tail spikes and occasional warning-text instability.
 - Optimized OpenAI `gpt-4o-mini` was more stable, but measured about 3.5 to 5.4 seconds per image.
 - Gemini `gemini-2.5-flash-lite` with the same compressed fixture measured about 1.7 to 2.1 seconds per image after warmup and returned stable field extraction on the smoke case.
+- After the 2026-05-18 timeout regression, a three-fixture candidate sweep found `gemini-3.1-flash-lite` at 3/3 full fixture matches with p95 4143 ms. The previous `gemini-2.5-flash-lite` measured 2/3 full matches with p95 16160 ms in the same sweep.
 
 The app still needs deterministic rules and human review gates because model OCR can vary, especially around statutory warning punctuation, line wraps, glare, blur, and crop quality.
 
@@ -22,7 +23,7 @@ Gemini is the default vision provider.
 Configuration:
 
 - Default provider: `VISION_PROVIDER=gemini`
-- Default Gemini model: `GEMINI_VISION_MODEL=gemini-2.5-flash-lite`
+- Default Gemini model: `GEMINI_VISION_MODEL=gemini-3.1-flash-lite`
 - Accepted Gemini key variables: `GEMINI_API_KEY`, `GEMINI_API_KEY_MAX`, `GEMINI_API_KEY_TURKEY`, or `GOOGLE_API_KEY`
 - OpenAI remains available with `VISION_PROVIDER=openai`
 

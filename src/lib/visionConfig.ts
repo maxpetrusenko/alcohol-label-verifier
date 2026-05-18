@@ -14,9 +14,22 @@ export function visionMode(mode: "guidance" | "rules") {
 }
 
 export function visionModel() {
-  return visionProvider() === "gemini" ? process.env.GEMINI_VISION_MODEL || "gemini-2.5-flash-lite" : process.env.OPENAI_VISION_MODEL || "gpt-4.1-nano";
+  return visionProvider() === "gemini" ? process.env.GEMINI_VISION_MODEL || "gemini-3.1-flash-lite" : process.env.OPENAI_VISION_MODEL || "gpt-4.1-nano";
 }
 
 export function visionEndpoint() {
   return visionProvider() === "gemini" ? "generateContent" : process.env.OPENAI_VISION_ENDPOINT || "chat_completions";
+}
+
+function parsePositiveInt(value: string | undefined, fallback: number) {
+  const parsed = Number.parseInt(value ?? "", 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+export function visionTimeoutMs() {
+  return parsePositiveInt(process.env.VISION_TIMEOUT_MS, 12000);
+}
+
+export function visionFallbackTimeoutMs() {
+  return parsePositiveInt(process.env.VISION_FALLBACK_TIMEOUT_MS, 6000);
 }

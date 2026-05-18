@@ -2,13 +2,13 @@
 
 Read when validating the 5-second review requirement.
 
-Date: 2026-05-14, updated 2026-05-16
+Date: 2026-05-14, updated 2026-05-18
 
 ## Current Local Evidence
 
 Local server: `http://localhost:3001`
 
-Provider: Gemini, `gemini-2.5-flash-lite`
+Provider: Gemini, `gemini-3.1-flash-lite`
 
 Text fallback API run:
 
@@ -31,7 +31,7 @@ Demo-fail image API run after disabling Gemini 2.5 thinking and adding bounded p
 - Result: rejected, score 83, government-warning issue detected
 - Browser-compressed wall-clock probe: 2874 ms
 - Browser-compressed API elapsed: 2493 ms
-- Guardrail: `VISION_TIMEOUT_MS=2500` plus `VISION_FALLBACK_TIMEOUT_MS=1500` prevents stalled provider calls from producing 20-30 second reviewer waits. When the opposite provider key is present, the app retries once with that provider inside the fallback budget.
+- Guardrail: `VISION_TIMEOUT_MS=12000` plus `VISION_FALLBACK_TIMEOUT_MS=6000` gives current provider latency enough room to complete while still bounding stalled reviewer waits. When the opposite provider key is present, the app retries once with that provider inside the fallback budget.
 
 Direct live provider eval:
 
@@ -39,6 +39,16 @@ Direct live provider eval:
 - Result: 4/10 full fixture matches, 90% field accuracy
 - p95 latency: 5139 ms
 - Note: this direct eval uses copied PNG fixtures and bypasses the browser compression path, so it is a conservative speed check.
+
+Three-fixture candidate sweep after the timeout regression:
+
+- Gemini `gemini-3.1-flash-lite`: 3/3 full matches, 100% field accuracy, p95 4143 ms
+- Gemini `gemini-3-flash-preview`: 2/3 full matches, 67% field accuracy, p95 4430 ms
+- Gemini `gemini-2.5-flash-lite`: 2/3 full matches, 72% field accuracy, p95 16160 ms
+- Gemini `gemini-2.0-flash-lite`: 0/3 full matches, 11% field accuracy, p95 597 ms
+- OpenAI `gpt-4.1-nano`: 3/3 full matches, 100% field accuracy, p95 3646 ms
+- OpenAI `gpt-5.4-mini` through Responses: 3/3 full matches, 100% field accuracy, p95 4691 ms
+- OpenAI `gpt-5.4-nano` through Responses: 3/3 full matches, 100% field accuracy, p95 5804 ms
 
 ## Deployed URL Check
 

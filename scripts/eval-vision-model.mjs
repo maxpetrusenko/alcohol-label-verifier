@@ -117,7 +117,7 @@ function providerConfig() {
   }
   return {
     provider,
-    model: process.env.GEMINI_VISION_MODEL || "gemini-2.5-flash-lite",
+    model: process.env.GEMINI_VISION_MODEL || "gemini-3.1-flash-lite",
     apiKey: geminiApiKey(),
   };
 }
@@ -167,7 +167,7 @@ async function callOpenAiVision(apiKey, prompt, dataUrl) {
     },
     body: JSON.stringify({
       model,
-      max_tokens: tokens,
+      ...(model.startsWith("gpt-5") ? { max_completion_tokens: tokens } : { max_tokens: tokens }),
       response_format: {
         type: "json_schema",
         json_schema: {
@@ -197,7 +197,8 @@ async function callOpenAiVision(apiKey, prompt, dataUrl) {
 async function callGeminiVision(apiKey, prompt, dataUrl) {
   const parsed = parseDataUrl(dataUrl);
   if (!parsed) throw new Error("Gemini vision requires a base64 data URL.");
-  const model = process.env.GEMINI_VISION_MODEL || "gemini-2.5-flash-lite";
+  const model = process.env.GEMINI_VISION_MODEL || "gemini-3.1-flash-lite";
+  const thinkingConfig = model.startsWith("gemini-3") ? { thinkingLevel: "low" } : { thinkingBudget: 0 };
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
     method: "POST",
     headers: {
@@ -223,6 +224,7 @@ async function callGeminiVision(apiKey, prompt, dataUrl) {
         responseJsonSchema: extractionSchema,
         maxOutputTokens: maxOutputTokens(),
         temperature: 0,
+        thinkingConfig,
       },
     }),
   });

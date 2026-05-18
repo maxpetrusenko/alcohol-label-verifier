@@ -23,7 +23,7 @@ The API does not verify font size, boldness, contrast, same-field-of-vision layo
 
 The API also does not provide authentication, RBAC, audit logs, retention/deletion policy, encrypted persistence, COLAs integration, final reviewer disposition, FedRAMP/ATO assurance, or approved government model-hosting guarantees.
 
-Vision mode depends on the configured provider key and outbound network access. Gemini is the default provider; OpenAI is available with `VISION_PROVIDER=openai`. If provider secrets are missing or blocked, the API falls back to text-only extraction behavior. Uploaded image data is sent to the configured model provider when vision mode is active. Provider calls use `VISION_TIMEOUT_MS` with a default of `2500` ms. If the opposite provider key is configured, a timeout retries once with `VISION_FALLBACK_TIMEOUT_MS`, default `1500` ms; otherwise the API returns a fast extraction failure instead of blocking the reviewer.
+Vision mode depends on the configured provider key and outbound network access. Gemini is the default provider; OpenAI is available with `VISION_PROVIDER=openai`. If provider secrets are missing or blocked, the API falls back to text-only extraction behavior. Uploaded image data is sent to the configured model provider when vision mode is active. Provider calls use `VISION_TIMEOUT_MS` with a default of `12000` ms. If the opposite provider key is configured, a timeout retries once with `VISION_FALLBACK_TIMEOUT_MS`, default `6000` ms. If vision still fails and the request includes supplied `text`, the API uses that text as evidence; otherwise it returns a bounded extraction failure instead of blocking indefinitely.
 
 ## CLI
 
@@ -75,9 +75,11 @@ Returns:
     "configured": true,
     "mode": "vision+rules",
     "provider": "gemini",
-    "model": "gemini-2.5-flash-lite",
+    "model": "gemini-3.1-flash-lite",
     "endpoint": "generateContent",
-    "imageDetail": "low"
+    "imageDetail": "low",
+    "timeoutMs": 12000,
+    "fallbackTimeoutMs": 6000
   },
   "braintrust": {
     "configured": true,

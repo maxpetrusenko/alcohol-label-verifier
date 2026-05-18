@@ -304,7 +304,7 @@ describe("extractLabel", () => {
       const body = JSON.parse(String(init?.body));
       expect(body.contents[0].parts[1].inline_data.mime_type).toBe("image/jpeg");
       expect(body.generationConfig.responseMimeType).toBe("application/json");
-      expect(body.generationConfig.thinkingConfig).toEqual({ thinkingBudget: 0 });
+      expect(body.generationConfig.thinkingConfig).toEqual({ thinkingLevel: "low" });
       return new Response(
         JSON.stringify({
           candidates: [
@@ -426,6 +426,68 @@ describe("extractLabel", () => {
         dataUrl: "data:image/jpeg;base64,test",
       }),
     ).rejects.toThrow("gemini Vision extraction timed out after 1 ms.; retried with openai. openai Vision extraction timed out after 1 ms.");
+  });
+
+  it("uses supplied text evidence when all vision providers time out", async () => {
+    process.env.VISION_PROVIDER = "gemini";
+    process.env.GEMINI_API_KEY = "gemini-key";
+    process.env.OPENAI_API_KEY = "openai-key";
+    process.env.VISION_TIMEOUT_MS = "1";
+    process.env.VISION_FALLBACK_TIMEOUT_MS = "1";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((_url: string, init?: RequestInit) => {
+        return new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => {
+            reject(new DOMException("Aborted", "AbortError"));
+          });
+        });
+      }),
+    );
+
+    const extraction = await extractLabel({
+      fileName: "all-timeout-with-text.jpg",
+      mimeType: "image/jpeg",
+      dataUrl: "data:image/jpeg;base64,test",
+      text: `Fallback Brand\nVodka\n40% Alc./Vol.\n750 mL\n${GOVERNMENT_WARNING_TEXT}`,
+    });
+
+    expect(extraction.brandName).toBe("Fallback Brand");
+    expect(extraction.notes[0]).toBe(
+      "Vision extraction failed; used supplied text evidence instead: gemini Vision extraction timed out after 1 ms.; retried with openai. openai Vision extraction timed out after 1 ms.",
+    );
+  });
+
+  it("preserves primary timeout notes when fallback provider returns an error", async () => {
+    process.env.VISION_PROVIDER = "openai";
+    process.env.OPENAI_API_KEY = "openai-key";
+    process.env.GEMINI_API_KEY = "gemini-key";
+    process.env.VISION_TIMEOUT_MS = "1";
+    process.env.VISION_FALLBACK_TIMEOUT_MS = "100";
+    const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+      if (url.includes("api.openai.com")) {
+        return new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => {
+            reject(new DOMException("Aborted", "AbortError"));
+          });
+        });
+      }
+      return Promise.resolve(new Response("provider overloaded", { status: 503 }));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const extraction = await extractLabel({
+      fileName: "fallback-provider-error.jpg",
+      mimeType: "image/jpeg",
+      dataUrl: "data:image/jpeg;base64,test",
+      text: "Fallback Brand\nVodka\n40% Alc./Vol.\n750 mL",
+    });
+
+    expect(extraction.brandName).toBe("Fallback Brand");
+    expect(extraction.notes).toEqual([
+      "openai Vision extraction timed out after 1 ms.; retried with gemini.",
+      "Vision extraction failed with provider status 503: provider overloaded",
+    ]);
   });
 
   it("fails fast when the vision provider exceeds the configured timeout without fallback", async () => {

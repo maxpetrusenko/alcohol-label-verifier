@@ -75,6 +75,29 @@ export const demoFixtures = {
   fail: "06-warning-sneaky-01",
 } as const;
 
+const DEMO_LABEL_TEXT: Record<(typeof demoFixtures)[keyof typeof demoFixtures], string> = {
+  "01-pass-01": [
+    "Old Cypress Distillery",
+    "Kentucky Straight Bourbon Whiskey",
+    "45% Alc./Vol.",
+    "750 mL",
+    "Distilled and bottled by Old Cypress Distillery, Louisville, KY",
+    "GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.",
+  ].join("\n"),
+  "06-warning-sneaky-01": [
+    "Maple Ridge",
+    "Bourbon Whiskey",
+    "40% Alc./Vol.",
+    "750 mL",
+    "Distilled and bottled by Ridge Distilling, Burlington, VT",
+    "GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and could cause health problems.",
+  ].join("\n"),
+};
+
+export function demoLabelText(id: string) {
+  return DEMO_LABEL_TEXT[id as keyof typeof DEMO_LABEL_TEXT];
+}
+
 export type ReviewerDisposition = "approved" | "rejected";
 
 export type Adjudication = {
@@ -311,7 +334,8 @@ export async function knownEvalFixtureFromImage(imageFile: File): Promise<KnownE
     if (!fixture) continue;
     const application = applicationFromImportJson(fixture);
     if (application) {
-      const labelText = typeof fixture.labelVisibleText === "string" ? fixture.labelVisibleText : typeof fixture.labelText === "string" ? fixture.labelText : undefined;
+      const labelText =
+        typeof fixture.labelVisibleText === "string" ? fixture.labelVisibleText : typeof fixture.labelText === "string" ? fixture.labelText : demoLabelText(id);
       return { application, ...(labelText ? { labelText } : {}) };
     }
   }

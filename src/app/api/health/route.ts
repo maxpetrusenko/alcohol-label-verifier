@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 import { braintrustProject, isBraintrustConfigured, isBraintrustTracingEnabled } from "../../../lib/braintrust";
-import { hasConfiguredVisionProvider, visionEndpoint, visionMode, visionModel, visionProvider } from "../../../lib/visionConfig";
+import {
+  hasConfiguredVisionProvider,
+  visionEndpoint,
+  visionFallbackTimeoutMs,
+  visionMode,
+  visionModel,
+  visionProvider,
+  visionTimeoutMs,
+} from "../../../lib/visionConfig";
 
 export function GET() {
   return NextResponse.json({
@@ -13,6 +21,8 @@ export function GET() {
       model: visionModel(),
       endpoint: visionEndpoint(),
       imageDetail: process.env.OPENAI_IMAGE_DETAIL || "low",
+      timeoutMs: visionTimeoutMs(),
+      fallbackTimeoutMs: visionFallbackTimeoutMs(),
     },
     braintrust: {
       configured: isBraintrustConfigured(),

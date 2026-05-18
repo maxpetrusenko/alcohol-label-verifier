@@ -11,6 +11,8 @@ describe("GET /api/health", () => {
   const originalGeminiMaxKey = process.env.GEMINI_API_KEY_MAX;
   const originalGeminiTurkeyKey = process.env.GEMINI_API_KEY_TURKEY;
   const originalGeminiModel = process.env.GEMINI_VISION_MODEL;
+  const originalVisionTimeout = process.env.VISION_TIMEOUT_MS;
+  const originalVisionFallbackTimeout = process.env.VISION_FALLBACK_TIMEOUT_MS;
   const originalBraintrustKey = process.env.BRAINTRUST_API_KEY;
   const originalBraintrustProject = process.env.BRAINTRUST_PROJECT;
   const originalBraintrustTracing = process.env.BRAINTRUST_TRACING;
@@ -29,6 +31,8 @@ describe("GET /api/health", () => {
     delete process.env.GEMINI_API_KEY_MAX;
     delete process.env.GEMINI_API_KEY_TURKEY;
     delete process.env.GEMINI_VISION_MODEL;
+    delete process.env.VISION_TIMEOUT_MS;
+    delete process.env.VISION_FALLBACK_TIMEOUT_MS;
     delete process.env.BRAINTRUST_API_KEY;
     delete process.env.BRAINTRUST_PROJECT;
     delete process.env.BRAINTRUST_TRACING;
@@ -66,6 +70,12 @@ describe("GET /api/health", () => {
     if (originalGeminiModel) process.env.GEMINI_VISION_MODEL = originalGeminiModel;
     else delete process.env.GEMINI_VISION_MODEL;
 
+    if (originalVisionTimeout) process.env.VISION_TIMEOUT_MS = originalVisionTimeout;
+    else delete process.env.VISION_TIMEOUT_MS;
+
+    if (originalVisionFallbackTimeout) process.env.VISION_FALLBACK_TIMEOUT_MS = originalVisionFallbackTimeout;
+    else delete process.env.VISION_FALLBACK_TIMEOUT_MS;
+
     if (originalBraintrustKey) process.env.BRAINTRUST_API_KEY = originalBraintrustKey;
     else delete process.env.BRAINTRUST_API_KEY;
 
@@ -95,9 +105,11 @@ describe("GET /api/health", () => {
       configured: false,
       mode: "text-only-demo",
       provider: "gemini",
-      model: "gemini-2.5-flash-lite",
+      model: "gemini-3.1-flash-lite",
       endpoint: "generateContent",
       imageDetail: "low",
+      timeoutMs: 12000,
+      fallbackTimeoutMs: 6000,
     });
     expect(data.braintrust).toEqual({
       configured: false,
@@ -122,6 +134,8 @@ describe("GET /api/health", () => {
       model: "gpt-4.1-mini",
       endpoint: "responses",
       imageDetail: "high",
+      timeoutMs: 12000,
+      fallbackTimeoutMs: 6000,
     });
     expect(JSON.stringify(data)).not.toContain("sk-test-secret");
   });
@@ -140,6 +154,8 @@ describe("GET /api/health", () => {
       model: "gemini-2.5-flash-lite",
       endpoint: "generateContent",
       imageDetail: "low",
+      timeoutMs: 12000,
+      fallbackTimeoutMs: 6000,
     });
     expect(JSON.stringify(data)).not.toContain("gemini-secret");
   });
@@ -152,6 +168,8 @@ describe("GET /api/health", () => {
 
     expect(data.vision.configured).toBe(true);
     expect(data.vision.provider).toBe("gemini");
+    expect(data.vision.timeoutMs).toBe(12000);
+    expect(data.vision.fallbackTimeoutMs).toBe(6000);
     expect(JSON.stringify(data)).not.toContain("named-gemini-secret");
   });
 

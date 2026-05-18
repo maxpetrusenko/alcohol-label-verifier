@@ -3,6 +3,7 @@ export { buildExtractionGuidance } from "./extractionGuidance";
 import type { VisionTraceInput } from "./trace-types";
 import { extractionFromPlainText } from "./rules";
 import type { LabelExtraction } from "./types";
+import { visionFallbackTimeoutMs, visionTimeoutMs } from "./visionConfig";
 
 export type ExtractableLabel = {
   fileName: string;
@@ -201,17 +202,12 @@ function parseMaxOutputTokens() {
   return Number.isFinite(value) && value > 0 ? value : 450;
 }
 
-function parsePositiveInt(value: string | undefined, fallback: number) {
-  const parsed = Number.parseInt(value ?? "", 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
-}
-
 function parsePrimaryVisionTimeoutMs() {
-  return parsePositiveInt(process.env.VISION_TIMEOUT_MS, 2500);
+  return visionTimeoutMs();
 }
 
 function parseFallbackVisionTimeoutMs() {
-  return parsePositiveInt(process.env.VISION_FALLBACK_TIMEOUT_MS, 1500);
+  return visionFallbackTimeoutMs();
 }
 
 async function fetchWithVisionTimeout(url: string, init: RequestInit, timeoutMs: number) {
@@ -230,11 +226,19 @@ async function fetchWithVisionTimeout(url: string, init: RequestInit, timeoutMs:
 }
 
 function selectedVisionModel(provider: VisionProvider) {
-  return provider === "gemini" ? process.env.GEMINI_VISION_MODEL || "gemini-2.5-flash-lite" : process.env.OPENAI_VISION_MODEL || "gpt-4.1-nano";
+  return provider === "gemini" ? process.env.GEMINI_VISION_MODEL || "gemini-3.1-flash-lite" : process.env.OPENAI_VISION_MODEL || "gpt-4.1-nano";
 }
 
 function selectedVisionEndpoint(provider: VisionProvider) {
   return provider === "gemini" ? "generateContent" : process.env.OPENAI_VISION_ENDPOINT || "chat_completions";
+}
+
+function selectedOpenAiChatTokenLimit(model: string, maxOutputTokens: number) {
+  return model.startsWith("gpt-5") ? { max_completion_tokens: maxOutputTokens } : { max_tokens: maxOutputTokens };
+}
+
+function selectedGeminiThinkingConfig(model: string) {
+  return model.startsWith("gemini-3") ? { thinkingLevel: "low" } : { thinkingBudget: 0 };
 }
 
 async function callOpenAiVision(apiKey: string, prompt: string, dataUrl: string, timeoutMs = parsePrimaryVisionTimeoutMs()) {
@@ -283,7 +287,7 @@ async function callOpenAiVision(apiKey: string, prompt: string, dataUrl: string,
     },
     body: JSON.stringify({
       model,
-      max_tokens: maxOutputTokens,
+      ...selectedOpenAiChatTokenLimit(model, maxOutputTokens),
       response_format: {
         type: "json_schema",
         json_schema: {
@@ -312,6 +316,7 @@ async function callGeminiVision(apiKey: string, prompt: string, dataUrl: string,
   if (!parsed) throw new Error("Gemini vision requires a base64 data URL.");
   const model = selectedVisionModel("gemini");
   const maxOutputTokens = parseMaxOutputTokens();
+  const thinkingConfig = selectedGeminiThinkingConfig(model);
   const response = await fetchWithVisionTimeout(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
     method: "POST",
     headers: {
@@ -337,9 +342,7 @@ async function callGeminiVision(apiKey: string, prompt: string, dataUrl: string,
         responseJsonSchema: extractionSchema,
         maxOutputTokens,
         temperature: 0,
-        thinkingConfig: {
-          thinkingBudget: 0,
-        },
+        thinkingConfig,
       },
     }),
   }, timeoutMs);
@@ -357,6 +360,15 @@ function providerApiKey(provider: VisionProvider): string | undefined {
 
 function timeoutNote(error: unknown) {
   return error instanceof Error && /timed out after \d+ ms/u.test(error.message) ? error.message : undefined;
+}
+
+function failedVisionFallback(fallback: LabelExtraction | undefined, error: unknown): LabelExtraction | undefined {
+  if (!fallback) return undefined;
+  const message = error instanceof Error ? error.message.replace(/\s+/g, " ").replace(/\.\.+/gu, ".").trim() : "unknown vision extraction error";
+  return {
+    ...fallback,
+    notes: [`Vision extraction failed; used supplied text evidence instead: ${message}`, ...fallback.notes],
+  };
 }
 
 function fallbackProvider(provider: VisionProvider): VisionProvider {
@@ -438,7 +450,15 @@ Every non-empty structured field must be copied from visible text also present i
 Do not shorten or generalize class/type wording; preserve the full visible designation line when legible.
 Set governmentWarning only to the exact visible warning statement, including the leading "GOVERNMENT WARNING:" prefix when present. Preserve warning capitalization and punctuation when legible.`;
 
-  const { result, notes } = await callVisionWithTimeoutFallback(provider, label, prompt, dataUrl);
+  let result: Awaited<ReturnType<typeof callVisionWithTimeoutFallback>>["result"];
+  let notes: string[];
+  try {
+    ({ result, notes } = await callVisionWithTimeoutFallback(provider, label, prompt, dataUrl));
+  } catch (error) {
+    const fallbackExtraction = failedVisionFallback(fallback, error);
+    if (fallbackExtraction) return fallbackExtraction;
+    throw error;
+  }
   if (!result) return fallback ?? extractionFromPlainText("");
   const { response, readText } = result as VisionCallResult;
 
@@ -447,7 +467,7 @@ Set governmentWarning only to the exact visible warning statement, including the
     return {
       ...(fallback ?? extractionFromPlainText("")),
       confidence: fallback?.confidence ?? 0,
-      notes: [sanitizeProviderError(response.status, message)],
+      notes: [...notes, sanitizeProviderError(response.status, message)],
     };
   }
 

@@ -1,4 +1,4 @@
-import { CheckCircle2 } from "lucide-react";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
 import type { ReviewRow } from "@/lib/reviewRows";
 import { issueTitle } from "@/lib/reviewPresentation";
 import type { VerificationCheck, VerificationResult } from "@/lib/types";
@@ -28,6 +28,16 @@ function LabelEvidence({ row }: { row: ReviewRow }) {
   return <>{labelEvidenceContent(row)}</>;
 }
 
+function extractionAlert(result: VerificationResult) {
+  const note = result.extraction.notes.find((item) => /(?:vision extraction failed|timed out|provider status|unreadable json|extraction failed)/iu.test(item));
+  if (!note) return null;
+  return {
+    title: /used supplied text evidence/iu.test(note) ? "Vision timed out; using supplied text evidence" : "Vision extraction issue",
+    detail: note,
+    severe: result.extraction.confidence === 0,
+  };
+}
+
 export function ResultsPanel({
   activeResult,
   attentionChecks,
@@ -39,6 +49,8 @@ export function ResultsPanel({
   nextSteps,
   onReviewerDecision,
 }: ResultsPanelProps) {
+  const alert = extractionAlert(activeResult);
+
   return (
     <section className="guidance-panel" aria-label="Issues and next steps">
       <div className="field-comparison-header">
@@ -75,6 +87,16 @@ export function ResultsPanel({
           <span>{Math.round(activeResult.extraction.confidence * 100)}% extraction confidence</span>
           <span>{scoredReviewRows.filter((row) => row.status === "pass").length}/{scoredReviewRows.length} requirement rows pass</span>
         </div>
+
+        {alert ? (
+          <div className={`extraction-alert ${alert.severe ? "extraction-alert-severe" : ""}`} role="status">
+            <AlertCircle aria-hidden />
+            <div>
+              <strong>{alert.title}</strong>
+              <p>{alert.detail}</p>
+            </div>
+          </div>
+        ) : null}
 
         <div className="comparison-table" aria-label="Expected and detected label values">
           <div className="comparison-head" aria-hidden>

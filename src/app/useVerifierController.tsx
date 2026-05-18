@@ -21,6 +21,7 @@ import {
   applicationsFromImportFile,
   defaultApplication,
   demoFixtures,
+  demoLabelText,
   drawScaledImage,
   filesFromDrop,
   knownEvalFixtureFromImage,
@@ -312,6 +313,7 @@ export function useVerifierController() {
         fileName: file.name,
         mimeType: image.mimeType,
         dataUrl: image.dataUrl,
+        text: demoLabelText(id),
       };
 
       setApplication(demoApplication);
