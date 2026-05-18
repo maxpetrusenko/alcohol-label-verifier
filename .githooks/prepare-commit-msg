@@ -1,0 +1,9 @@
+#!/bin/sh
+# Strip Cursor co-author trailers (set core.hooksPath to .githooks in this repo).
+MSG_FILE=$1
+[ -f "$MSG_FILE" ] || exit 0
+if sed --version 2>/dev/null | grep -q GNU; then
+  sed -i '/^Co-authored-by: Cursor /d' "$MSG_FILE"
+else
+  sed -i '' '/^Co-authored-by: Cursor /d' "$MSG_FILE"
+fi
