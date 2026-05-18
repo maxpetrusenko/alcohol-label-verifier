@@ -91,6 +91,12 @@ export function useVerifierController() {
   const activeSupplementalRows = useMemo(() => (activeResult ? supplementalReviewRows(activeResult).filter((row) => row.status !== "not_applicable") : []), [activeResult]);
 
   useEffect(() => {
+    if (!exportStatus) return undefined;
+    const timer = window.setTimeout(() => setExportStatus(null), 5000);
+    return () => window.clearTimeout(timer);
+  }, [exportStatus]);
+
+  useEffect(() => {
     if (!isCameraOpen) {
       stopMediaStream(cameraStreamRef.current);
       cameraStreamRef.current = null;
@@ -546,7 +552,9 @@ export function useVerifierController() {
       },
       { approved: 0, needs_review: 0, rejected: 0 },
     );
-    const activeReview = activeAdjudication ? `Reviewer disposition: ${activeAdjudication.disposition}${activeAdjudication.reasonCode ? ` (${activeAdjudication.reasonCode})` : ""}` : "Reviewer disposition: not set";
+    const activeReview = activeAdjudication
+      ? `Reviewer decision: ${activeAdjudication.reviewerDecision ?? activeAdjudication.disposition}${activeAdjudication.reasonCode ? ` (${activeAdjudication.reasonCode})` : ""}`
+      : "Reviewer decision: not set";
     const summary = [
       `LabelCheck batch: ${completedResults.length} label${completedResults.length === 1 ? "" : "s"}`,
       `System decisions: ${counts.approved} approved, ${counts.needs_review} needs review, ${counts.rejected} rejected`,
@@ -562,6 +570,10 @@ export function useVerifierController() {
     } catch {
       setExportStatus("Clipboard blocked; use export instead.");
     }
+  }
+
+  function clearExportStatus() {
+    setExportStatus(null);
   }
 
   return {
@@ -611,5 +623,6 @@ export function useVerifierController() {
     setReviewerDecision,
     exportReviewPacket,
     copyReviewSummary,
+    clearExportStatus,
   };
 }

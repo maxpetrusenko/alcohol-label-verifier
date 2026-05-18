@@ -101,7 +101,7 @@ export function demoLabelText(id: string) {
 export const reviewerDispositionOptions = [
   { value: "accept_recommendation", label: "Accept recommendation", hint: "Use app result" },
   { value: "request_correction", label: "Request correction", hint: "Send label back" },
-  { value: "override", label: "Reject / override", hint: "Reviewer decides" },
+  { value: "override", label: "Reject", hint: "Reviewer decides" },
   { value: "sme_review", label: "SME review", hint: "Escalate" },
 ] as const;
 

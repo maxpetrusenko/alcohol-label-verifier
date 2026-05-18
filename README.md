@@ -4,7 +4,7 @@ AI-powered alcohol label verification for TTB-style compliance review.
 
 **Live:** <https://cola.maxpetrusenko.com>
 
-Vision reads the label; deterministic rules compare extracted text to the application record; the reviewer records final disposition, reason, and notes. Standalone proof of concept — no COLAs integration.
+Vision reads the label; deterministic rules compare extracted text to the application record; the reviewer makes the final Approve or Reject decision with optional reason and notes. Standalone proof of concept — no COLAs integration.
 
 ## Reviewer UI
 
@@ -43,7 +43,7 @@ Take-home scope: [`docs/requirements.md`](docs/requirements.md). Full trace (evi
 | Imperfect / bad photo handling | **Done for V1 triage**: low-confidence, glare/skew/unreadable/multi-product cases route to review instead of false pass |
 | Mismatch highlighting | **Done for V1**: image-side issue callouts plus expected/observed field table |
 | Broader beer/wine/profile coverage | **Started**: common matching and limited exceptions; deeper commodity profiles remain future work |
-| Reviewer productivity features | **Done for V1**: pass/fail/review signals, batch rail, reviewer disposition, export |
+| Reviewer productivity features | **Done for V1**: pass/fail/review signals, batch rail, Approve/Reject decisions, export |
 | Robust judgment cases | **Done for V1**: case, punctuation, apostrophe, unit, and proof/ABV normalization |
 
 **Out of V1 / not required by the take-home:** mock COLA queue, durable server-side batch jobs, server-side audit logs, FedRAMP, auth/RBAC, retention policy, exact font/bold/contrast/placement verification, and true pixel-level bounding boxes.
@@ -52,7 +52,7 @@ Take-home scope: [`docs/requirements.md`](docs/requirements.md). Full trace (evi
 
 1. **Blind extraction** — vision sees only the label, not application facts ([ADR 0001](docs/decisions/0001-blind-extraction.md)).
 2. **Deterministic rules** — pass / fail / needs-review ([ADR 0002](docs/decisions/0002-deterministic-rules.md)).
-3. **Human disposition** — reviewer accepts, requests correction, overrides, or escalates to SME; no silent auto-denial ([ADR 0003](docs/decisions/0003-human-in-the-loop-no-auto-denial.md)).
+3. **Human decision** — reviewer approves or rejects; no silent auto-denial ([ADR 0003](docs/decisions/0003-human-in-the-loop-no-auto-denial.md)).
 
 **Assumptions:** one image = one label panel; cloud vision (Gemini default); no upload persistence or COLAs API; rules approximate TTB for demo speed, not legal sign-off.
 

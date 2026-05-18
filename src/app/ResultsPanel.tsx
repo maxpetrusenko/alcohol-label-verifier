@@ -5,14 +5,12 @@ import type { VerificationCheck, VerificationResult } from "@/lib/types";
 import {
   type Adjudication,
   type AdjudicationUpdate,
-  defaultReviewerDecision,
   decisionIcon,
   dispositionNeedsReason,
   labelEvidenceContent,
   reasonCodeLabel,
   rowReason,
   rowStatusLabel,
-  reviewerDispositionOptions,
   reviewerReasonOptions,
 } from "./pageSupport";
 
@@ -20,7 +18,6 @@ type ResultsPanelProps = {
   activeResult: VerificationResult;
   attentionChecks: VerificationCheck[];
   activeAdjudication?: Adjudication;
-  adjudicationCount: number;
   exportStatus: string | null;
   isVerifying: boolean;
   activeReviewRows: ReviewRow[];
@@ -30,6 +27,7 @@ type ResultsPanelProps = {
   onReviewerDecision: (update: AdjudicationUpdate) => void;
   onExportReviewPacket: (format: "json" | "csv") => void;
   onCopyReviewSummary: () => void;
+  onClearExportStatus: () => void;
 };
 
 function LabelEvidence({ row }: { row: ReviewRow }) {
@@ -51,7 +49,6 @@ export function ResultsPanel({
   activeResult,
   attentionChecks,
   activeAdjudication,
-  adjudicationCount,
   exportStatus,
   isVerifying,
   activeReviewRows,
@@ -61,14 +58,16 @@ export function ResultsPanel({
   onReviewerDecision,
   onExportReviewPacket,
   onCopyReviewSummary,
+  onClearExportStatus,
 }: ResultsPanelProps) {
   const alert = extractionAlert(activeResult);
   const extractionNotes = Array.isArray(activeResult.extraction.notes) ? activeResult.extraction.notes : [];
   const extractionConfidence = typeof activeResult.extraction.confidence === "number" ? activeResult.extraction.confidence : 0;
-  const isCleanApproval = activeResult.decision === "approved" && !attentionChecks.length && !activeAdjudication;
-  const showDispositionPanel = !isCleanApproval;
   const needsDispositionDetail = dispositionNeedsReason(activeAdjudication?.disposition);
-  const dispositionStatus = activeAdjudication ? (activeAdjudication.isComplete ? "Draft ready" : "Needs reason and note") : "No reviewer draft";
+  const needsReviewerFields = Boolean(activeAdjudication && (activeAdjudication.reviewerDecision === "rejected" || needsDispositionDetail));
+  const approvalSelected = activeAdjudication?.reviewerDecision === "approved";
+  const rejectionSelected = activeAdjudication?.reviewerDecision === "rejected";
+  const reviewerStatus = activeAdjudication ? (activeAdjudication.isComplete ? "Decision saved" : "Needs reason and note") : undefined;
 
   return (
     <section className="guidance-panel" aria-label="Issues and next steps">
@@ -94,10 +93,26 @@ export function ResultsPanel({
           <span>{scoredReviewRows.filter((row) => row.status === "pass").length}/{scoredReviewRows.length} requirement rows pass</span>
         </div>
 
-        {isCleanApproval ? (
-          <div className="review-output-actions review-output-actions-compact" aria-label="Review packet actions">
+        <div className="review-decision-actions" aria-label="Reviewer decision actions">
+          <div className="review-decision-primary">
             <button
               type="button"
+              className={`review-decision-button approve ${approvalSelected ? "selected" : ""}`}
+              disabled={isVerifying}
+              onClick={() =>
+                onReviewerDecision({
+                  disposition: activeResult.decision === "approved" ? "accept_recommendation" : "override",
+                  reviewerDecision: "approved",
+                  reasonCode: "",
+                  note: "",
+                })
+              }
+            >
+              Approve
+            </button>
+            <button
+              type="button"
+              className={`review-decision-button reject ${rejectionSelected ? "selected" : ""}`}
               disabled={isVerifying}
               onClick={() =>
                 onReviewerDecision({
@@ -106,8 +121,10 @@ export function ResultsPanel({
                 })
               }
             >
-              Reject label
+              Reject
             </button>
+          </div>
+          <div className="review-output-actions" aria-label="Review packet actions">
             <button type="button" disabled={isVerifying} onClick={() => onExportReviewPacket("json")}>
               Export packet
             </button>
@@ -117,36 +134,21 @@ export function ResultsPanel({
             <button type="button" disabled={isVerifying} onClick={onCopyReviewSummary}>
               Copy summary
             </button>
-            <span>{exportStatus ?? "No issues"}</span>
+            {reviewerStatus ? <span>{reviewerStatus}</span> : null}
+          </div>
+        </div>
+
+        {exportStatus ? (
+          <div className="review-toast" role="status">
+            <span>{exportStatus}</span>
+            <button type="button" onClick={onClearExportStatus} aria-label="Close notification">
+              Close
+            </button>
           </div>
         ) : null}
 
-        {showDispositionPanel ? (
-          <div className="reviewer-disposition" aria-label="Reviewer disposition">
-            <div className="reviewer-disposition-head">
-              <strong>Reviewer disposition</strong>
-              <span className={activeAdjudication?.isComplete ? "disposition-ready" : "disposition-open"}>{dispositionStatus}</span>
-            </div>
-            <div className="disposition-actions">
-              {reviewerDispositionOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  className={`disposition-action ${activeAdjudication?.disposition === option.value ? "selected" : ""}`}
-                  disabled={isVerifying}
-                  onClick={() =>
-                    onReviewerDecision({
-                      disposition: option.value,
-                      reviewerDecision: defaultReviewerDecision(option.value, activeResult.decision),
-                    })
-                  }
-                >
-                  <span>{option.label}</span>
-                  <small>{option.hint}</small>
-                </button>
-              ))}
-            </div>
-            {activeAdjudication ? (
+        {needsReviewerFields && activeAdjudication ? (
+          <div className="reviewer-disposition" aria-label="Reviewer decision details">
               <div className="disposition-fields">
                 {activeAdjudication.disposition === "override" ? (
                   <label>
@@ -194,19 +196,6 @@ export function ResultsPanel({
                 </label>
                 {activeAdjudication.reasonCode ? <p>{reasonCodeLabel(activeAdjudication.reasonCode)}</p> : null}
               </div>
-            ) : null}
-            <div className="review-output-actions" aria-label="Review packet actions">
-              <button type="button" disabled={isVerifying} onClick={() => onExportReviewPacket("json")}>
-                Export packet
-              </button>
-              <button type="button" disabled={isVerifying} onClick={() => onExportReviewPacket("csv")}>
-                Export CSV
-              </button>
-              <button type="button" disabled={isVerifying} onClick={onCopyReviewSummary}>
-                Copy summary
-              </button>
-              <span>{exportStatus ?? `${adjudicationCount} reviewer draft${adjudicationCount === 1 ? "" : "s"}`}</span>
-            </div>
           </div>
         ) : null}
 

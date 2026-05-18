@@ -1,4 +1,4 @@
-import type { ChangeEvent, DragEvent, RefObject } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent, type DragEvent, type RefObject } from "react";
 import Image from "next/image";
 import { Camera, FileImage, UploadCloud } from "lucide-react";
 import type { PendingLabel } from "@/lib/labelPayload";
@@ -59,6 +59,18 @@ export function LabelStage({
 }: LabelStageProps) {
   const { hasBatch, isDropActive, isVerifying, isCameraOpen } = stageState;
   const imageCallouts = activeIssueRows.filter((row) => row.status === "fail" || row.status === "needs_review").slice(0, 4);
+  const calloutKey = useMemo(
+    () => `${activeLabel?.labelId ?? activeLabel?.fileName ?? activeIndex}:${imageCallouts.map((row) => `${row.id}:${row.status}:${row.observed}`).join("|")}`,
+    [activeIndex, activeLabel?.fileName, activeLabel?.labelId, imageCallouts],
+  );
+  const [dismissedCalloutKey, setDismissedCalloutKey] = useState<string | null>(null);
+  const showImageCallouts = Boolean(imageCallouts.length && dismissedCalloutKey !== calloutKey);
+
+  useEffect(() => {
+    if (!showImageCallouts) return undefined;
+    const timer = window.setTimeout(() => setDismissedCalloutKey(calloutKey), 5000);
+    return () => window.clearTimeout(timer);
+  }, [calloutKey, showImageCallouts]);
 
   function batchItemClass(index: number, result?: VerificationResult) {
     return ["batch-item", index === activeIndex ? "active" : "", result ? `decision-${result.decision}` : ""].filter(Boolean).join(" ");
@@ -66,12 +78,15 @@ export function LabelStage({
 
   return (
     <div className={`label-stage${isDropActive ? " drop-active" : ""}`} onDragOver={onDragOver} onDragEnter={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}>
-      <div className={`label-preview${imageCallouts.length ? " has-image-callouts" : ""}`} aria-label="Full label preview">
+      <div className={`label-preview${showImageCallouts ? " has-image-callouts" : ""}`} aria-label="Full label preview">
         {activeLabel?.dataUrl ? (
           <>
             <Image unoptimized fill sizes="(min-width: 900px) 58vw, 100vw" src={activeLabel.dataUrl} alt={`Uploaded label preview for ${activeLabel.fileName}`} />
-            {imageCallouts.length ? (
+            {showImageCallouts ? (
               <div className="image-callout-stack" aria-label="Mismatches to inspect on this label image">
+                <button type="button" className="image-callout-close" aria-label="Close image mismatch notices" onClick={() => setDismissedCalloutKey(calloutKey)}>
+                  Close
+                </button>
                 {imageCallouts.map((row) => (
                   <div className={`image-callout image-callout-${row.status}`} key={row.id}>
                     <span>{row.status === "fail" ? "FAIL" : "REVIEW"}</span>

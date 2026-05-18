@@ -16,7 +16,6 @@ export function VerifierClient() {
     activeIndex,
     activeResult,
     activeAdjudication,
-    adjudications,
     exportStatus,
     batchCount,
     batchProgress,
@@ -52,6 +51,7 @@ export function VerifierClient() {
     setReviewerDecision,
     exportReviewPacket,
     copyReviewSummary,
+    clearExportStatus,
   } = verifier;
   const activeImageIssueRows = [...activeReviewRows, ...activeSupplementalRows];
 
@@ -115,7 +115,6 @@ export function VerifierClient() {
               activeResult={activeResult}
               attentionChecks={attentionChecks}
               activeAdjudication={activeAdjudication}
-              adjudicationCount={Object.keys(adjudications).length}
               exportStatus={exportStatus}
               isVerifying={isVerifying}
               activeReviewRows={activeReviewRows}
@@ -125,6 +124,7 @@ export function VerifierClient() {
               onReviewerDecision={setReviewerDecision}
               onExportReviewPacket={exportReviewPacket}
               onCopyReviewSummary={copyReviewSummary}
+              onClearExportStatus={clearExportStatus}
             />
           ) : null}
         </aside>

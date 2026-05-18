@@ -50,7 +50,20 @@
   width: min(330px, calc(100% - 20px));
   display: grid;
   gap: 6px;
-  pointer-events: none;
+  pointer-events: auto;
+}
+
+.image-callout-close {
+  justify-self: end;
+  border: 1px solid rgb(24 21 18 / 0.14);
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: rgb(255 250 240 / 0.96);
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.66rem;
+  font-weight: 950;
 }
 
 .image-callout {
