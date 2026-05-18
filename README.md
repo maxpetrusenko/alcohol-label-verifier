@@ -75,7 +75,7 @@ npm run dev
 
 Open <http://localhost:3000> · health: `curl -fsS http://localhost:3000/api/health | jq`
 
-Optional: `doppler secrets download --no-file --format env -p api_keys -c dev >> .env.local` · README screenshots: `npm run screenshots:readme`
+Optional: `doppler secrets download --no-file --format env -p api_keys -c dev >> .env.local` · README screenshots: `npm run screenshots:readme` · `git config core.hooksPath .githooks` (drops Cursor co-author trailers)
 
 ## Environment
 
