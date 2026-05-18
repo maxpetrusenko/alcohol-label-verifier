@@ -7,7 +7,7 @@ const requirementRef = {
   url: "https://www.ttb.gov/regulated-commodities/beverage-alcohol/distilled-spirits/ds-labeling-home/ds-brand-name",
 };
 
-test("reviewer can load the app and run the demo verification flow", async ({ page }) => {
+async function mockVerifyPass(page: import("@playwright/test").Page) {
   await page.route("**/api/verify", async (route) => {
     await route.fulfill({
       status: 200,
@@ -60,6 +60,10 @@ test("reviewer can load the app and run the demo verification flow", async ({ pa
       }),
     });
   });
+}
+
+test("reviewer can load the app and run the demo verification flow", async ({ page }) => {
+  await mockVerifyPass(page);
 
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "LabelCheck" })).toBeVisible();
@@ -87,4 +91,36 @@ test("reviewer can load the app and run the demo verification flow", async ({ pa
   await page.getByRole("button", { name: "Demo pass" }).click();
   await expect(page.getByRole("button", { name: "Reject" })).toHaveClass(/selected/);
   await expect(page.getByLabel("Reviewer note")).toHaveValue("Correct the brand presentation before approval.");
+});
+
+test("mobile viewport uses the single-column review layout", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-chrome", "mobile-only regression guard");
+
+  await mockVerifyPass(page);
+  await page.goto("/");
+  await page.getByRole("button", { name: "Demo pass" }).click();
+  await expect(page.getByRole("heading", { name: "Field comparison" })).toBeVisible();
+
+  const layout = await page.evaluate(() => {
+    const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
+    const hero = document.querySelector(".hero-panel")?.getBoundingClientRect();
+    const controls = document.querySelector(".control-panel")?.getBoundingClientRect();
+    const screenColumns = window.getComputedStyle(document.querySelector(".verifier-screen")!).gridTemplateColumns;
+
+    return {
+      viewportWidth,
+      screenColumns,
+      heroRight: hero?.right ?? 0,
+      controlsLeft: controls?.left ?? 0,
+      controlsRight: controls?.right ?? 0,
+      controlsTop: controls?.top ?? 0,
+      heroBottom: hero?.bottom ?? 0,
+    };
+  });
+
+  expect(layout.screenColumns.split(" ")).toHaveLength(1);
+  expect(layout.heroRight).toBeLessThanOrEqual(layout.viewportWidth + 1);
+  expect(layout.controlsLeft).toBeLessThanOrEqual(10);
+  expect(layout.controlsRight).toBeLessThanOrEqual(layout.viewportWidth + 1);
+  expect(layout.controlsTop).toBeGreaterThanOrEqual(layout.heroBottom - 1);
 });

@@ -60,7 +60,7 @@ Take-home scope: [`docs/requirements.md`](docs/requirements.md). Full trace (evi
 
 ## Stack
 
-Next.js (App Router), TypeScript, Tailwind, Zod, Vitest, Playwright, Gemini/OpenAI vision, Braintrust tracing (optional), `labelcheck` CLI + OpenAPI.
+Next.js (App Router), TypeScript, Tailwind, Zod, Vitest, Playwright desktop + mobile smoke coverage, Gemini/OpenAI vision, Braintrust tracing (optional), `labelcheck` CLI + OpenAPI.
 
 ## Fixtures
 
@@ -106,6 +106,8 @@ See [`.env.example`](.env.example).
 ```bash
 npm run test && npm run test:e2e && npm run lint && npm run build
 ```
+
+`npm run test:e2e` runs both desktop Chromium and mobile Chrome viewport checks; mobile layout regressions are release blockers.
 
 ## API and CLI
 

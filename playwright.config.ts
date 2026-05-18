@@ -18,6 +18,10 @@ export default defineConfig({
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
     },
+    {
+      name: "mobile-chrome",
+      use: { ...devices["Pixel 7"] },
+    },
   ],
   webServer: {
     command: "npm run dev -- --hostname 127.0.0.1 --port 3101",

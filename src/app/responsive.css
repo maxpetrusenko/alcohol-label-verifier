@@ -5,17 +5,17 @@
     overflow: auto;
   }
 
-  .verifier-screen {
+  .app-shell .verifier-screen {
     height: auto;
     grid-template-columns: 1fr;
   }
 
-  .hero-panel {
+  .app-shell .hero-panel {
     height: auto;
     min-height: 58svh;
   }
 
-  .control-panel {
+  .app-shell .control-panel {
     grid-template-rows: auto auto;
   }
 }
@@ -25,12 +25,12 @@
     padding: 8px;
   }
 
-  .verifier-screen {
+  .app-shell .verifier-screen {
     gap: 8px;
   }
 
-  .hero-panel,
-  .control-panel > section {
+  .app-shell .hero-panel,
+  .app-shell .control-panel > section {
     border-radius: 14px;
     padding: 10px;
   }
@@ -86,7 +86,7 @@
     justify-self: start;
   }
 
-  .hero-panel {
+  .app-shell .hero-panel {
     min-height: 64svh;
   }
 }
