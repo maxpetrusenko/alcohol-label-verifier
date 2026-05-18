@@ -47,5 +47,23 @@ jobs:
           printf '%s\n' "$COOLIFY_SSH_PRIVATE_KEY" > ~/.ssh/coolify_deploy
           chmod 600 ~/.ssh/coolify_deploy
           ssh-keyscan -H "$COOLIFY_SSH_HOST" >> ~/.ssh/known_hosts
-          ssh -i ~/.ssh/coolify_deploy "$COOLIFY_SSH_USER@$COOLIFY_SSH_HOST" \
-            "curl -fsS -X PATCH 'http://127.0.0.1:8000/api/v1/applications/$COOLIFY_APP_UUID' -H 'Authorization: Bearer $COOLIFY_TOKEN' -H 'Content-Type: application/json' --data '{\"docker_registry_image_name\":\"${IMAGE_NAME}\",\"docker_registry_image_tag\":\"${IMAGE_TAG}\"}' >/dev/null && curl -fsS -X POST 'http://127.0.0.1:8000/api/v1/deploy?uuid=$COOLIFY_APP_UUID&force=false' -H 'Authorization: Bearer $COOLIFY_TOKEN'"
+          deploy_json="$(ssh -i ~/.ssh/coolify_deploy "$COOLIFY_SSH_USER@$COOLIFY_SSH_HOST" \
+            "curl -fsS -X PATCH 'http://127.0.0.1:8000/api/v1/applications/$COOLIFY_APP_UUID' -H 'Authorization: Bearer $COOLIFY_TOKEN' -H 'Content-Type: application/json' --data '{\"docker_registry_image_name\":\"${IMAGE_NAME}\",\"docker_registry_image_tag\":\"${IMAGE_TAG}\"}' >/dev/null && curl -fsS -X POST 'http://127.0.0.1:8000/api/v1/deploy?uuid=$COOLIFY_APP_UUID&force=false' -H 'Authorization: Bearer $COOLIFY_TOKEN'")"
+          deployment_uuid="$(printf '%s' "$deploy_json" | node -e "let input=''; process.stdin.on('data', c => input += c); process.stdin.on('end', () => { const data = JSON.parse(input); const uuid = data.deployments?.[0]?.deployment_uuid; if (!uuid) throw new Error('Coolify deploy response did not include deployment_uuid'); console.log(uuid); });")"
+
+          for _ in $(seq 1 80); do
+            status_json="$(ssh -i ~/.ssh/coolify_deploy "$COOLIFY_SSH_USER@$COOLIFY_SSH_HOST" \
+              "curl -fsS 'http://127.0.0.1:8000/api/v1/deployments/$deployment_uuid' -H 'Authorization: Bearer $COOLIFY_TOKEN'")"
+            status="$(printf '%s' "$status_json" | node -e "let input=''; process.stdin.on('data', c => input += c); process.stdin.on('end', () => console.log(JSON.parse(input).status || 'unknown'));")"
+            echo "Coolify deployment $deployment_uuid status: $status"
+            if [ "$status" = "finished" ]; then
+              exit 0
+            fi
+            if [ "$status" = "failed" ] || [ "$status" = "cancelled" ]; then
+              exit 1
+            fi
+            sleep 10
+          done
+
+          echo "Timed out waiting for Coolify deployment $deployment_uuid"
+          exit 1
