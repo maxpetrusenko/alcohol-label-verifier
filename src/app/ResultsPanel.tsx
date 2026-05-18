@@ -37,7 +37,8 @@ function LabelEvidence({ row }: { row: ReviewRow }) {
 }
 
 function extractionAlert(result: VerificationResult) {
-  const note = result.extraction.notes.find((item) => /(?:vision extraction failed|timed out|provider status|unreadable json|extraction failed|verification request failed)/iu.test(item));
+  const notes = Array.isArray(result.extraction.notes) ? result.extraction.notes : [];
+  const note = notes.find((item) => /(?:vision extraction failed|timed out|provider status|unreadable json|extraction failed|verification request failed)/iu.test(item));
   if (!note) return null;
   return {
     title: /used supplied text evidence/iu.test(note) ? "Vision timed out; using supplied text evidence" : "Vision extraction issue",
@@ -62,6 +63,8 @@ export function ResultsPanel({
   onCopyReviewSummary,
 }: ResultsPanelProps) {
   const alert = extractionAlert(activeResult);
+  const extractionNotes = Array.isArray(activeResult.extraction.notes) ? activeResult.extraction.notes : [];
+  const extractionConfidence = typeof activeResult.extraction.confidence === "number" ? activeResult.extraction.confidence : 0;
   const needsDispositionDetail = dispositionNeedsReason(activeAdjudication?.disposition);
   const dispositionStatus = activeAdjudication ? (activeAdjudication.isComplete ? "Draft ready" : "Needs reason and note") : "No reviewer draft";
 
@@ -85,7 +88,7 @@ export function ResultsPanel({
 
       <div className="comparison-stack">
         <div className="comparison-meta">
-          <span>{Math.round(activeResult.extraction.confidence * 100)}% extraction confidence</span>
+          <span>{Math.round(extractionConfidence * 100)}% extraction confidence</span>
           <span>{scoredReviewRows.filter((row) => row.status === "pass").length}/{scoredReviewRows.length} requirement rows pass</span>
         </div>
 
@@ -232,9 +235,9 @@ export function ResultsPanel({
         <details className="extraction-evidence">
           <summary>Additional details: extracted text evidence</summary>
           <pre>{activeResult.extraction.labelText || "No raw label text returned."}</pre>
-          {activeResult.extraction.notes.length ? (
+          {extractionNotes.length ? (
             <ul>
-              {activeResult.extraction.notes.map((note) => (
+              {extractionNotes.map((note) => (
                 <li key={note}>{note}</li>
               ))}
             </ul>
@@ -252,7 +255,7 @@ export function ResultsPanel({
             </div>
           ) : null}
           <ul>
-            {(nextSteps.length ? nextSteps : activeResult.extraction.notes.length ? activeResult.extraction.notes : ["Ready to save."])
+            {(nextSteps.length ? nextSteps : extractionNotes.length ? extractionNotes : ["Ready to save."])
               .slice(0, 3)
               .map((step) => (
                 <li key={step}>
