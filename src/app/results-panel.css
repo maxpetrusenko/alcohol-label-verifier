@@ -375,6 +375,10 @@
   gap: 6px;
 }
 
+.review-output-actions-compact {
+  padding: 6px 0 2px;
+}
+
 .review-output-actions button {
   border: 1px solid var(--line);
   border-radius: 8px;

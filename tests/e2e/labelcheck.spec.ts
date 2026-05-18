@@ -71,8 +71,10 @@ test("reviewer can load the app and run the demo verification flow", async ({ pa
   await expect(page.getByText("Brand name")).toBeVisible();
   await expect(page.getByText("OLD TOM DISTILLERY").first()).toBeVisible();
 
-  await page.getByRole("button", { name: /Request correction/ }).click();
+  await expect(page.getByText("No issues", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: /Reject label/ }).click();
   await expect(page.getByText("Needs reason and note")).toBeVisible();
+  await expect(page.getByLabel("Reviewer outcome")).toHaveValue("rejected");
   await page.getByLabel("Reason code").selectOption("label_correction");
   await page.getByLabel("Reviewer note").fill("Correct the brand presentation before approval.");
   await expect(page.getByText("Draft ready")).toBeVisible();
@@ -82,6 +84,6 @@ test("reviewer can load the app and run the demo verification flow", async ({ pa
 
   await page.reload();
   await page.getByRole("button", { name: "Demo pass" }).click();
-  await expect(page.getByRole("button", { name: /Request correction/ })).toHaveClass(/selected/);
+  await expect(page.getByRole("button", { name: /Reject \/ override/ })).toHaveClass(/selected/);
   await expect(page.getByLabel("Reviewer note")).toHaveValue("Correct the brand presentation before approval.");
 });
