@@ -2,8 +2,9 @@
 
 import { ChangeEvent, DragEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
+  batchFailureResult,
   batchLimitError,
-  chunkVerificationLabels,
+  chunkVerificationLabelsWithIndex,
   isImageLikeUpload,
   type PendingLabel,
 } from "@/lib/labelPayload";
@@ -17,18 +18,23 @@ import { coreReviewRows, supplementalReviewRows } from "@/lib/reviewRows";
 import type { ApplicationData, VerificationResult } from "@/lib/types";
 import {
   type Adjudication,
+  type AdjudicationUpdate,
+  adjudicationResultKey,
   applicationForLabel,
   applicationsFromImportFile,
   defaultApplication,
+  defaultReviewerDecision,
   demoFixtures,
   demoLabelText,
   drawScaledImage,
   filesFromDrop,
+  isAdjudicationComplete,
   knownEvalFixtureFromImage,
   optimizedImageDataUrl,
-  type ReviewerDisposition,
+  readStoredAdjudication,
   stopMediaStream,
   VISION_IMAGE_QUALITY,
+  writeStoredAdjudication,
 } from "./pageSupport";
 
 export function useVerifierController() {
@@ -37,6 +43,7 @@ export function useVerifierController() {
   const [labels, setLabels] = useState<PendingLabel[]>([]);
   const [results, setResults] = useState<VerificationResult[]>([]);
   const [verifiedCount, setVerifiedCount] = useState(0);
+  const [failedCount, setFailedCount] = useState(0);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,15 +52,34 @@ export function useVerifierController() {
   const [isDropActive, setIsDropActive] = useState(false);
   const [isFactsDropActive, setIsFactsDropActive] = useState(false);
   const [adjudications, setAdjudications] = useState<Record<string, Adjudication>>({});
+  const [exportStatus, setExportStatus] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const cameraStreamRef = useRef<MediaStream | null>(null);
 
   const activeLabel = labels[activeIndex] ?? labels[0];
-  const activeResult = results[activeIndex] ?? results[0];
-  const activeAdjudicationKey = activeResult?.labelId ?? activeLabel?.labelId ?? activeResult?.fileName ?? activeLabel?.fileName ?? "single-label";
-  const activeAdjudication = activeResult ? adjudications[activeAdjudicationKey] : undefined;
+  const activeResult = results[activeIndex];
+  const activeAdjudicationKey = adjudicationResultKey(activeResult, activeLabel);
+  const storedAdjudications = useMemo(() => {
+    const next: Record<string, Adjudication> = {};
+    results.forEach((result, index) => {
+      if (!result) return;
+      const key = adjudicationResultKey(result, labels[index]);
+      const stored = readStoredAdjudication(key);
+      if (stored) next[key] = stored;
+    });
+    return next;
+  }, [results, labels]);
+  const reviewerAdjudications = useMemo(() => ({ ...storedAdjudications, ...adjudications }), [storedAdjudications, adjudications]);
+  const activeAdjudication = activeResult ? reviewerAdjudications[activeAdjudicationKey] : undefined;
   const batchCount = Math.max(labels.length, results.length);
   const hasBatch = batchCount > 1;
+  const batchProgress = hasBatch
+    ? {
+        total: labels.length,
+        completed: verifiedCount,
+        failed: failedCount,
+      }
+    : undefined;
   const hasApplicationBatch = importedApplications.length > 1;
   const nextSteps = activeResult?.nextSteps?.length ? activeResult.nextSteps : activeResult?.workflow?.nextSteps ?? [];
   const attentionChecks = useMemo(
@@ -167,6 +193,7 @@ export function useVerifierController() {
       setResults([]);
       setAdjudications({});
       setVerifiedCount(0);
+      setFailedCount(0);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not import application facts.");
@@ -201,6 +228,7 @@ export function useVerifierController() {
     setResults([]);
     setAdjudications({});
     setVerifiedCount(0);
+    setFailedCount(0);
     setError(null);
     setIsCameraOpen(false);
   }
@@ -282,6 +310,7 @@ export function useVerifierController() {
     setResults([]);
     setAdjudications({});
     setVerifiedCount(0);
+    setFailedCount(0);
     setActiveIndex(0);
     setError(null);
   }
@@ -294,6 +323,7 @@ export function useVerifierController() {
     setResults([]);
     setAdjudications({});
     setVerifiedCount(0);
+    setFailedCount(0);
 
     try {
       const [factsResponse, imageResponse] = await Promise.all([
@@ -333,6 +363,7 @@ export function useVerifierController() {
       }
       setResults(data.results);
       setVerifiedCount(data.results.length);
+      setFailedCount(0);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load demo fixture.");
     } finally {
@@ -347,6 +378,7 @@ export function useVerifierController() {
     setResults([]);
     setAdjudications({});
     setVerifiedCount(0);
+    setFailedCount(0);
 
     if (!labels.length) {
       setError("Upload or capture one label photo before verification.");
@@ -363,25 +395,64 @@ export function useVerifierController() {
           })
         : labels;
 
-      const chunkedResults = await Promise.all(
-        chunkVerificationLabels(labelsToVerify).map(async (chunk) => {
+      const nextResults = Array<VerificationResult | undefined>(labelsToVerify.length);
+      const chunks = chunkVerificationLabelsWithIndex(labelsToVerify);
+      const chunkFailures: string[] = [];
+
+      function commitChunk(start: number, chunkResults: VerificationResult[]) {
+        chunkResults.forEach((result, offset) => {
+          nextResults[start + offset] = result;
+        });
+        const committed = nextResults.filter(Boolean) as VerificationResult[];
+        setResults([...nextResults] as VerificationResult[]);
+        setVerifiedCount(committed.length);
+        setFailedCount(committed.filter((result) => result.checks.some((check) => check.id === "batch-request")).length);
+      }
+
+      async function verifyChunk(start: number, chunk: PendingLabel[]) {
+        const chunkStart = Date.now();
+        try {
           const response = await fetch("/api/verify", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ application, labels: chunk }),
+            body: JSON.stringify({ application, labels: chunk, options: { maxConcurrency: 3 } }),
           });
           const data = await response.json();
           if (!response.ok) {
             const message = typeof data.error === "string" ? data.error : data.error?.message;
             throw new Error(message || "Verification failed.");
           }
-          return data.results as VerificationResult[];
+          if (!Array.isArray(data.results) || data.results.length !== chunk.length) throw new Error("Verification returned an incomplete batch response.");
+          commitChunk(start, data.results as VerificationResult[]);
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "Unexpected verification error.";
+          chunkFailures.push(message);
+          commitChunk(
+            start,
+            chunk.map((label) => batchFailureResult(label, message, Date.now() - chunkStart)),
+          );
+        }
+      }
+
+      let cursor = 0;
+      const workerCount = Math.min(2, chunks.length);
+      await Promise.all(
+        Array.from({ length: workerCount }, async () => {
+          while (cursor < chunks.length) {
+            const chunk = chunks[cursor];
+            cursor += 1;
+            if (chunk) await verifyChunk(chunk.start, chunk.labels);
+          }
         }),
       );
-      const nextResults = chunkedResults.flat();
-      setResults(nextResults);
-      setVerifiedCount(nextResults.length);
+
+      setResults(nextResults as VerificationResult[]);
+      setVerifiedCount(labelsToVerify.length);
+      setFailedCount(nextResults.filter((result) => result?.checks.some((check) => check.id === "batch-request")).length);
       setActiveIndex(0);
+      if (chunkFailures.length) {
+        setError(`${chunkFailures.length} batch request${chunkFailures.length === 1 ? "" : "s"} failed. Completed labels stayed in the queue; retry failed rows or split the batch.`);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unexpected error");
     } finally {
@@ -389,13 +460,108 @@ export function useVerifierController() {
     }
   }
 
-  function setReviewerDecision(decision: ReviewerDisposition) {
-    setAdjudications((current) => ({
-      ...current,
-      [activeAdjudicationKey]: {
-        decision,
+  function setReviewerDecision(update: AdjudicationUpdate) {
+    if (!activeResult) return;
+    setExportStatus(null);
+    setAdjudications((current) => {
+      const currentDraft = current[activeAdjudicationKey];
+      const disposition = update.disposition ?? currentDraft?.disposition ?? "accept_recommendation";
+      const dispositionChanged = Boolean(update.disposition && update.disposition !== currentDraft?.disposition);
+      const reviewerDecision =
+        "reviewerDecision" in update
+          ? update.reviewerDecision
+          : dispositionChanged
+            ? defaultReviewerDecision(disposition, activeResult.decision)
+            : currentDraft?.reviewerDecision ?? defaultReviewerDecision(disposition, activeResult.decision);
+      const nextDraft: Adjudication = {
+        resultKey: activeAdjudicationKey,
+        fileName: activeResult.fileName,
+        disposition,
+        reasonCode: update.reasonCode ?? currentDraft?.reasonCode ?? "",
+        note: update.note ?? currentDraft?.note ?? "",
+        recommendationDecision: activeResult.decision,
+        reviewerDecision,
+        isComplete: false,
+        updatedAt: new Date().toISOString(),
+        ...(activeResult.labelId ? { labelId: activeResult.labelId } : {}),
+      };
+      const completeDraft = { ...nextDraft, isComplete: isAdjudicationComplete(nextDraft) };
+      writeStoredAdjudication(completeDraft);
+      return { ...current, [activeAdjudicationKey]: completeDraft };
+    });
+  }
+
+  function exportBatchPayload() {
+    const completedResults = results.filter(Boolean);
+    return {
+      batchId: `labelcheck-${new Date().toISOString().replace(/[:.]/gu, "-")}`,
+      application,
+      results: completedResults,
+      adjudications: reviewerAdjudications,
+      meta: {
+        labelCount: completedResults.length,
+        exportedFrom: "reviewer-ui",
       },
-    }));
+    };
+  }
+
+  async function exportReviewPacket(format: "json" | "csv") {
+    const completedResults = results.filter(Boolean);
+    if (!completedResults.length) return;
+    setExportStatus("Preparing export");
+    try {
+      const response = await fetch("/api/export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ batch: exportBatchPayload(), format }),
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        const message = typeof data?.error?.message === "string" ? data.error.message : "Export failed.";
+        throw new Error(message);
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `labelcheck-review.${format}`;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setExportStatus(`${format.toUpperCase()} export ready`);
+    } catch (err) {
+      setExportStatus(err instanceof Error ? err.message : "Export failed.");
+    }
+  }
+
+  async function copyReviewSummary() {
+    const completedResults = results.filter(Boolean);
+    if (!completedResults.length) return;
+    const counts = completedResults.reduce(
+      (acc, result) => {
+        acc[result.decision] += 1;
+        return acc;
+      },
+      { approved: 0, needs_review: 0, rejected: 0 },
+    );
+    const activeReview = activeAdjudication ? `Reviewer disposition: ${activeAdjudication.disposition}${activeAdjudication.reasonCode ? ` (${activeAdjudication.reasonCode})` : ""}` : "Reviewer disposition: not set";
+    const summary = [
+      `LabelCheck batch: ${completedResults.length} label${completedResults.length === 1 ? "" : "s"}`,
+      `System decisions: ${counts.approved} approved, ${counts.needs_review} needs review, ${counts.rejected} rejected`,
+      activeResult ? `Active label: ${activeResult.fileName} - ${activeResult.decision}` : undefined,
+      activeReview,
+      activeAdjudication?.note ? `Reviewer note: ${activeAdjudication.note}` : undefined,
+      activeResult?.nextSteps?.[0] ? `Next action: ${activeResult.nextSteps[0]}` : undefined,
+    ].filter(Boolean).join("\n");
+
+    try {
+      await navigator.clipboard.writeText(summary);
+      setExportStatus("Summary copied");
+    } catch {
+      setExportStatus("Clipboard blocked; use export instead.");
+    }
   }
 
   return {
@@ -406,7 +572,10 @@ export function useVerifierController() {
     activeIndex,
     activeResult,
     activeAdjudication,
+    adjudications: reviewerAdjudications,
+    exportStatus,
     batchCount,
+    batchProgress,
     hasBatch,
     isDropActive,
     isVerifying,
@@ -440,5 +609,7 @@ export function useVerifierController() {
     handleFactsDrop,
     handleApplicationImportInput,
     setReviewerDecision,
+    exportReviewPacket,
+    copyReviewSummary,
   };
 }

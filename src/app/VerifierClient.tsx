@@ -16,7 +16,10 @@ export function VerifierClient() {
     activeIndex,
     activeResult,
     activeAdjudication,
+    adjudications,
+    exportStatus,
     batchCount,
+    batchProgress,
     hasBatch,
     isDropActive,
     isVerifying,
@@ -47,7 +50,10 @@ export function VerifierClient() {
     handleFactsDrop,
     handleApplicationImportInput,
     setReviewerDecision,
+    exportReviewPacket,
+    copyReviewSummary,
   } = verifier;
+  const activeImageIssueRows = [...activeReviewRows, ...activeSupplementalRows];
 
   return (
     <main className="app-shell">
@@ -66,6 +72,8 @@ export function VerifierClient() {
             batchCount={batchCount}
             labels={labels}
             results={results}
+            activeIssueRows={activeImageIssueRows}
+            batchProgress={batchProgress}
             stageState={{ hasBatch, isDropActive, isVerifying, isCameraOpen }}
             cameraError={cameraError}
             videoRef={videoRef}
@@ -107,12 +115,16 @@ export function VerifierClient() {
               activeResult={activeResult}
               attentionChecks={attentionChecks}
               activeAdjudication={activeAdjudication}
+              adjudicationCount={Object.keys(adjudications).length}
+              exportStatus={exportStatus}
               isVerifying={isVerifying}
               activeReviewRows={activeReviewRows}
               scoredReviewRows={scoredReviewRows}
               activeSupplementalRows={activeSupplementalRows}
               nextSteps={nextSteps}
               onReviewerDecision={setReviewerDecision}
+              onExportReviewPacket={exportReviewPacket}
+              onCopyReviewSummary={copyReviewSummary}
             />
           ) : null}
         </aside>

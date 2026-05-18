@@ -4,7 +4,7 @@ AI-powered alcohol label verification for TTB-style compliance review.
 
 **Live:** <https://cola.maxpetrusenko.com>
 
-Vision reads the label; deterministic rules compare extracted text to the application record; the reviewer keeps final disposition. Standalone proof of concept — no COLAs integration.
+Vision reads the label; deterministic rules compare extracted text to the application record; the reviewer records final disposition, reason, and notes. Standalone proof of concept — no COLAs integration.
 
 ## Reviewer UI
 
@@ -18,28 +18,41 @@ Vision reads the label; deterministic rules compare extracted text to the applic
 
 Take-home scope: [`docs/requirements.md`](docs/requirements.md). Full trace (evidence, gaps, peer notes): [`docs/REQUIREMENTS_TRACE.md`](docs/REQUIREMENTS_TRACE.md).
 
-| # | Requirement | Status |
-| --- | --- | --- |
-| 1 | Deployed prototype + repo README (setup, approach, tools, assumptions, limits) | **Done** |
-| 2 | Core flow: brand, class/type, ABV, net contents, bottler, import origin, gov. warning | **Done** (spirits strongest) |
-| 3 | Government warning exact text (+ `GOVERNMENT WARNING:` caps) | **Done** (not font/size/placement) |
-| 4 | Human judgment; formatting equivalence | **Done** |
-| 5 | ~5 second results | **Done** ([`docs/SPEED_EVIDENCE.md`](docs/SPEED_EVIDENCE.md)) |
-| 6 | Clean UI + error handling | **Partial** |
-| 7 | Standalone — no COLAs API | **Done** |
-| 8 | Security / cloud API documented | **Done** |
-| 9 | Sample spirits test labels | **Done** ([fixtures](#fixtures)) |
-| — | Batch upload (200–300) | **Partial** (browser batch only) |
-| — | Imperfect / bad photos | **Partial** |
-| — | Highlight mismatches on image | **Partial** (field table only) |
+### Required Scope
 
-**Out of V1:** mock COLA queue, persisted audit trail, FedRAMP, layout/font compliance.
+| # | Required deliverable | Status |
+| --- | --- | --- |
+| 1 | Working deployed prototype | **Done** |
+| 2 | Source repo + README setup, approach, tools, assumptions, limits | **Done** |
+| 3 | Reviewer checks label artwork against application facts | **Done** |
+| 4 | Required fields: brand, class/type, alcohol content, net contents, bottler/producer/importer, import origin, government warning | **Done** (spirits strongest) |
+| 5 | Government warning exact text and all-caps `GOVERNMENT WARNING:` | **Done** (visual font/placement documented as limited) |
+| 6 | Human judgment retained; no blind auto-approval/denial | **Done** |
+| 7 | Formatting equivalence, not dumb exact-match-only behavior | **Done** |
+| 8 | Results in about 5 seconds | **Done** ([`docs/SPEED_EVIDENCE.md`](docs/SPEED_EVIDENCE.md)) |
+| 9 | Clean, obvious UI + clear error handling | **Done** |
+| 10 | Standalone prototype; no COLAs integration | **Done** |
+| 11 | Security/cloud API assumptions documented | **Done** |
+| 12 | Sample distilled spirits labels | **Done** ([fixtures](#fixtures)) |
+
+### Nice-To-Haves / Stakeholder Wants
+
+| Nice-to-have | Status |
+| --- | --- |
+| Batch upload / review for 200–300 label spikes | **Done for V1**: browser and CLI image/folder batches, progressive 25-label API chunks, partial-safe rows |
+| Imperfect / bad photo handling | **Done for V1 triage**: low-confidence, glare/skew/unreadable/multi-product cases route to review instead of false pass |
+| Mismatch highlighting | **Done for V1**: image-side issue callouts plus expected/observed field table |
+| Broader beer/wine/profile coverage | **Started**: common matching and limited exceptions; deeper commodity profiles remain future work |
+| Reviewer productivity features | **Done for V1**: pass/fail/review signals, batch rail, reviewer disposition, export |
+| Robust judgment cases | **Done for V1**: case, punctuation, apostrophe, unit, and proof/ABV normalization |
+
+**Out of V1 / not required by the take-home:** mock COLA queue, durable server-side batch jobs, server-side audit logs, FedRAMP, auth/RBAC, retention policy, exact font/bold/contrast/placement verification, and true pixel-level bounding boxes.
 
 ## Approach
 
 1. **Blind extraction** — vision sees only the label, not application facts ([ADR 0001](docs/decisions/0001-blind-extraction.md)).
 2. **Deterministic rules** — pass / fail / needs-review ([ADR 0002](docs/decisions/0002-deterministic-rules.md)).
-3. **Human disposition** — reviewer approves or rejects; no silent auto-denial ([ADR 0003](docs/decisions/0003-human-in-the-loop-no-auto-denial.md)).
+3. **Human disposition** — reviewer accepts, requests correction, overrides, or escalates to SME; no silent auto-denial ([ADR 0003](docs/decisions/0003-human-in-the-loop-no-auto-denial.md)).
 
 **Assumptions:** one image = one label panel; cloud vision (Gemini default); no upload persistence or COLAs API; rules approximate TTB for demo speed, not legal sign-off.
 
@@ -104,7 +117,8 @@ npm run test && npm run test:e2e && npm run lint && npm run build
 
 ```bash
 npx labelcheck health
-npx labelcheck verify payload.json
+npx labelcheck verify ./front.png --facts ./application.json
+npx labelcheck verify ./label-photos --facts ./applications.csv
 npm run demo:cli
 ```
 

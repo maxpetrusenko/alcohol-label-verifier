@@ -1,6 +1,6 @@
 # SPEC: LabelCheck Agent Next Phase
 
-> Corrective note: read `docs/PRODUCT_BLUEPRINT.md` first. It clarifies the product as a controlled discrepancy agent, adds the missing batch/edge-case/design requirements, and supersedes any vague app-like framing in this first spec.
+> Current note: this is a historical next-phase spec. Read `README.md` and `docs/REQUIREMENTS_TRACE.md` for the current shipped status. The product now has browser and CLI folder batches up to 300 images, progressive 25-label API chunks, per-label failure isolation, reviewer disposition controls, and export support.
 
 ## 1. Purpose
 
@@ -19,8 +19,8 @@ Existing app capabilities observed in the repo:
   - Displays per-label decisions and field-level evidence cards.
 - API: `src/app/api/verify/route.ts`
   - `POST /api/verify` validates requests with Zod.
-  - Accepts `application` plus up to 25 `labels`.
-  - Uses OpenAI Responses vision extraction when `OPENAI_API_KEY` and `label.dataUrl` are present.
+  - Accepts `application` plus up to 25 `labels` per request; browser and CLI chunk larger image batches.
+  - Uses Gemini vision by default, with OpenAI as configured fallback/provider.
   - Falls back to deterministic plain-text extraction when no model input is available.
 - Rules: `src/lib/rules.ts`
   - Deterministic checks for brand, class/type, alcohol content/proof, net contents, Government Health Warning, optional bottler/producer, optional country of origin.

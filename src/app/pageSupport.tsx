@@ -9,7 +9,7 @@ import {
   type ImportedApplication,
 } from "@/lib/applicationImport";
 import { isImageLikeUpload } from "@/lib/labelPayload";
-import type { ApplicationData, VerificationResult } from "@/lib/types";
+import type { ApplicationData, VerificationDecision, VerificationResult } from "@/lib/types";
 
 export const defaultApplication: ApplicationData = {
   brandName: "",
@@ -98,11 +98,41 @@ export function demoLabelText(id: string) {
   return DEMO_LABEL_TEXT[id as keyof typeof DEMO_LABEL_TEXT];
 }
 
-export type ReviewerDisposition = "approved" | "rejected";
+export const reviewerDispositionOptions = [
+  { value: "accept_recommendation", label: "Accept recommendation", hint: "Use app result" },
+  { value: "request_correction", label: "Request correction", hint: "Send label back" },
+  { value: "override", label: "Override", hint: "Reviewer decides" },
+  { value: "sme_review", label: "SME review", hint: "Escalate" },
+] as const;
+
+export type ReviewerDisposition = (typeof reviewerDispositionOptions)[number]["value"];
+
+export const reviewerReasonOptions = [
+  { value: "matches_record", label: "Matches source record" },
+  { value: "label_correction", label: "Label correction needed" },
+  { value: "source_facts_issue", label: "Source facts issue" },
+  { value: "image_quality", label: "Image quality or OCR issue" },
+  { value: "policy_interpretation", label: "Policy interpretation" },
+  { value: "system_error", label: "System error" },
+  { value: "other", label: "Other" },
+] as const;
+
+export type ReviewerReasonCode = (typeof reviewerReasonOptions)[number]["value"];
 
 export type Adjudication = {
-  decision: ReviewerDisposition;
+  resultKey: string;
+  labelId?: string;
+  fileName: string;
+  disposition: ReviewerDisposition;
+  reasonCode: ReviewerReasonCode | "";
+  note: string;
+  recommendationDecision: VerificationDecision;
+  reviewerDecision?: VerificationDecision;
+  isComplete: boolean;
+  updatedAt: string;
 };
+
+export type AdjudicationUpdate = Partial<Pick<Adjudication, "disposition" | "reasonCode" | "note" | "reviewerDecision">>;
 
 export type KnownEvalFixture = {
   application: ApplicationData;
@@ -190,8 +220,87 @@ export function rowReason(row: { id: string; label: string; expected: string; ob
   return row.guidance || row.rationale;
 }
 
-export function dispositionLabel(decision: ReviewerDisposition) {
-  return decision === "approved" ? "Approve" : "Reject";
+export function dispositionLabel(disposition: ReviewerDisposition) {
+  return reviewerDispositionOptions.find((option) => option.value === disposition)?.label ?? disposition;
+}
+
+export function reasonCodeLabel(reasonCode: ReviewerReasonCode | "") {
+  return reviewerReasonOptions.find((option) => option.value === reasonCode)?.label ?? "";
+}
+
+export function dispositionNeedsReason(disposition?: ReviewerDisposition) {
+  return disposition === "request_correction" || disposition === "override" || disposition === "sme_review";
+}
+
+export function isAdjudicationComplete(adjudication: Pick<Adjudication, "disposition" | "reasonCode" | "note" | "reviewerDecision">) {
+  if (adjudication.disposition === "accept_recommendation") return true;
+  if (adjudication.disposition === "override" && !adjudication.reviewerDecision) return false;
+  return Boolean(adjudication.reasonCode && adjudication.note.trim());
+}
+
+export function defaultReviewerDecision(disposition: ReviewerDisposition, recommendationDecision: VerificationDecision) {
+  if (disposition === "accept_recommendation") return recommendationDecision;
+  if (disposition !== "override") return undefined;
+  return recommendationDecision === "approved" ? "rejected" : "approved";
+}
+
+export function adjudicationResultKey(
+  result?: Pick<VerificationResult, "fileName" | "decision" | "score" | "checks">,
+  label?: { fileName?: string },
+) {
+  const fileName = result?.fileName ?? label?.fileName ?? "single-label";
+  const resultFingerprint = result ? `${result.decision}:${result.score}:${result.checks.map((check) => `${check.id}:${check.status}`).join(",")}` : "pending";
+  return `${fileName}::${resultFingerprint}`;
+}
+
+const ADJUDICATION_STORAGE_PREFIX = "labelcheck:reviewer-disposition:v1:";
+
+function localStorageKey(resultKey: string) {
+  return `${ADJUDICATION_STORAGE_PREFIX}${encodeURIComponent(resultKey)}`;
+}
+
+function isReviewerDisposition(value: unknown): value is ReviewerDisposition {
+  return reviewerDispositionOptions.some((option) => option.value === value);
+}
+
+function isReasonCode(value: unknown): value is ReviewerReasonCode | "" {
+  return value === "" || reviewerReasonOptions.some((option) => option.value === value);
+}
+
+function isVerificationDecision(value: unknown): value is VerificationDecision {
+  return value === "approved" || value === "needs_review" || value === "rejected";
+}
+
+export function readStoredAdjudication(resultKey: string) {
+  if (typeof window === "undefined") return undefined;
+  try {
+    const raw = window.localStorage.getItem(localStorageKey(resultKey));
+    if (!raw) return undefined;
+    const value = JSON.parse(raw) as Partial<Adjudication>;
+    if (!isReviewerDisposition(value.disposition) || !isReasonCode(value.reasonCode) || !isVerificationDecision(value.recommendationDecision) || !value.fileName) {
+      return undefined;
+    }
+    const adjudication: Adjudication = {
+      resultKey,
+      fileName: value.fileName,
+      disposition: value.disposition,
+      reasonCode: value.reasonCode,
+      note: typeof value.note === "string" ? value.note : "",
+      recommendationDecision: value.recommendationDecision,
+      reviewerDecision: isVerificationDecision(value.reviewerDecision) ? value.reviewerDecision : undefined,
+      isComplete: false,
+      updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : new Date().toISOString(),
+      ...(typeof value.labelId === "string" ? { labelId: value.labelId } : {}),
+    };
+    return { ...adjudication, isComplete: isAdjudicationComplete(adjudication) };
+  } catch {
+    return undefined;
+  }
+}
+
+export function writeStoredAdjudication(adjudication: Adjudication) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(localStorageKey(adjudication.resultKey), JSON.stringify(adjudication));
 }
 
 export function stopMediaStream(stream: MediaStream | null) {

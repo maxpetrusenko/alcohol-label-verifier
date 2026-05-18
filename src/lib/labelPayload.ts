@@ -1,9 +1,12 @@
+import type { ApplicationData, VerificationResult } from "./types";
+
 export type PendingLabel = {
   labelId?: string;
   fileName: string;
   mimeType?: string;
   dataUrl?: string;
   text?: string;
+  application?: ApplicationData;
 };
 
 export const MAX_LABEL_BATCH = 300;
@@ -23,6 +26,67 @@ export function chunkVerificationLabels(labels: PendingLabel[], chunkSize = VERI
     chunks.push(labels.slice(start, start + chunkSize));
   }
   return chunks;
+}
+
+export type IndexedVerificationChunk = {
+  start: number;
+  labels: PendingLabel[];
+};
+
+export function chunkVerificationLabelsWithIndex(labels: PendingLabel[], chunkSize = VERIFY_REQUEST_LABEL_LIMIT): IndexedVerificationChunk[] {
+  const chunks: IndexedVerificationChunk[] = [];
+  for (let start = 0; start < labels.length; start += chunkSize) {
+    chunks.push({ start, labels: labels.slice(start, start + chunkSize) });
+  }
+  return chunks;
+}
+
+const BATCH_FAILURE_REF = {
+  id: "labelcheck-batch-verification",
+  label: "Batch verification request",
+  source: "LabelCheck review workflow",
+  url: "https://cola.maxpetrusenko.com",
+};
+
+function cleanBatchFailureMessage(message: string) {
+  return message.replace(/\s+/g, " ").trim() || "Verification request failed.";
+}
+
+export function batchFailureResult(label: PendingLabel, message: string, elapsedMs = 0): VerificationResult {
+  const detail = cleanBatchFailureMessage(message);
+  return {
+    labelId: label.labelId,
+    fileName: label.fileName,
+    decision: "needs_review",
+    score: 0,
+    elapsedMs,
+    extraction: {
+      labelText: label.text ?? "",
+      confidence: 0,
+      notes: [`Verification request failed for this label: ${detail}`],
+    },
+    checks: [
+      {
+        id: "batch-request",
+        label: "Verification request",
+        status: "needs_review",
+        severity: "blocking",
+        requirementRef: BATCH_FAILURE_REF,
+        expected: "Completed extraction and rules check",
+        observed: "Request failed",
+        rationale: `This label stayed in the batch, but its request did not complete: ${detail}`,
+        guidance: "Retry this label, or split the batch if the network or provider is overloaded.",
+      },
+    ],
+    summary: "Verification did not finish for this label.",
+    missingApplicationFacts: [],
+    nextSteps: ["Retry this label, or split the batch into smaller groups."],
+    workflow: {
+      comparisonSummary: "Verification did not finish for this label.",
+      missingApplicationFacts: [],
+      nextSteps: ["Retry this label, or split the batch into smaller groups."],
+    },
+  };
 }
 
 function withOptionalText(label: PendingLabel, text?: string): PendingLabel {

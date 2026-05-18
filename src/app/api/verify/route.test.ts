@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { POST } from "./route";
 import { POST as V1POST } from "../v1/verify/route";
+import { MAX_LABEL_DATA_URL_LENGTH } from "../../../lib/apiSchemas";
 import { GOVERNMENT_WARNING_TEXT } from "../../../lib/rules";
 
 const application = {
@@ -170,6 +171,101 @@ describe("POST /api/verify", () => {
     } finally {
       globalThis.fetch = originalFetch;
     }
+  });
+
+  it("rejects unsupported image MIME types before extraction", async () => {
+    process.env.OPENAI_API_KEY = "test-key";
+    process.env.VISION_PROVIDER = "openai";
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async () => {
+      throw new Error("fetch should not be called for invalid payloads");
+    };
+
+    try {
+      const response = await POST(
+        requestWithLabels([
+          {
+            labelId: "pdf",
+            fileName: "front.pdf",
+            mimeType: "application/pdf",
+            dataUrl: "data:application/pdf;base64,dGVzdA==",
+          },
+        ]),
+      );
+      const data = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(data.error.code).toBe("VALIDATION_ERROR");
+      expect(data.error.issues).toContainEqual(
+        expect.objectContaining({
+          path: ["labels", 0, "dataUrl"],
+          message: expect.stringContaining("Unsupported image MIME type"),
+        }),
+      );
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it("rejects oversized image data URLs before extraction", async () => {
+    const response = await POST(
+      requestWithLabels([
+        {
+          labelId: "too-large",
+          fileName: "front.png",
+          mimeType: "image/png",
+          dataUrl: `data:image/png;base64,${"a".repeat(MAX_LABEL_DATA_URL_LENGTH)}`,
+        },
+      ]),
+    );
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data.error.code).toBe("VALIDATION_ERROR");
+    expect(data.error.issues).toContainEqual(
+      expect.objectContaining({
+        path: ["labels", 0, "dataUrl"],
+        message: expect.stringContaining("Image dataUrl must be"),
+      }),
+    );
+  });
+
+  it("rejects labels with no image or text evidence", async () => {
+    const response = await POST(
+      requestWithLabels([
+        {
+          labelId: "empty",
+          fileName: "empty.txt",
+        },
+      ]),
+    );
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data.error.code).toBe("VALIDATION_ERROR");
+    expect(data.error.issues).toContainEqual(
+      expect.objectContaining({
+        path: ["labels", 0, "dataUrl"],
+        message: "Each label needs either image dataUrl evidence or text evidence.",
+      }),
+    );
+  });
+
+  it("accepts text-only fallback labels and keeps generated label ids stable", async () => {
+    const response = await POST(
+      requestWithLabels([
+        {
+          fileName: "typed-label.txt",
+          mimeType: "text/plain",
+          text: `Old Cypress Distillery\nKentucky Straight Bourbon Whiskey\n45% Alc./Vol.\n750 mL\nDistilled and bottled by Old Cypress Distillery, Louisville, KY\n${GOVERNMENT_WARNING_TEXT}`,
+        },
+      ]),
+    );
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.results[0].labelId).toBe("1-typed-label.txt");
+    expect(data.results[0].decision).toBe("approved");
   });
 
   it("rejects batches over the configured per-request label limit", async () => {

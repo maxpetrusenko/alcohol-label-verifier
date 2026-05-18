@@ -4,7 +4,7 @@ Reference first: [`docs/PRESEARCH.html`](./PRESEARCH.html)
 
 ## V1 product target
 
-A stateless spirits-label discrepancy review cockpit. One review session, 1–25 labels, evidence-backed rule findings, human disposition, JSON/export summary. No persistence or live integrations.
+A stateless spirits-label discrepancy review cockpit. One review session, up to 300 browser labels in 25-label API chunks, evidence-backed rule findings, human disposition, JSON/export summary. No persistence or live integrations.
 
 ## Phase 0 — reset docs/source of truth
 
@@ -28,16 +28,16 @@ A stateless spirits-label discrepancy review cockpit. One review session, 1–25
 - [ ] Add `src/lib/schemas.ts` and move Zod schemas out of route.
 - [ ] Add `src/lib/extract.ts` for text fallback and guarded OpenAI extraction.
 - [ ] Add route tests for malformed payloads and malformed model JSON.
-- [ ] Add per-label failure isolation: one bad label should not fail the batch.
+- [x] Add per-label failure isolation: one bad label should not fail the batch.
 - [ ] Add stable `batchId` and `labelId` in response.
 - [ ] Sanitize model errors before returning notes.
 
 ## Phase 3 — export/disposition model
 
-- [ ] Add `src/lib/exportPacket.ts`.
-- [ ] Add reviewer disposition type: `accept`, `request_correction`, `override`, `sme_review`.
-- [ ] Add JSON export packet generation.
-- [ ] Add Teams-style copy summary generator; copy only, no live post.
+- [x] Add `src/lib/exportPacket.ts`.
+- [x] Add reviewer disposition type: `accept`, `request_correction`, `override`, `sme_review`.
+- [x] Add JSON export packet generation.
+- [x] Add Teams-style copy summary generator; copy only, no live post.
 
 ## Phase 4 — cockpit UI
 
@@ -52,8 +52,8 @@ A stateless spirits-label discrepancy review cockpit. One review session, 1–25
 - [ ] Add queue statuses: queued, extracting, checking, completed, failed, needs_review.
 - [ ] Add selected-label detail view.
 - [ ] Add source chips and confidence labels.
-- [ ] Add disposition buttons and reason/note field.
-- [ ] Add export JSON and copy summary actions.
+- [x] Add disposition buttons and reason/note field.
+- [x] Add export JSON and copy summary actions.
 
 ## Phase 5 — verification
 

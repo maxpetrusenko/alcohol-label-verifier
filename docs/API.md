@@ -21,7 +21,7 @@ API consumers must treat LabelCheck V1 as a prototype review aid, not a producti
 
 The API does not verify font size, boldness, contrast, same-field-of-vision layout, exact placement, or warning separation. Those require layout-aware extraction, bounding boxes, and image-region evidence that V1 does not expose.
 
-The API also does not provide authentication, RBAC, audit logs, retention/deletion policy, encrypted persistence, COLAs integration, final reviewer disposition, FedRAMP/ATO assurance, or approved government model-hosting guarantees.
+The API also does not provide authentication, RBAC, durable audit logs, retention/deletion policy, encrypted persistence, COLAs integration, FedRAMP/ATO assurance, or approved government model-hosting guarantees. Reviewer disposition can be included in client-held export packets, but V1 does not persist it server-side.
 
 Vision mode depends on the configured provider key and outbound network access. Gemini is the default provider; OpenAI is available with `VISION_PROVIDER=openai`. If provider secrets are missing or blocked, the API falls back to text-only extraction behavior. Uploaded image data is sent to the configured model provider when vision mode is active. Provider calls use `VISION_TIMEOUT_MS` with a default of `12000` ms. If the opposite provider key is configured, a timeout retries once with `VISION_FALLBACK_TIMEOUT_MS`, default `6000` ms. If vision still fails and the request includes supplied `text`, the API uses that text as evidence; otherwise it returns a bounded extraction failure instead of blocking indefinitely.
 
@@ -31,7 +31,8 @@ The CLI is a thin HTTP client over `/api/v1/*`.
 
 ```bash
 npx labelcheck health
-npx labelcheck verify input.json
+npx labelcheck verify label.png --facts application.json
+npx labelcheck verify ./label-photos --facts applications.csv
 npx labelcheck extract label.png
 npx labelcheck export verify-response.json --format json
 npx labelcheck export verify-response.json --format csv
@@ -41,7 +42,7 @@ The published CLI defaults to `https://cola.maxpetrusenko.com`. For local develo
 
 ```bash
 LABELCHECK_BASE_URL=http://localhost:3000 labelcheck health
-labelcheck verify input.json --base-url http://localhost:3000
+labelcheck verify label.png --facts application.json --base-url http://localhost:3000
 ```
 
 For local development without installing the package:
@@ -59,7 +60,9 @@ npm run demo:cli -- --base-url https://cola.maxpetrusenko.com --no-start
 
 The demo reuses a running LabelCheck server when available, or starts one for the default local URL. It creates fixture-backed input under `/tmp`, calls `health`, `verify`, and `export`, writes the JSON/CSV artifacts, and exits non-zero if expected fixture decisions drift. Use `--no-start` for production so agents fail clearly instead of starting a local server.
 
-`verify` accepts the same batch JSON as `/api/v1/verify`, including up to 25 labels per request. Agents should chunk larger jobs into 25-label requests and preserve `labelId` values to join results back to source files.
+`verify` accepts direct label image paths, recursive image folders, or the same batch JSON as `/api/v1/verify`. For image or folder verification, pass `--facts application.json` for one source record, or `--facts applications.csv` for many records. CSV/JSON batches with multiple application rows should include `fileName`, `file_name`, `image`, or `image_file` so each image can be matched to its source facts. The CLI chunks folder batches into 25-label `/api/v1/verify` requests and preserves `labelId` values to join results back to source files.
+
+`extract` accepts direct label image paths and recursive image folders without application facts. Use it for image-only OCR/vision.
 
 ## Endpoints
 
@@ -187,13 +190,34 @@ Request:
 {
   "batch": {
     "batchId": "batch-local-001",
-    "results": []
+    "application": {
+      "brandName": "Old Cypress Distillery",
+      "classType": "Kentucky Straight Bourbon Whiskey",
+      "netContents": "750 mL",
+      "beverageKind": "spirits"
+    },
+    "results": [
+      {
+        "labelId": "front",
+        "fileName": "front.txt",
+        "decision": "approved",
+        "score": 100,
+        "checks": []
+      }
+    ],
+    "adjudications": {
+      "front": {
+        "disposition": "accept_recommendation",
+        "reasonCode": "matches_record",
+        "note": "Reviewer accepted the system recommendation."
+      }
+    }
   },
   "format": "json"
 }
 ```
 
-Use `"format": "csv"` for a flat review summary.
+JSON export strips raw image data such as `dataUrl` by default and returns a `rawImagePolicy` block. Use `"format": "csv"` for a flat review summary with reviewer disposition columns when present.
 
 ## OpenAPI
 

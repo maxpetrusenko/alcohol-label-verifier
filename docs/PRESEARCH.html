@@ -524,7 +524,7 @@
       <div class="grid-3">
         <div class="card good"><h3>Normal case</h3><p>Reviewer opens one COLA row or JSON fixture and one label image. The app extracts observed label values and compares them to expected facts.</p></div>
         <div class="card good"><h3>Same SKU</h3><p>Reviewer attaches front and back labels to the same source row. The app combines evidence across panels: brand may be front, warning may be back.</p></div>
-        <div class="card warn"><h3>Batch case</h3><p>Reviewer drops image files or a folder onto the label area, or uses Upload to select up to 25 label images. Each image becomes an independent result row tied to the same current application facts.</p></div>
+        <div class="card warn"><h3>Batch case</h3><p>Reviewer drops image files or a folder onto the label area, or uses Upload to select up to 300 label images. Browser and CLI batches chunk work into 25-label API requests. Each image becomes an independent result row tied to source application facts.</p></div>
       </div>
       <h3>Where pictures come from</h3>
       <ol class="flow-list">
@@ -574,9 +574,9 @@ Result:
       <div class="flow-index" aria-label="Named implementation flows">
         <article><b>Demo label success</b><p>Demo text flows through payload, verify route, fallback extraction, rule graph, and result cards.</p></article>
         <article><b>Fixture mismatch failure</b><p>Fixture facts and fallback text produce a deterministic brand mismatch rejection.</p></article>
-        <article><b>Uploaded image with vision</b><p>Image data URL reaches OpenAI vision, then returns observed evidence to rules.</p></article>
+        <article><b>Uploaded image with vision</b><p>Image data URL reaches the configured vision provider, then returns observed evidence to rules.</p></article>
         <article><b>Vision failure fallback</b><p>Missing key, missing image, bad JSON, or provider failure falls back to text parsing.</p></article>
-        <article><b>Batch verify labels</b><p>Multiple labels normalize into one request and return per-label result rows.</p></article>
+        <article><b>Batch verify labels</b><p>Multiple labels normalize into progressive chunks and return per-label result rows.</p></article>
         <article><b>Missing application facts</b><p>Zod rejects incomplete source facts before extraction or rules run.</p></article>
         <article><b>Health check</b><p>GET health route proves the app can answer deploy or local smoke checks.</p></article>
         <article><b>Production build gate</b><p>Lint, tests, and Next build validate the app before handoff.</p></article>
@@ -614,7 +614,7 @@ Result:
 
     <section id="contract" class="tab-panel" role="tabpanel" aria-labelledby="tab-contract">
       <h2>Contract direction</h2>
-      <p>The current contract now includes requirement references, severities, confidence gating, image-quality review paths, versioned API routes, and export packets. Reviewer disposition is still the main unfinished contract piece.</p>
+      <p>The current contract now includes requirement references, severities, confidence gating, image-quality review paths, versioned API routes, reviewer disposition controls, CLI image/folder input, and export packets.</p>
       <pre>type VerificationCheck = {
   id: string;
   label: string;
@@ -633,7 +633,7 @@ type ReviewerDisposition = {
 };</pre>
       <div class="grid-2">
         <div class="card good"><h3>Backward compatible</h3><p>Keep <code>POST /api/verify</code>. Add fields rather than replacing the route.</p></div>
-        <div class="card warn"><h3>Batch truth</h3><p>V1 can cap at 25 labels. Real importer spikes need job IDs, queue state, retry, and resume.</p></div>
+        <div class="card warn"><h3>Batch truth</h3><p>V1 supports up to 300 browser or CLI image labels through 25-label API chunks. Production importer spikes still need durable job IDs, server queue state, retry, and resume.</p></div>
       </div>
     </section>
 
@@ -1435,7 +1435,7 @@ npm run build</pre>
       "kind": "library",
       "title": "Request schema",
       "path": "src/app/api/verify/route.ts",
-      "summary": "Requires application facts and one to twenty-five labels before server work begins.",
+      "summary": "Requires application facts and one to twenty-five labels per API request before server work begins; browser and CLI chunk larger batches.",
       "x": 9.75,
       "y": 3.4,
       "w": 2.65,
@@ -1446,7 +1446,7 @@ npm run build</pre>
       "kind": "library",
       "title": "Image extractor",
       "path": "src/lib/extraction.ts",
-      "summary": "Reads each label through OpenAI vision when configured, otherwise uses supplied text or empty fallback.",
+      "summary": "Reads each label through the configured vision provider when configured, otherwise uses supplied text or empty fallback.",
       "x": 12.95,
       "y": 2.1,
       "w": 2.65,
@@ -1853,7 +1853,7 @@ npm run build</pre>
       "id": "batch-review",
       "title": "Batch verify labels",
       "actor": "Reviewer",
-      "intent": "Drop or select up to twenty-five label images and verify them as independent rows.",
+      "intent": "Drop or select up to 300 label images and verify them as independent rows.",
       "input": "Drop image files or a folder, or use Upload for multiple images, then click Verify N labels.",
       "expectedOutcome": "One result per label, batch rail lets reviewer jump between approved, review, and blocked rows.",
       "happyPath": true,
@@ -1870,7 +1870,7 @@ npm run build</pre>
           "to": "file-reader",
           "kind": "client",
           "label": "Promise.all reads",
-          "payload": "onFiles rejects batches above 25 and reads the rest in parallel."
+          "payload": "onFiles rejects batches above 300, reads accepted images, and verifies them through 25-label API chunks."
         },
         {
           "from": "file-reader",

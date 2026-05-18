@@ -155,7 +155,7 @@
       "kind": "library",
       "title": "Request schema",
       "path": "src/app/api/verify/route.ts",
-      "summary": "Requires application facts and one to twenty-five labels before server work begins.",
+      "summary": "Requires application facts and one to twenty-five labels per API request before server work begins; browser and CLI chunk larger batches.",
       "x": 9.75,
       "y": 3.4,
       "w": 2.65,
@@ -166,7 +166,7 @@
       "kind": "library",
       "title": "Image extractor",
       "path": "src/lib/extraction.ts",
-      "summary": "Reads each label through OpenAI vision when configured, otherwise uses supplied text or empty fallback.",
+      "summary": "Reads each label through the configured vision provider when configured, otherwise uses supplied text or empty fallback.",
       "x": 12.95,
       "y": 2.1,
       "w": 2.65,
@@ -573,7 +573,7 @@
       "id": "batch-review",
       "title": "Batch verify labels",
       "actor": "Reviewer",
-      "intent": "Select up to twenty-five label files and verify them as independent rows.",
+      "intent": "Select up to 300 label files and verify them as independent rows.",
       "input": "Upload multiple images, then click Verify N labels.",
       "expectedOutcome": "One result per label, batch rail lets reviewer jump between approved, review, and blocked rows.",
       "happyPath": true,
@@ -590,7 +590,7 @@
           "to": "file-reader",
           "kind": "client",
           "label": "Promise.all reads",
-          "payload": "onFiles rejects batches above 25 and reads the rest in parallel."
+          "payload": "onFiles rejects batches above 300, reads accepted images, and verifies them through 25-label API chunks."
         },
         {
           "from": "file-reader",

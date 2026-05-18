@@ -1,7 +1,9 @@
 # Product Blueprint + Research Audit: LabelCheck Agent
 
 Date: 2026-05-12
-Status: corrective v2 after review
+Status: historical corrective blueprint. Current shipped status lives in [`README.md`](../README.md) and [`REQUIREMENTS_TRACE.md`](REQUIREMENTS_TRACE.md).
+
+> Current note: this document captures the planning critique that drove V1. Some “current support” statements below are intentionally historical and should not be used as the latest status matrix.
 
 ## Blunt assessment
 
@@ -116,17 +118,13 @@ Core separation of concerns:
 
 ### US-01: Reviewer checks one label against an application
 
-Status: **partially satisfied**.
+Status at blueprint time: **partially satisfied**. Current V1 status: implemented for the core reviewer path.
 
 Current support:
 - UI accepts application fields and label/text input.
 - API returns per-field checks.
 
-Missing:
-- requirement references on every check.
-- final reviewer disposition controls.
-- low-confidence gating.
-- exportable packet.
+Then-missing items have since moved into V1: requirement references, reviewer disposition controls, low-confidence gating, and exportable packets.
 
 Acceptance criteria:
 - Given one valid label, reviewer sees extracted fields, expected/observed values, rule refs, status, and final disposition controls.
@@ -134,18 +132,17 @@ Acceptance criteria:
 
 ### US-02: Reviewer processes 200–300 labels during importer spikes
 
-Status: **not satisfied**.
+Status at blueprint time: **not satisfied**. Current V1 status: implemented for browser/CLI batches without durable server persistence.
 
 Current support:
-- API accepts array of up to 25 labels in one request.
+- Browser and CLI accept up to 300 image labels and chunk them into 25-label API requests.
+- API accepts up to 25 labels in one request.
+- Per-label progress/error isolation is implemented client-side.
 
-Missing:
-- persistent or session-local batch ID.
-- queue/concurrency model.
-- per-label progress.
-- retry/resume.
-- partial failure isolation.
-- CSV/JSON summary export.
+Still out of V1:
+- durable server-side batch ID.
+- server-side retry/resume.
+- persisted queue state.
 
 Acceptance criteria:
 - Batch creation returns `batchId` immediately.

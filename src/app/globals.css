@@ -99,6 +99,7 @@ p {
 }
 
 .hero-panel {
+  min-width: 0;
   height: calc(100svh - 16px);
   min-height: 0;
   display: grid;

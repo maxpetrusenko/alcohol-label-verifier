@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  batchFailureResult,
   batchLimitError,
   buildVerificationLabels,
   chunkVerificationLabels,
+  chunkVerificationLabelsWithIndex,
   isImageLikeUpload,
   MAX_LABEL_BATCH,
   VERIFY_REQUEST_LABEL_LIMIT,
@@ -74,6 +76,37 @@ describe("buildVerificationLabels", () => {
     expect(chunks).toHaveLength(3);
     expect(chunks.map((chunk) => chunk.length)).toEqual([25, 25, 10]);
     expect(chunks[2][9]).toEqual({ fileName: "label-59.png" });
+  });
+
+  it("keeps chunk start indexes for progressive browser batch results", () => {
+    const labels = Array.from({ length: 60 }, (_, index) => ({ fileName: `label-${index}.png` }));
+    const chunks = chunkVerificationLabelsWithIndex(labels);
+
+    expect(chunks.map((chunk) => ({ start: chunk.start, size: chunk.labels.length }))).toEqual([
+      { start: 0, size: 25 },
+      { start: 25, size: 25 },
+      { start: 50, size: 10 },
+    ]);
+    expect(chunks[2].labels[9]).toEqual({ fileName: "label-59.png" });
+  });
+
+  it("keeps a failed batch label visible as a needs-review result", () => {
+    const result = batchFailureResult({ labelId: "front", fileName: "front.png", text: "raw OCR" }, "network down", 1234);
+
+    expect(result.labelId).toBe("front");
+    expect(result.fileName).toBe("front.png");
+    expect(result.decision).toBe("needs_review");
+    expect(result.elapsedMs).toBe(1234);
+    expect(result.extraction.confidence).toBe(0);
+    expect(result.extraction.labelText).toBe("raw OCR");
+    expect(result.extraction.notes[0]).toContain("network down");
+    expect(result.checks).toEqual([
+      expect.objectContaining({
+        id: "batch-request",
+        status: "needs_review",
+        severity: "blocking",
+      }),
+    ]);
   });
 
   it("keeps drag and drop folder imports scoped to image files", () => {

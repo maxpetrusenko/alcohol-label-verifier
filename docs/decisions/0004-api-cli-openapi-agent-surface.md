@@ -21,7 +21,7 @@ The intended surface is:
 - `docs/openapi.json` as the compact machine-readable contract
 - `labelcheck` CLI as a local and future automation wrapper over the same API
 
-The CLI intentionally accepts the same batch JSON as `/api/v1/verify`, including multiple labels per request, so agents can use it for local batch verification without scraping the browser.
+The CLI accepts direct label image files, recursive image folders, and the same batch JSON as `/api/v1/verify`. Image/folder verification requires `--facts` so the rules can compare observed label evidence against source application facts. Folder batches are chunked into 25-label API requests, preserving label identity without scraping the browser.
 
 ## Consequences
 
@@ -29,4 +29,4 @@ The CLI intentionally accepts the same batch JSON as `/api/v1/verify`, including
 - The API can be wrapped later as MCP tools or workflow-agent actions without changing core behavior.
 - New response fields should be additive inside `v1`.
 - Errors need stable codes and request IDs before this becomes a public or cross-team API.
-- Agents should chunk large jobs at the documented request limit and preserve caller-provided `labelId` values.
+- Agents can pass image paths/folders through the CLI; lower-level API callers should chunk large jobs at the documented request limit and preserve caller-provided `labelId` values.

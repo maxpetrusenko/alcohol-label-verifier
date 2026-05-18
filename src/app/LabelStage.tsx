@@ -2,6 +2,7 @@ import type { ChangeEvent, DragEvent, RefObject } from "react";
 import Image from "next/image";
 import { Camera, FileImage, UploadCloud } from "lucide-react";
 import type { PendingLabel } from "@/lib/labelPayload";
+import type { ReviewRow } from "@/lib/reviewRows";
 import type { VerificationResult } from "@/lib/types";
 
 type LabelStageProps = {
@@ -10,6 +11,12 @@ type LabelStageProps = {
   batchCount: number;
   labels: PendingLabel[];
   results: VerificationResult[];
+  activeIssueRows: ReviewRow[];
+  batchProgress?: {
+    total: number;
+    completed: number;
+    failed: number;
+  };
   stageState: {
     hasBatch: boolean;
     isDropActive: boolean;
@@ -35,6 +42,8 @@ export function LabelStage({
   batchCount,
   labels,
   results,
+  activeIssueRows,
+  batchProgress,
   stageState,
   cameraError,
   videoRef,
@@ -49,6 +58,7 @@ export function LabelStage({
   onCaptureCameraFrame,
 }: LabelStageProps) {
   const { hasBatch, isDropActive, isVerifying, isCameraOpen } = stageState;
+  const imageCallouts = activeIssueRows.filter((row) => row.status === "fail" || row.status === "needs_review").slice(0, 4);
 
   function batchItemClass(index: number, result?: VerificationResult) {
     return ["batch-item", index === activeIndex ? "active" : "", result ? `decision-${result.decision}` : ""].filter(Boolean).join(" ");
@@ -56,9 +66,22 @@ export function LabelStage({
 
   return (
     <div className={`label-stage${isDropActive ? " drop-active" : ""}`} onDragOver={onDragOver} onDragEnter={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}>
-      <div className="label-preview" aria-label="Full label preview">
+      <div className={`label-preview${imageCallouts.length ? " has-image-callouts" : ""}`} aria-label="Full label preview">
         {activeLabel?.dataUrl ? (
-          <Image unoptimized fill sizes="(min-width: 900px) 58vw, 100vw" src={activeLabel.dataUrl} alt={`Uploaded label preview for ${activeLabel.fileName}`} />
+          <>
+            <Image unoptimized fill sizes="(min-width: 900px) 58vw, 100vw" src={activeLabel.dataUrl} alt={`Uploaded label preview for ${activeLabel.fileName}`} />
+            {imageCallouts.length ? (
+              <div className="image-callout-stack" aria-label="Mismatches to inspect on this label image">
+                {imageCallouts.map((row) => (
+                  <div className={`image-callout image-callout-${row.status}`} key={row.id}>
+                    <span>{row.status === "fail" ? "FAIL" : "REVIEW"}</span>
+                    <strong>{row.label}</strong>
+                    <em>{row.observed || "Not found on label"}</em>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </>
         ) : (
           <div className="empty-label-state">
             <UploadCloud aria-hidden />
@@ -69,24 +92,35 @@ export function LabelStage({
       </div>
 
       {hasBatch ? (
-        <div className="batch-rail" aria-label="Batch labels">
-          {labels.map((label, index) => {
-            const result = results[index];
-            return (
-              <button
-                key={label.labelId ?? `${label.fileName}-${index}`}
-                type="button"
-                className={batchItemClass(index, result)}
-                disabled={isVerifying}
-                onClick={() => onSetActiveIndex(index)}
-              >
-                <span>{index + 1}</span>
-                <strong>{label.fileName}</strong>
-                <em>{result ? result.decision.replace("_", " ") : isVerifying ? "checking" : "queued"}</em>
-              </button>
-            );
-          })}
-        </div>
+        <>
+          {batchProgress ? (
+            <div className={`batch-meter${batchProgress.failed ? " batch-meter-warning" : ""}`} aria-label="Batch verification progress">
+              <div>
+                <strong>{`${batchProgress.completed}/${batchProgress.total}`}</strong>
+                <span>{batchProgress.failed ? `${batchProgress.failed} need retry` : isVerifying ? "Batch running" : "Batch complete"}</span>
+              </div>
+              <progress max={batchProgress.total} value={batchProgress.completed} />
+            </div>
+          ) : null}
+          <div className="batch-rail" aria-label="Batch labels">
+            {labels.map((label, index) => {
+              const result = results[index];
+              return (
+                <button
+                  key={label.labelId ?? `${label.fileName}-${index}`}
+                  type="button"
+                  className={batchItemClass(index, result)}
+                  disabled={isVerifying}
+                  onClick={() => onSetActiveIndex(index)}
+                >
+                  <span>{index + 1}</span>
+                  <strong>{label.fileName}</strong>
+                  <em>{result ? result.decision.replace("_", " ") : isVerifying ? "checking" : "queued"}</em>
+                </button>
+              );
+            })}
+          </div>
+        </>
       ) : null}
 
       <div className="photo-dock">

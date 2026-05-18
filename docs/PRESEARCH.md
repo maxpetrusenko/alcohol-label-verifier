@@ -114,6 +114,7 @@ V1 currently has:
 - opt-in generated scene-photo fixtures under `public/evals/fixtures/stress-nano-scenes/` for edge-case demos
 - blind extraction or text fallback for observed label evidence
 - one or more label inputs through multi-file upload or folder/image drag and drop, capped at 300 browser labels and 25 labels per API request
+- CLI image and folder verification, capped at 300 images and chunked into 25-label API requests
 - bounded parallel batch verification, defaulting to 3 labels in flight and accepting API options up to 10
 - common field-matching support for distilled spirits, wine, and beer/malt, with `Other` blocked as an unsupported open-ended profile
 - browser camera capture for one label at a time on localhost or HTTPS
@@ -121,15 +122,17 @@ V1 currently has:
 - source-backed rule cards
 - status grouping by blocking, review, warning, clear
 - per-label batch results and summary counts
+- reviewer disposition controls with reason codes, notes, browser draft persistence, and export inclusion
 - export packet route without raw images by default
+- CSV/JSON application fact import for single-record and multi-record batches
 
 V1 still needs:
 
 - mock COLA queue as the default main-screen data model
 - target-label selection and crop confirmation for shelf/rack/multi-product photos before automated comparison
-- reviewer disposition controls with reason codes
-- CSV/JSON manifest import beyond the fixture loaders
-- stronger visual evidence links between checks and label regions
+- durable server-side reviewer disposition audit trail
+- durable server-side batch queue/retry/resume
+- true pixel-level bounding boxes for label regions
 
 V1 does not ship:
 

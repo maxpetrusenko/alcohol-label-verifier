@@ -294,49 +294,115 @@
   transform: rotate(90deg);
 }
 
-.decision-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+.reviewer-disposition {
+  display: grid; gap: 7px; border: 1px solid var(--line); border-radius: 10px; padding: 8px; background: rgb(255 255 255 / 0.62);
+}
+
+.reviewer-disposition-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+
+.reviewer-disposition-head strong {
+  color: var(--ink); font-size: 0.8rem;
+}
+
+.reviewer-disposition-head span {
+  border-radius: 999px; padding: 4px 7px; font-size: 0.66rem; font-weight: 900; white-space: nowrap;
+}
+
+.disposition-ready {
+  background: var(--green-soft); color: var(--green);
+}
+
+.disposition-open {
+  background: var(--amber-soft); color: var(--amber);
+}
+
+.disposition-actions {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px;
+}
+
+.disposition-action {
+  min-width: 0; min-height: 46px; border: 1px solid var(--line); border-radius: 8px; padding: 6px; background: rgb(248 237 217 / 0.58); color: var(--ink); cursor: pointer; font: inherit; text-align: left;
+}
+
+.disposition-action span,
+.disposition-action small {
+  display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.disposition-action span {
+  font-size: 0.72rem; font-weight: 950;
+}
+
+.disposition-action small {
+  margin-top: 2px; color: var(--muted); font-size: 0.63rem; font-weight: 800;
+}
+
+.disposition-action.selected {
+  border-color: var(--blue); background: var(--blue-soft); color: var(--blue);
+}
+
+.disposition-fields {
+  display: grid; grid-template-columns: minmax(120px, 0.75fr) minmax(180px, 1fr); gap: 6px;
+}
+
+.disposition-fields label {
+  display: grid; gap: 3px; min-width: 0;
+}
+
+.disposition-fields span {
+  color: var(--muted); font-size: 0.66rem; font-weight: 900; text-transform: uppercase;
+}
+
+.disposition-fields select,
+.disposition-fields textarea {
+  width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 7px 8px; background: rgb(255 255 255 / 0.82); color: var(--ink); font: inherit; font-size: 0.76rem; font-weight: 750;
+}
+
+.disposition-note {
+  grid-column: span 1;
+}
+
+.disposition-fields p {
+  grid-column: 1 / -1; margin: -2px 0 0; color: var(--muted); font-size: 0.68rem; font-weight: 800;
+}
+
+.review-output-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
 }
 
-.inline-decision-actions {
-  flex: 0 0 210px;
-  min-width: 190px;
-}
-
-.decision-action {
-  min-height: 38px;
-  border: 1px solid currentColor;
-  border-radius: 9px;
+.review-output-actions button {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 9px;
+  background: rgb(248 237 217 / 0.72);
+  color: var(--ink);
   cursor: pointer;
   font: inherit;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 900;
 }
 
-.decision-action-approved {
-  background: var(--green-soft);
-  color: var(--green);
+.review-output-actions button:hover:not(:disabled) {
+  border-color: var(--blue);
+  color: var(--blue);
 }
 
-.decision-action-rejected {
-  background: var(--red-soft);
-  color: var(--red);
+.review-output-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
-.decision-action.selected {
-  color: white;
-}
-
-.decision-action-approved.selected {
-  border-color: var(--green);
-  background: var(--green);
-}
-
-.decision-action-rejected.selected {
-  border-color: var(--red);
-  background: var(--red);
+.review-output-actions span {
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 850;
+  overflow-wrap: anywhere;
 }
 
 dl {
@@ -464,4 +530,18 @@ dd {
   margin-top: 1px;
   color: var(--green);
   flex: 0 0 auto;
+}
+
+@media (max-width: 760px) {
+  .disposition-actions,
+  .disposition-fields {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .disposition-actions,
+  .disposition-fields {
+    grid-template-columns: 1fr;
+  }
 }

@@ -150,7 +150,7 @@ POST /api/verify
       |
       v
 Extractor
-  OpenAI vision when key and image exist
+  configured vision provider when key and image exist
   text parser fallback when no key or blocked network
   sees only label image or pasted OCR
   returns visible fields, confidence, notes
@@ -194,7 +194,7 @@ Three concrete cases:
 | --- | --- | --- |
 | One label | One COLA row or JSON fixture + one image/text label | Extract observed facts from the label, compare field by field to expected structured facts. |
 | Two panels for same SKU | One COLA row or JSON fixture + front label + back label | Combine evidence across panels. Brand/class may be on front; warning/name/address may be on back. Result is one product review with panel-level evidence. |
-| Two different labels | Two source records plus two label files in batch | Each label gets its own result row. If they belong to different applications/SKUs, each needs its own expected facts. V1 can show batch rows; future work can import many application records. |
+| Two different labels | Two source records plus two label files in batch | Each label gets its own result row. If they belong to different applications/SKUs, CSV/JSON application import can match each label to its expected facts by filename. |
 
 Picture sources:
 

@@ -106,7 +106,19 @@
         },
         "responses": {
           "200": {
-            "description": "JSON review packet or CSV summary"
+            "description": "JSON review packet or CSV summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExportPacket"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           },
           "400": {
             "$ref": "#/components/responses/StructuredError"
@@ -446,6 +458,18 @@
               },
               "meta": {
                 "type": "object"
+              },
+              "adjudications": {
+                "type": "object",
+                "description": "Optional reviewer adjudications keyed by labelId or fileName."
+              },
+              "reviewerDispositions": {
+                "type": "object",
+                "description": "Optional reviewer dispositions keyed by labelId or fileName."
+              },
+              "dispositions": {
+                "type": "object",
+                "description": "Backward-compatible alias for reviewer dispositions."
               }
             }
           },
@@ -453,6 +477,70 @@
             "type": "string",
             "enum": ["json", "csv"],
             "default": "json"
+          }
+        }
+      },
+      "ExportPacket": {
+        "type": "object",
+        "required": ["requestId", "packetType", "schemaVersion", "exportedAt", "batchId", "application", "results", "rawImagePolicy", "batch"],
+        "properties": {
+          "requestId": {
+            "type": "string"
+          },
+          "packetType": {
+            "type": "string",
+            "const": "labelcheck.review_packet"
+          },
+          "schemaVersion": {
+            "type": "string"
+          },
+          "exportedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "appVersion": {
+            "type": "string"
+          },
+          "batchId": {
+            "type": ["string", "null"]
+          },
+          "application": {
+            "type": ["object", "null"]
+          },
+          "results": {
+            "type": "array"
+          },
+          "adjudications": {
+            "type": "object"
+          },
+          "reviewerDispositions": {
+            "type": "object"
+          },
+          "dispositions": {
+            "type": "object"
+          },
+          "rawImagePolicy": {
+            "type": "object",
+            "required": ["mode", "excludedByDefault", "excludedFields"],
+            "properties": {
+              "mode": {
+                "type": "string",
+                "const": "excluded"
+              },
+              "excludedByDefault": {
+                "type": "boolean",
+                "const": true
+              },
+              "excludedFields": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "batch": {
+            "type": "object"
           }
         }
       },

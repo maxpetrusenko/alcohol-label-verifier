@@ -72,6 +72,27 @@ describe("POST /api/extract", () => {
     expect(data.error.issues[0].path).toEqual(["labels"]);
   });
 
+  it("rejects labels with no image or text evidence", async () => {
+    const response = await POST(
+      requestWithLabels([
+        {
+          fileName: "empty.txt",
+        },
+      ]),
+    );
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data.error.code).toBe("VALIDATION_ERROR");
+    expect(data.error.requestId).toBeTruthy();
+    expect(data.error.issues).toContainEqual(
+      expect.objectContaining({
+        path: ["labels", 0, "dataUrl"],
+        message: "Each label needs either image dataUrl evidence or text evidence.",
+      }),
+    );
+  });
+
   it("serves the same contract through the v1 route", async () => {
     const response = await V1POST(
       requestWithLabels([

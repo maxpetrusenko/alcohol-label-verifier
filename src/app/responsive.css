@@ -49,6 +49,21 @@
     grid-template-columns: 1fr;
   }
 
+  .batch-meter {
+    grid-template-columns: 1fr;
+  }
+
+  .image-callout-stack {
+    right: 8px;
+    bottom: 8px;
+    left: 8px;
+    width: auto;
+  }
+
+  .image-callout:nth-child(n + 3) {
+    display: none;
+  }
+
   .field-comparison-actions {
     justify-content: stretch;
   }
@@ -74,5 +89,4 @@
   .hero-panel {
     min-height: 64svh;
   }
-
 }

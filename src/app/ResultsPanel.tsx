@@ -4,24 +4,32 @@ import { issueTitle } from "@/lib/reviewPresentation";
 import type { VerificationCheck, VerificationResult } from "@/lib/types";
 import {
   type Adjudication,
+  type AdjudicationUpdate,
+  defaultReviewerDecision,
   decisionIcon,
-  dispositionLabel,
-  type ReviewerDisposition,
+  dispositionNeedsReason,
   labelEvidenceContent,
+  reasonCodeLabel,
   rowReason,
   rowStatusLabel,
+  reviewerDispositionOptions,
+  reviewerReasonOptions,
 } from "./pageSupport";
 
 type ResultsPanelProps = {
   activeResult: VerificationResult;
   attentionChecks: VerificationCheck[];
   activeAdjudication?: Adjudication;
+  adjudicationCount: number;
+  exportStatus: string | null;
   isVerifying: boolean;
   activeReviewRows: ReviewRow[];
   scoredReviewRows: ReviewRow[];
   activeSupplementalRows: ReviewRow[];
   nextSteps: string[];
-  onReviewerDecision: (decision: ReviewerDisposition) => void;
+  onReviewerDecision: (update: AdjudicationUpdate) => void;
+  onExportReviewPacket: (format: "json" | "csv") => void;
+  onCopyReviewSummary: () => void;
 };
 
 function LabelEvidence({ row }: { row: ReviewRow }) {
@@ -29,7 +37,7 @@ function LabelEvidence({ row }: { row: ReviewRow }) {
 }
 
 function extractionAlert(result: VerificationResult) {
-  const note = result.extraction.notes.find((item) => /(?:vision extraction failed|timed out|provider status|unreadable json|extraction failed)/iu.test(item));
+  const note = result.extraction.notes.find((item) => /(?:vision extraction failed|timed out|provider status|unreadable json|extraction failed|verification request failed)/iu.test(item));
   if (!note) return null;
   return {
     title: /used supplied text evidence/iu.test(note) ? "Vision timed out; using supplied text evidence" : "Vision extraction issue",
@@ -42,14 +50,20 @@ export function ResultsPanel({
   activeResult,
   attentionChecks,
   activeAdjudication,
+  adjudicationCount,
+  exportStatus,
   isVerifying,
   activeReviewRows,
   scoredReviewRows,
   activeSupplementalRows,
   nextSteps,
   onReviewerDecision,
+  onExportReviewPacket,
+  onCopyReviewSummary,
 }: ResultsPanelProps) {
   const alert = extractionAlert(activeResult);
+  const needsDispositionDetail = dispositionNeedsReason(activeAdjudication?.disposition);
+  const dispositionStatus = activeAdjudication ? (activeAdjudication.isComplete ? "Draft ready" : "Needs reason and note") : "No reviewer draft";
 
   return (
     <section className="guidance-panel" aria-label="Issues and next steps">
@@ -66,19 +80,6 @@ export function ResultsPanel({
             <span>{activeResult.decision.replace("_", " ")}</span>
             <strong>{activeResult.score}%</strong>
           </div>
-          <div className="decision-actions inline-decision-actions" aria-label="Reviewer final decision">
-            {(["approved", "rejected"] as const).map((decision) => (
-              <button
-                key={decision}
-                type="button"
-                className={`decision-action ${activeAdjudication?.decision === decision ? "selected" : ""} decision-action-${decision}`}
-                disabled={isVerifying}
-                onClick={() => onReviewerDecision(decision)}
-              >
-                {dispositionLabel(decision)}
-              </button>
-            ))}
-          </div>
         </div>
       </div>
 
@@ -86,6 +87,93 @@ export function ResultsPanel({
         <div className="comparison-meta">
           <span>{Math.round(activeResult.extraction.confidence * 100)}% extraction confidence</span>
           <span>{scoredReviewRows.filter((row) => row.status === "pass").length}/{scoredReviewRows.length} requirement rows pass</span>
+        </div>
+
+        <div className="reviewer-disposition" aria-label="Reviewer disposition">
+          <div className="reviewer-disposition-head">
+            <strong>Reviewer disposition</strong>
+            <span className={activeAdjudication?.isComplete ? "disposition-ready" : "disposition-open"}>{dispositionStatus}</span>
+          </div>
+          <div className="disposition-actions">
+            {reviewerDispositionOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className={`disposition-action ${activeAdjudication?.disposition === option.value ? "selected" : ""}`}
+                disabled={isVerifying}
+                onClick={() =>
+                  onReviewerDecision({
+                    disposition: option.value,
+                    reviewerDecision: defaultReviewerDecision(option.value, activeResult.decision),
+                  })
+                }
+              >
+                <span>{option.label}</span>
+                <small>{option.hint}</small>
+              </button>
+            ))}
+          </div>
+          {activeAdjudication ? (
+            <div className="disposition-fields">
+              {activeAdjudication.disposition === "override" ? (
+                <label>
+                  <span>Reviewer outcome</span>
+                  <select
+                    aria-label="Reviewer outcome"
+                    value={activeAdjudication.reviewerDecision ?? ""}
+                    disabled={isVerifying}
+                    onChange={(event) => onReviewerDecision({ reviewerDecision: event.currentTarget.value as Adjudication["reviewerDecision"] })}
+                  >
+                    <option value="approved">Approve</option>
+                    <option value="needs_review">Needs review</option>
+                    <option value="rejected">Reject</option>
+                  </select>
+                </label>
+              ) : null}
+              <label>
+                <span>{needsDispositionDetail ? "Reason code required" : "Reason code"}</span>
+                <select
+                  aria-label="Reason code"
+                  value={activeAdjudication.reasonCode}
+                  disabled={isVerifying}
+                  aria-required={needsDispositionDetail}
+                  onChange={(event) => onReviewerDecision({ reasonCode: event.currentTarget.value as Adjudication["reasonCode"] })}
+                >
+                  <option value="">Select reason</option>
+                  {reviewerReasonOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="disposition-note">
+                <span>{needsDispositionDetail ? "Note required" : "Note"}</span>
+                <textarea
+                  aria-label="Reviewer note"
+                  value={activeAdjudication.note}
+                  disabled={isVerifying}
+                  aria-required={needsDispositionDetail}
+                  rows={2}
+                  placeholder={needsDispositionDetail ? "Add reviewer rationale before export." : "Optional reviewer note."}
+                  onChange={(event) => onReviewerDecision({ note: event.currentTarget.value })}
+                />
+              </label>
+              {activeAdjudication.reasonCode ? <p>{reasonCodeLabel(activeAdjudication.reasonCode)}</p> : null}
+            </div>
+          ) : null}
+          <div className="review-output-actions" aria-label="Review packet actions">
+            <button type="button" disabled={isVerifying} onClick={() => onExportReviewPacket("json")}>
+              Export packet
+            </button>
+            <button type="button" disabled={isVerifying} onClick={() => onExportReviewPacket("csv")}>
+              Export CSV
+            </button>
+            <button type="button" disabled={isVerifying} onClick={onCopyReviewSummary}>
+              Copy summary
+            </button>
+            <span>{exportStatus ?? `${adjudicationCount} reviewer draft${adjudicationCount === 1 ? "" : "s"}`}</span>
+          </div>
         </div>
 
         {alert ? (
