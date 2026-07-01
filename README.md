@@ -6,6 +6,10 @@ Regulated AI workflow for alcohol label review: blind vision extraction, determi
 
 LabelCheck is a standalone prototype, not a COLAs integration or legal approval system. It is built to show the trust boundary: the model reads the label, TypeScript rules make repeatable findings, and the reviewer makes the final Approve or Reject decision with optional reason and notes.
 
+![LabelCheck regulated workflow](docs/assets/alcohol-label-verifier-workflow-poster.png)
+
+[Watch the 8-second workflow video](docs/assets/alcohol-label-verifier-workflow.mp4)
+
 ![LabelCheck reviewer workflow](docs/assets/readme-regulated-workflow.png)
 
 ## What It Proves
