@@ -139,12 +139,12 @@ export function ResultsPanel({
         </div>
 
         {exportStatus ? (
-          <div className="review-toast" role="status">
+          <output className="review-toast" aria-live="polite">
             <span>{exportStatus}</span>
             <button type="button" onClick={onClearExportStatus} aria-label="Close notification">
               Close
             </button>
-          </div>
+          </output>
         ) : null}
 
         {needsReviewerFields && activeAdjudication ? (
@@ -200,13 +200,13 @@ export function ResultsPanel({
         ) : null}
 
         {alert ? (
-          <div className={`extraction-alert ${alert.severe ? "extraction-alert-severe" : ""}`} role="status">
+          <output className={`extraction-alert ${alert.severe ? "extraction-alert-severe" : ""}`} aria-live="polite">
             <AlertCircle aria-hidden />
             <div>
               <strong>{alert.title}</strong>
               <p>{alert.detail}</p>
             </div>
-          </div>
+          </output>
         ) : null}
 
         <div className="comparison-table" aria-label="Expected and detected label values">

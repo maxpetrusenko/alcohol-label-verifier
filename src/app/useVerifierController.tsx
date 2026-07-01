@@ -8,6 +8,7 @@ import {
   isImageLikeUpload,
   type PendingLabel,
 } from "@/lib/labelPayload";
+import { mapWithConcurrency } from "@/lib/concurrency";
 import {
   applicationFromImportJson,
   isApplicationImportUpload,
@@ -36,6 +37,10 @@ import {
   VISION_IMAGE_QUALITY,
   writeStoredAdjudication,
 } from "./pageSupport";
+
+function makeLabelId(fileName: string, index: number) {
+  return `${Date.now()}-${index}-${fileName.replace(/[^a-z0-9._-]+/gi, "-")}`;
+}
 
 export function useVerifierController() {
   const [application, setApplication] = useState<ApplicationData>(defaultApplication);
@@ -140,10 +145,6 @@ export function useVerifierController() {
       cameraStreamRef.current = null;
     };
   }, [isCameraOpen]);
-
-  function makeLabelId(fileName: string, index: number) {
-    return `${Date.now()}-${index}-${fileName.replace(/[^a-z0-9._-]+/gi, "-")}`;
-  }
 
   function loadImportedApplications(rows: ImportedApplication[]) {
     setImportedApplications(rows);
@@ -440,17 +441,9 @@ export function useVerifierController() {
         }
       }
 
-      let cursor = 0;
-      const workerCount = Math.min(2, chunks.length);
-      await Promise.all(
-        Array.from({ length: workerCount }, async () => {
-          while (cursor < chunks.length) {
-            const chunk = chunks[cursor];
-            cursor += 1;
-            if (chunk) await verifyChunk(chunk.start, chunk.labels);
-          }
-        }),
-      );
+      await mapWithConcurrency(chunks, 2, async (chunk) => {
+        await verifyChunk(chunk.start, chunk.labels);
+      });
 
       setResults(nextResults as VerificationResult[]);
       setVerifiedCount(labelsToVerify.length);

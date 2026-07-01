@@ -14,10 +14,12 @@ describe("extractLabel", () => {
   const originalBraintrustKey = process.env.BRAINTRUST_API_KEY;
   const originalBraintrustProject = process.env.BRAINTRUST_PROJECT;
   const originalBraintrustTracing = process.env.BRAINTRUST_TRACING;
+  const originalBraintrustSyncFlush = process.env.BRAINTRUST_SYNC_FLUSH;
   const originalAppBraintrustKey = process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_API_KEY;
   const originalAppBraintrustAppUrl = process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_APP_URL;
   const originalAppBraintrustProject = process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_PROJECT;
   const originalAppBraintrustTracing = process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_TRACING;
+  const originalAppBraintrustSyncFlush = process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_SYNC_FLUSH;
 
   beforeEach(() => {
     process.env.OPENAI_API_KEY = "test-key";
@@ -31,10 +33,12 @@ describe("extractLabel", () => {
     delete process.env.BRAINTRUST_API_KEY;
     delete process.env.BRAINTRUST_PROJECT;
     delete process.env.BRAINTRUST_TRACING;
+    delete process.env.BRAINTRUST_SYNC_FLUSH;
     delete process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_API_KEY;
     delete process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_APP_URL;
     delete process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_PROJECT;
     delete process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_TRACING;
+    delete process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_SYNC_FLUSH;
   });
 
   afterEach(() => {
@@ -61,6 +65,8 @@ describe("extractLabel", () => {
     else delete process.env.BRAINTRUST_PROJECT;
     if (originalBraintrustTracing) process.env.BRAINTRUST_TRACING = originalBraintrustTracing;
     else delete process.env.BRAINTRUST_TRACING;
+    if (originalBraintrustSyncFlush) process.env.BRAINTRUST_SYNC_FLUSH = originalBraintrustSyncFlush;
+    else delete process.env.BRAINTRUST_SYNC_FLUSH;
     if (originalAppBraintrustKey) process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_API_KEY = originalAppBraintrustKey;
     else delete process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_API_KEY;
     if (originalAppBraintrustAppUrl) process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_APP_URL = originalAppBraintrustAppUrl;
@@ -69,6 +75,8 @@ describe("extractLabel", () => {
     else delete process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_PROJECT;
     if (originalAppBraintrustTracing) process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_TRACING = originalAppBraintrustTracing;
     else delete process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_TRACING;
+    if (originalAppBraintrustSyncFlush) process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_SYNC_FLUSH = originalAppBraintrustSyncFlush;
+    else delete process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_SYNC_FLUSH;
   });
 
   it("normalizes provider confidence and common warning OCR typos", async () => {
@@ -236,6 +244,7 @@ describe("extractLabel", () => {
     process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_APP_URL = "https://braintrust-app.test";
     process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_PROJECT = "alcohol-label-verifier-test";
     process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_TRACING = "true";
+    process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_SYNC_FLUSH = "true";
 
     const fetchMock = vi.fn(async (url: string | URL | Request) => {
       const href = typeof url === "string" ? url : url instanceof URL ? url.href : url.url;
@@ -400,6 +409,168 @@ describe("extractLabel", () => {
     ]);
     expect(extraction.brandName).toBe("Backup Brand");
     expect(extraction.notes[0]).toBe("gemini Vision extraction timed out after 1 ms.; retried with openai.");
+  });
+
+  it("falls back to OpenAI when Gemini returns a provider error", async () => {
+    process.env.VISION_PROVIDER = "gemini";
+    process.env.GEMINI_API_KEY = "gemini-key";
+    process.env.OPENAI_API_KEY = "openai-key";
+    process.env.OPENAI_VISION_ENDPOINT = "responses";
+    const fetchMock = vi.fn((url: string) => {
+      if (url.includes("generativelanguage.googleapis.com")) {
+        return Promise.resolve(new Response("quota exceeded", { status: 429 }));
+      }
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            output_text: JSON.stringify({
+              labelText: "Backup Brand",
+              brandName: "Backup Brand",
+              classType: "",
+              alcoholContent: "",
+              netContents: "",
+              governmentWarning: "",
+              bottlerAddress: "",
+              countryOfOrigin: "",
+              confidence: 0.7,
+              notes: [],
+            }),
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const extraction = await extractLabel({
+      fileName: "quota-label.jpg",
+      mimeType: "image/jpeg",
+      dataUrl: "data:image/jpeg;base64,test",
+    });
+
+    expect(fetchMock.mock.calls.map(([url]) => String(url))).toEqual([
+      expect.stringContaining("generativelanguage.googleapis.com"),
+      "https://api.openai.com/v1/responses",
+    ]);
+    expect(extraction.brandName).toBe("Backup Brand");
+    expect(extraction.notes[0]).toBe("gemini returned provider status 429; retried with openai.");
+  });
+
+  it("falls back to OpenAI when Gemini returns unreadable JSON", async () => {
+    process.env.VISION_PROVIDER = "gemini";
+    process.env.GEMINI_API_KEY = "gemini-key";
+    process.env.OPENAI_API_KEY = "openai-key";
+    process.env.OPENAI_VISION_ENDPOINT = "responses";
+    const fetchMock = vi.fn((url: string) => {
+      if (url.includes("generativelanguage.googleapis.com")) {
+        return Promise.resolve(
+          new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: "not json" }] } }] }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }),
+        );
+      }
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            output_text: JSON.stringify({
+              labelText: "Readable Backup",
+              brandName: "Readable Backup",
+              classType: "",
+              alcoholContent: "",
+              netContents: "",
+              governmentWarning: "",
+              bottlerAddress: "",
+              countryOfOrigin: "",
+              confidence: 0.73,
+              notes: [],
+            }),
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const extraction = await extractLabel({
+      fileName: "bad-json-label.jpg",
+      mimeType: "image/jpeg",
+      dataUrl: "data:image/jpeg;base64,test",
+    });
+
+    expect(fetchMock.mock.calls.map(([url]) => String(url))).toEqual([
+      expect.stringContaining("generativelanguage.googleapis.com"),
+      "https://api.openai.com/v1/responses",
+    ]);
+    expect(extraction.brandName).toBe("Readable Backup");
+    expect(extraction.notes[0]).toBe("gemini returned unreadable JSON; retried with openai.");
+  });
+
+  it("reports fallback provider status when unreadable Gemini JSON retries to OpenAI error", async () => {
+    process.env.VISION_PROVIDER = "gemini";
+    process.env.GEMINI_API_KEY = "gemini-key";
+    process.env.OPENAI_API_KEY = "openai-key";
+    process.env.OPENAI_VISION_ENDPOINT = "responses";
+    const fetchMock = vi.fn((url: string) => {
+      if (url.includes("generativelanguage.googleapis.com")) {
+        return Promise.resolve(
+          new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: "not json" }] } }] }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }),
+        );
+      }
+      return Promise.resolve(new Response("backup unavailable", { status: 503 }));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const extraction = await extractLabel({
+      fileName: "bad-json-backup-error.jpg",
+      mimeType: "image/jpeg",
+      dataUrl: "data:image/jpeg;base64,test",
+      text: "Fallback Brand\nVodka\n40% Alc./Vol.\n750 mL",
+    });
+
+    expect(extraction.brandName).toBe("Fallback Brand");
+    expect(extraction.notes).toContain("gemini returned unreadable JSON; retried with openai.");
+    expect(extraction.notes).toContain("Vision extraction failed with provider status 503: backup unavailable");
+  });
+
+  it("uses supplied text evidence when both providers return unreadable JSON", async () => {
+    process.env.VISION_PROVIDER = "gemini";
+    process.env.GEMINI_API_KEY = "gemini-key";
+    process.env.OPENAI_API_KEY = "openai-key";
+    process.env.OPENAI_VISION_ENDPOINT = "responses";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string) => {
+        if (url.includes("generativelanguage.googleapis.com")) {
+          return Promise.resolve(
+            new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: "not json" }] } }] }), {
+              status: 200,
+              headers: { "Content-Type": "application/json" },
+            }),
+          );
+        }
+        return Promise.resolve(
+          new Response(JSON.stringify({ output_text: "also not json" }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }),
+        );
+      }),
+    );
+
+    const extraction = await extractLabel({
+      fileName: "both-json-fail.jpg",
+      mimeType: "image/jpeg",
+      dataUrl: "data:image/jpeg;base64,test",
+      text: `Fallback Brand\nVodka\n40% Alc./Vol.\n750 mL\n${GOVERNMENT_WARNING_TEXT}`,
+    });
+
+    expect(extraction.brandName).toBe("Fallback Brand");
+    expect(extraction.notes[0]).toContain("Vision extraction failed; used supplied text evidence instead:");
+    expect(extraction.notes[1]).toBe("Parsed from supplied text/OCR paste without calling a vision model.");
   });
 
   it("reports both provider timeouts when primary and fallback fail", async () => {

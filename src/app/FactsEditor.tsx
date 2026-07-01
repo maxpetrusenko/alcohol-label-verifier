@@ -69,7 +69,9 @@ export function FactsEditor({
         {datalists.map(([key, options]) => (
           <datalist key={key} id={`options-${key}`}>
             {options.map((option) => (
-              <option key={option} value={option} />
+              <option key={option} value={option} label={option} aria-label={option}>
+                {option}
+              </option>
             ))}
           </datalist>
         ))}

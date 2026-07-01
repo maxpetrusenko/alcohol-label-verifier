@@ -14,6 +14,11 @@ export type ExtractableLabel = {
 
 type VisionProvider = "gemini" | "openai";
 type VisionCallResult = Awaited<ReturnType<typeof callGeminiVision>>;
+type VisionAttemptResult = {
+  result?: VisionCallResult;
+  provider: VisionProvider;
+  notes: string[];
+};
 
 const extractionSchema = {
   type: "object",
@@ -226,11 +231,11 @@ async function fetchWithVisionTimeout(url: string, init: RequestInit, timeoutMs:
 }
 
 function selectedVisionModel(provider: VisionProvider) {
-  return provider === "gemini" ? process.env.GEMINI_VISION_MODEL || "gemini-3.1-flash-lite" : process.env.OPENAI_VISION_MODEL || "gpt-4.1-nano";
+  return provider === "gemini" ? process.env.GEMINI_VISION_MODEL || "gemini-3.1-flash-lite" : process.env.OPENAI_VISION_MODEL || "gpt-5.4-mini";
 }
 
 function selectedVisionEndpoint(provider: VisionProvider) {
-  return provider === "gemini" ? "generateContent" : process.env.OPENAI_VISION_ENDPOINT || "chat_completions";
+  return provider === "gemini" ? "generateContent" : process.env.OPENAI_VISION_ENDPOINT || "responses";
 }
 
 function selectedOpenAiChatTokenLimit(model: string, maxOutputTokens: number) {
@@ -246,7 +251,7 @@ async function callOpenAiVision(apiKey: string, prompt: string, dataUrl: string,
   const detail = process.env.OPENAI_IMAGE_DETAIL || "low";
   const maxOutputTokens = parseMaxOutputTokens();
 
-  if (process.env.OPENAI_VISION_ENDPOINT === "responses") {
+  if (selectedVisionEndpoint("openai") === "responses") {
     const response = await fetchWithVisionTimeout("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: {
@@ -402,14 +407,15 @@ async function callVisionWithTrace(provider: VisionProvider, apiKey: string, lab
   );
 }
 
-async function callVisionWithTimeoutFallback(provider: VisionProvider, label: ExtractableLabel, prompt: string, dataUrl: string) {
+async function callVisionWithTimeoutFallback(provider: VisionProvider, label: ExtractableLabel, prompt: string, dataUrl: string): Promise<VisionAttemptResult> {
   const apiKey = providerApiKey(provider);
-  if (!apiKey) return { result: undefined, notes: [] };
+  if (!apiKey) return { result: undefined, provider, notes: [] };
 
   const notes: string[] = [];
   try {
     return {
       result: await callVisionWithTrace(provider, apiKey, label, prompt, dataUrl, parsePrimaryVisionTimeoutMs()),
+      provider,
       notes,
     };
   } catch (error) {
@@ -422,6 +428,7 @@ async function callVisionWithTimeoutFallback(provider: VisionProvider, label: Ex
     try {
       return {
         result: await callVisionWithTrace(backupProvider, backupApiKey, label, prompt, dataUrl, parseFallbackVisionTimeoutMs()),
+        provider: backupProvider,
         notes,
       };
     } catch (fallbackError) {
@@ -431,6 +438,28 @@ async function callVisionWithTimeoutFallback(provider: VisionProvider, label: Ex
       throw new Error(notes.join(" "));
     }
   }
+}
+
+async function retryWithBackupProvider(
+  initialProvider: VisionProvider,
+  attemptedProvider: VisionProvider,
+  label: ExtractableLabel,
+  prompt: string,
+  dataUrl: string,
+  notes: string[],
+  reason: string,
+): Promise<VisionAttemptResult | undefined> {
+  if (attemptedProvider !== initialProvider) return undefined;
+  const backupProvider = fallbackProvider(initialProvider);
+  const backupApiKey = providerApiKey(backupProvider);
+  if (!backupApiKey) return undefined;
+
+  notes.push(`${initialProvider} ${reason}; retried with ${backupProvider}.`);
+  return {
+    result: await callVisionWithTrace(backupProvider, backupApiKey, label, prompt, dataUrl, parseFallbackVisionTimeoutMs()),
+    provider: backupProvider,
+    notes,
+  };
 }
 
 export async function extractLabel(label: ExtractableLabel): Promise<LabelExtraction> {
@@ -450,17 +479,33 @@ Every non-empty structured field must be copied from visible text also present i
 Do not shorten or generalize class/type wording; preserve the full visible designation line when legible.
 Set governmentWarning only to the exact visible warning statement, including the leading "GOVERNMENT WARNING:" prefix when present. Preserve warning capitalization and punctuation when legible.`;
 
-  let result: Awaited<ReturnType<typeof callVisionWithTimeoutFallback>>["result"];
+  let result: VisionAttemptResult["result"];
+  let attemptedProvider = provider;
   let notes: string[];
   try {
-    ({ result, notes } = await callVisionWithTimeoutFallback(provider, label, prompt, dataUrl));
+    ({ result, provider: attemptedProvider, notes } = await callVisionWithTimeoutFallback(provider, label, prompt, dataUrl));
   } catch (error) {
     const fallbackExtraction = failedVisionFallback(fallback, error);
     if (fallbackExtraction) return fallbackExtraction;
     throw error;
   }
   if (!result) return fallback ?? extractionFromPlainText("");
-  const { response, readText } = result as VisionCallResult;
+  let { response, readText } = result as VisionCallResult;
+
+  if (!response.ok) {
+    try {
+      const retry = await retryWithBackupProvider(provider, attemptedProvider, label, prompt, dataUrl, notes, `returned provider status ${response.status}`);
+      if (retry?.result) {
+        attemptedProvider = retry.provider;
+        notes = retry.notes;
+        ({ response, readText } = retry.result);
+      }
+    } catch (error) {
+      const fallbackExtraction = failedVisionFallback(fallback, error);
+      if (fallbackExtraction) return fallbackExtraction;
+      throw error;
+    }
+  }
 
   if (!response.ok) {
     const message = await response.text();
@@ -476,6 +521,27 @@ Set governmentWarning only to the exact visible warning statement, including the
     const extraction = mergeExtraction(JSON.parse(readText(data) || "{}") as LabelExtraction, fallback);
     return notes.length ? { ...extraction, notes: [...notes, ...extraction.notes] } : extraction;
   } catch (error) {
+    try {
+      const retry = await retryWithBackupProvider(provider, attemptedProvider, label, prompt, dataUrl, notes, "returned unreadable JSON");
+      if (retry?.result) {
+        const retryResponse = retry.result.response;
+        if (!retryResponse.ok) {
+          const message = await retryResponse.text();
+          return {
+            ...(fallback ?? extractionFromPlainText("")),
+            confidence: fallback?.confidence ?? 0,
+            notes: [...retry.notes, sanitizeProviderError(retryResponse.status, message)],
+          };
+        }
+        const data = await retryResponse.json();
+        const extraction = mergeExtraction(JSON.parse(retry.result.readText(data) || "{}") as LabelExtraction, fallback);
+        return retry.notes.length ? { ...extraction, notes: [...retry.notes, ...extraction.notes] } : extraction;
+      }
+    } catch (retryError) {
+      const fallbackExtraction = failedVisionFallback(fallback, retryError);
+      if (fallbackExtraction) return fallbackExtraction;
+      throw retryError;
+    }
     return {
       ...(fallback ?? extractionFromPlainText("")),
       confidence: fallback?.confidence ?? 0,

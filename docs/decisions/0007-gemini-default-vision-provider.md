@@ -13,6 +13,7 @@ LabelCheck needs fast image-to-JSON extraction for reviewer uploads and future a
 - Optimized OpenAI `gpt-4o-mini` was more stable, but measured about 3.5 to 5.4 seconds per image.
 - Gemini `gemini-2.5-flash-lite` with the same compressed fixture measured about 1.7 to 2.1 seconds per image after warmup and returned stable field extraction on the smoke case.
 - After the 2026-05-18 timeout regression, a three-fixture candidate sweep found `gemini-3.1-flash-lite` at 3/3 full fixture matches with p95 4143 ms. The previous `gemini-2.5-flash-lite` measured 2/3 full matches with p95 16160 ms in the same sweep.
+- On 2026-06-30, a five-fixture sweep found `gemini-flash-lite-latest` fastest at p95 3352 ms, `gemini-3.1-flash-lite` close behind at p95 3939 ms, and OpenAI `gpt-5.4-mini` through Responses at p95 4508 ms. All three hit 5/5 runs under 5 seconds with the same 93% field accuracy.
 
 The app still needs deterministic rules and human review gates because model OCR can vary, especially around statutory warning punctuation, line wraps, glare, blur, and crop quality.
 
@@ -26,6 +27,7 @@ Configuration:
 - Default Gemini model: `GEMINI_VISION_MODEL=gemini-3.1-flash-lite`
 - Accepted Gemini key variables: `GEMINI_API_KEY`, `GEMINI_API_KEY_MAX`, `GEMINI_API_KEY_TURKEY`, or `GOOGLE_API_KEY`
 - OpenAI remains available with `VISION_PROVIDER=openai`
+- When both provider keys are configured, the app retries once with the opposite provider on timeout, provider status failures, or unreadable model JSON. The default OpenAI retry path is `OPENAI_VISION_MODEL=gpt-5.4-mini` and `OPENAI_VISION_ENDPOINT=responses`.
 
 The browser continues to compress uploaded and camera images to a bounded JPEG before sending them to the server. The model extracts visible label evidence only. The deterministic rules continue to decide compliance against application facts.
 

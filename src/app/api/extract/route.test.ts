@@ -93,6 +93,59 @@ describe("POST /api/extract", () => {
     );
   });
 
+  it("rejects unsupported image data URLs before provider calls", async () => {
+    const response = await POST(
+      requestWithLabels([
+        {
+          fileName: "label.svg",
+          mimeType: "image/svg+xml",
+          dataUrl: "data:image/svg+xml;base64,PHN2Zy8+",
+        },
+      ]),
+    );
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data.error.issues).toContainEqual(
+      expect.objectContaining({
+        path: ["labels", 0, "dataUrl"],
+        message: expect.stringContaining("Unsupported image MIME type"),
+      }),
+    );
+  });
+
+  it("rejects mismatched MIME metadata and malformed data URLs", async () => {
+    const response = await POST(
+      requestWithLabels([
+        {
+          fileName: "label.png",
+          mimeType: "image/jpeg",
+          dataUrl: "data:image/png;base64,AAAA",
+        },
+        {
+          fileName: "broken.png",
+          mimeType: "image/png",
+          dataUrl: "data:image/png;base64,not-valid-@@@",
+        },
+      ]),
+    );
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data.error.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: ["labels", 0, "mimeType"],
+          message: 'mimeType must match dataUrl MIME type "image/png".',
+        }),
+        expect.objectContaining({
+          path: ["labels", 1, "dataUrl"],
+          message: "Image dataUrl must be a base64 data URL.",
+        }),
+      ]),
+    );
+  });
+
   it("serves the same contract through the v1 route", async () => {
     const response = await V1POST(
       requestWithLabels([

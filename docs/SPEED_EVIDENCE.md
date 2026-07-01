@@ -2,7 +2,7 @@
 
 Read when validating the 5-second review requirement.
 
-Date: 2026-05-14, updated 2026-05-18
+Date: 2026-05-14, updated 2026-06-30
 
 ## Current Local Evidence
 
@@ -49,6 +49,24 @@ Three-fixture candidate sweep after the timeout regression:
 - OpenAI `gpt-4.1-nano`: 3/3 full matches, 100% field accuracy, p95 3646 ms
 - OpenAI `gpt-5.4-mini` through Responses: 3/3 full matches, 100% field accuracy, p95 4691 ms
 - OpenAI `gpt-5.4-nano` through Responses: 3/3 full matches, 100% field accuracy, p95 5804 ms
+
+Five-fixture mixed model sweep on 2026-06-30:
+
+- Gemini `gemini-flash-lite-latest`: 3/5 full matches, 93% field accuracy, p50 3049 ms, p95 3352 ms, 5/5 under 5 seconds
+- Gemini `gemini-3.1-flash-lite`: 3/5 full matches, 93% field accuracy, p50 3506 ms, p95 3939 ms, 5/5 under 5 seconds
+- OpenAI `gpt-5.4-mini` through Responses: 3/5 full matches, 93% field accuracy, p50 3980 ms, p95 4508 ms, 5/5 under 5 seconds
+- OpenAI `gpt-5.4-nano` through Responses: 3/5 full matches, 93% field accuracy, p50 5500 ms, p95 7272 ms, 0/5 under 5 seconds
+- Gemini `gemini-3.5-flash`: 0/5 full matches, 13% field accuracy, p50 4650 ms, p95 7459 ms, 3/5 under 5 seconds
+- OpenAI `gpt-4.1-nano`: 1/5 full matches, 83% field accuracy, p50 6766 ms, p95 9875 ms, 1/5 under 5 seconds
+
+Interpretation: keep Gemini `gemini-3.1-flash-lite` as the pinned default to avoid alias drift. The measured fastest alias was `gemini-flash-lite-latest`; teams can opt into it with `GEMINI_VISION_MODEL=gemini-flash-lite-latest`. The measured OpenAI fallback is now `gpt-5.4-mini` through Responses, replacing the older `gpt-4.1-nano` default.
+
+Fallback reliability regression coverage:
+
+- Gemini timeout retries once with OpenAI when `OPENAI_API_KEY` is present.
+- Gemini provider errors such as 429/5xx retry once with OpenAI.
+- Gemini unreadable JSON retries once with OpenAI.
+- If both providers fail and OCR/text evidence is available, the app returns the text-derived extraction with the failure note instead of dropping the reviewer workflow.
 
 ## Deployed URL Check
 
