@@ -88,18 +88,27 @@ jobs:
           COOLIFY_SSH_USER: ${{ secrets.COOLIFY_SSH_USER }}
           COOLIFY_SSH_PRIVATE_KEY: ${{ secrets.COOLIFY_SSH_PRIVATE_KEY }}
         run: |
-          # NO PATCH HERE, DELIBERATELY.
+          # NO PATCH HERE.
           #
-          # Coolify's own skip line is: "No configuration changed & image found (<image>:<sha>)
-          # with the same Git Commit SHA. Build step skipped." The condition is BOTH halves.
-          # This step used to PATCH docker_registry_image_name/tag first, which *is* a
-          # configuration change, so Coolify rebuilt on the VPS even though the pre-pulled
-          # image was sitting right there - observed 2026-09-14: pre-pull green, then
-          # "Importing ... to /artifacts/", "Building docker image started", 4 minutes.
+          # This was removed on the hypothesis that PATCHing the app config is what forced
+          # Coolify to rebuild. THAT HYPOTHESIS WAS TESTED AND REFUTED - 2026-09-14:
           #
-          # For a `dockerfile` app Coolify derives the image tag from the app's git commit
-          # anyway, so the PATCH was never what selected the image. Removing it makes the
-          # pre-pull above sufficient and the deploy a real pull.
+          #   deployment               duration  built on prod
+          #   e14mb4sath43vlcdvqnrsoiv     46s   NO    (manual pre-pull + trigger, no workflow)
+          #   deovddv9thsaumwgn6eycj5p    235s   YES   (pre-pull + PATCH)
+          #   u11o1hev367wbftva0yq1i31    245s   YES   (pre-pull, PATCH removed)
+          #
+          # So the PATCH is not the trigger and its removal is not the fix. The pre-pull is
+          # necessary (Coolify's check is for the tag's presence in the local image store)
+          # but demonstrably not sufficient from this workflow: Coolify imported the repo to
+          # /artifacts/ and ran a full build anyway, ~4 minutes on the production box.
+          #
+          # The reliable fix is the app TYPE: a `dockerimage` app has no git link and no
+          # build step at all, so it cannot compile on the VPS under any trigger. That is
+          # what the tantra-studio app was migrated to. It cannot be reached by PATCHing an
+          # existing app - Coolify rejects `build_pack` changes ("The selected build pack is
+          # invalid") - so it requires creating a new dockerimage app and cutting the domain
+          # over. Until that happens for this app, a deploy from here CAN build on prod.
           deploy_json="$(ssh -i ~/.ssh/coolify_deploy "$COOLIFY_SSH_USER@$COOLIFY_SSH_HOST" \
             "curl -fsS -X POST 'http://127.0.0.1:8000/api/v1/deploy?uuid=$COOLIFY_APP_UUID&force=false' -H 'Authorization: Bearer $COOLIFY_TOKEN'")"
           deployment_uuid="$(printf '%s' "$deploy_json" | node -e "let input=''; process.stdin.on('data', c => input += c); process.stdin.on('end', () => { const data = JSON.parse(input); const uuid = data.deployments?.[0]?.deployment_uuid; if (!uuid) throw new Error('Coolify deploy response did not include deployment_uuid'); console.log(uuid); });")"
