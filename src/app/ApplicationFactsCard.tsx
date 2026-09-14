@@ -1,4 +1,4 @@
-import type { ChangeEvent, DragEvent, ReactNode } from "react";
+import { useRef, type ChangeEvent, type DragEvent, type ReactNode } from "react";
 import { ClipboardList } from "lucide-react";
 
 type ApplicationFactsCardProps = {
@@ -12,22 +12,39 @@ type ApplicationFactsCardProps = {
   onApplicationImportInput: (event: ChangeEvent<HTMLInputElement>) => void;
 };
 
-function ImportButton({ isVerifying, onApplicationImportInput }: Pick<ApplicationFactsCardProps, "isVerifying" | "onApplicationImportInput">) {
-  function stopInputEventPropagation(event: { stopPropagation: () => void }) {
-    event.stopPropagation();
-  }
+function stopInputEventPropagation(event: { stopPropagation: () => void }) {
+  event.stopPropagation();
+}
 
+function ImportButton({ isVerifying, onApplicationImportInput }: Pick<ApplicationFactsCardProps, "isVerifying" | "onApplicationImportInput">) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
   return (
-    <label
-      className={`import-button${isVerifying ? " disabled" : ""}`}
-      aria-disabled={isVerifying}
-      onClick={stopInputEventPropagation}
-      onKeyDown={stopInputEventPropagation}
-    >
-      <ClipboardList aria-hidden />
-      <span>Import JSON / CSV</span>
-      <input className="file-input" type="file" accept=".json,.csv,application/json,text/csv" multiple disabled={isVerifying} onChange={onApplicationImportInput} />
-    </label>
+    <>
+      <button
+        type="button"
+        className={`import-button${isVerifying ? " disabled" : ""}`}
+        aria-disabled={isVerifying}
+        disabled={isVerifying}
+        onClick={(event) => {
+          event.stopPropagation();
+          inputRef.current?.click();
+        }}
+      >
+        <ClipboardList aria-hidden />
+        <span>Import JSON / CSV</span>
+      </button>
+      <input
+        ref={inputRef}
+        className="file-input"
+        type="file"
+        accept=".json,.csv,application/json,text/csv"
+        multiple
+        disabled={isVerifying}
+        aria-label="Import JSON or CSV"
+        onClick={stopInputEventPropagation}
+        onChange={onApplicationImportInput}
+      />
+    </>
   );
 }
 

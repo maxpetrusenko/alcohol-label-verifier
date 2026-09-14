@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ChangeEvent, type DragEvent, type RefObject } from "react";
+import { useEffect, useState, type ChangeEvent, type DragEvent, type RefObject } from "react";
 import Image from "next/image";
 import { Camera, FileImage, UploadCloud } from "lucide-react";
 import type { PendingLabel } from "@/lib/labelPayload";
@@ -59,10 +59,7 @@ export function LabelStage({
 }: LabelStageProps) {
   const { hasBatch, isDropActive, isVerifying, isCameraOpen } = stageState;
   const imageCallouts = activeIssueRows.filter((row) => row.status === "fail" || row.status === "needs_review").slice(0, 4);
-  const calloutKey = useMemo(
-    () => `${activeLabel?.labelId ?? activeLabel?.fileName ?? activeIndex}:${imageCallouts.map((row) => `${row.id}:${row.status}:${row.observed}`).join("|")}`,
-    [activeIndex, activeLabel?.fileName, activeLabel?.labelId, imageCallouts],
-  );
+  const calloutKey = `${activeLabel?.labelId ?? activeLabel?.fileName ?? activeIndex}:${imageCallouts.map((row) => `${row.id}:${row.status}:${row.observed}`).join("|")}`;
   const [dismissedCalloutKey, setDismissedCalloutKey] = useState<string | null>(null);
   const showImageCallouts = Boolean(imageCallouts.length && dismissedCalloutKey !== calloutKey);
 
@@ -175,7 +172,7 @@ export function LabelStage({
 
       {isCameraOpen ? (
         <div className="camera-panel" aria-label="Camera capture">
-          <video ref={videoRef} playsInline muted />
+          <video ref={videoRef} playsInline muted aria-label="Camera preview" />
           <div>
             <button type="button" className="ghost-button" disabled={isVerifying} onClick={onCaptureCameraFrame}>
               Capture label

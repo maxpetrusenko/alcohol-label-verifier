@@ -23,6 +23,20 @@ function flushInBackground(logger: Logger<true> | undefined, span: ReturnType<Lo
     .catch((error) => reportBraintrustError("flush", error));
 }
 
+async function flushTrace(logger: Logger<true> | undefined, span: ReturnType<Logger<true>["startSpan"]> | undefined) {
+  if (!span) return;
+  if (!truthy(firstNonEmpty(process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_SYNC_FLUSH, process.env.BRAINTRUST_SYNC_FLUSH))) {
+    flushInBackground(logger, span);
+    return;
+  }
+  try {
+    await span.flush();
+    await logger?.flush();
+  } catch (error) {
+    reportBraintrustError("flush", error);
+  }
+}
+
 function braintrustApiKey() {
   return firstNonEmpty(process.env.ALCOHOL_LABEL_VERIFIER_BRAINTRUST_API_KEY, process.env.BRAINTRUST_API_KEY);
 }
@@ -110,14 +124,14 @@ export async function withBraintrustTrace<T>(
     if (span) {
       span.log({ output: summarize(value) });
       span.end();
-      flushInBackground(logger, span);
+      await flushTrace(logger, span);
     }
     return value;
   } catch (error) {
     if (span) {
       span.log({ error: error instanceof Error ? error.message : "unknown model call error" });
       span.end();
-      flushInBackground(logger, span);
+      await flushTrace(logger, span);
     }
     throw error;
   }

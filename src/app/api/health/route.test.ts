@@ -110,6 +110,12 @@ describe("GET /api/health", () => {
       imageDetail: "low",
       timeoutMs: 12000,
       fallbackTimeoutMs: 6000,
+      fallback: {
+        configured: false,
+        provider: "openai",
+        model: "gpt-5.4-mini",
+        endpoint: "responses",
+      },
     });
     expect(data.braintrust).toEqual({
       configured: false,
@@ -136,6 +142,12 @@ describe("GET /api/health", () => {
       imageDetail: "high",
       timeoutMs: 12000,
       fallbackTimeoutMs: 6000,
+      fallback: {
+        configured: false,
+        provider: "gemini",
+        model: "gemini-3.1-flash-lite",
+        endpoint: "generateContent",
+      },
     });
     expect(JSON.stringify(data)).not.toContain("sk-test-secret");
   });
@@ -156,6 +168,12 @@ describe("GET /api/health", () => {
       imageDetail: "low",
       timeoutMs: 12000,
       fallbackTimeoutMs: 6000,
+      fallback: {
+        configured: false,
+        provider: "openai",
+        model: "gpt-5.4-mini",
+        endpoint: "responses",
+      },
     });
     expect(JSON.stringify(data)).not.toContain("gemini-secret");
   });
@@ -163,6 +181,7 @@ describe("GET /api/health", () => {
   it("reports Gemini configured when only a named key is present", async () => {
     process.env.VISION_PROVIDER = "gemini";
     process.env.GEMINI_API_KEY_MAX = "named-gemini-secret";
+    process.env.OPENAI_API_KEY = "openai-fallback-secret";
 
     const data = await GET().json();
 
@@ -170,7 +189,14 @@ describe("GET /api/health", () => {
     expect(data.vision.provider).toBe("gemini");
     expect(data.vision.timeoutMs).toBe(12000);
     expect(data.vision.fallbackTimeoutMs).toBe(6000);
+    expect(data.vision.fallback).toEqual({
+      configured: true,
+      provider: "openai",
+      model: "gpt-5.4-mini",
+      endpoint: "responses",
+    });
     expect(JSON.stringify(data)).not.toContain("named-gemini-secret");
+    expect(JSON.stringify(data)).not.toContain("openai-fallback-secret");
   });
 
   it("reports Braintrust configuration without exposing the key", async () => {

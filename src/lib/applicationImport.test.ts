@@ -200,6 +200,37 @@ front-b.png,Highland Crest,Scotch Whisky,40% Alc./Vol.,700 mL,Highland Crest Imp
     expect(rows.map((row) => row.application.brandName)).toEqual(["Frostweaver", "Island Bounty"]);
   });
 
+  it("imports a single JSON object with filename aliases and aged reason text", () => {
+    const rows = applicationsFromImportJson(
+      {
+        label_file: "young-whiskey.png",
+        brand_name: "Young Barrel",
+        class_type: "Straight Bourbon Whiskey",
+        abv: "45% Alc./Vol.",
+        net_contents: "750 mL",
+        reason: "Aged under 4 years, age statement required.",
+      },
+      "single.json",
+    );
+
+    expect(rows).toEqual([
+      {
+        sourceName: "single.json",
+        fileName: "young-whiskey.png",
+        application: {
+          brandName: "Young Barrel",
+          classType: "Straight Bourbon Whiskey",
+          alcoholContent: "45% Alc./Vol.",
+          netContents: "750 mL",
+          beverageKind: "spirits",
+          countryOfOrigin: "United States",
+          imported: false,
+          agedYears: 2,
+        },
+      },
+    ]);
+  });
+
   it("imports batch records from common collection properties", () => {
     const rows = applicationsFromImportJson(
       {

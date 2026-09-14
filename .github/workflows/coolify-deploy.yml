@@ -9,7 +9,20 @@ permissions:
 
 env:
   IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/alcohol-label-verifier
-  IMAGE_TAG: sha-${{ github.sha }}
+  # BARE commit sha, no `sha-` prefix.
+  #
+  # This is not cosmetic. The Coolify app is a `dockerfile` app, and Coolify resolves the
+  # image tag for such an app from the app's GIT COMMIT, not from
+  # `docker_registry_image_tag`:
+  #
+  #   Image not found (ghcr.io/maxpetrusenko/alcohol-label-verifier:291f93ae19eb...). Building new image.
+  #
+  # With the old `sha-${{ github.sha }}` the pushed tag (`sha-291f93ae19eb`) could never
+  # equal the tag Coolify looks for (`291f93ae19eb`), so every deploy missed, fell back to
+  # building ON THE VPS, and that on-box build failed (exit 1). The build belongs on the
+  # builder box; the prod host is a 12GB machine running ~49 containers with almost no
+  # free swap, where an on-box Next build has already OOM-killed co-tenant services.
+  IMAGE_TAG: ${{ github.sha }}
 
 jobs:
   build-push-deploy:
@@ -35,6 +48,38 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Set up the Coolify ssh key
+        env:
+          COOLIFY_SSH_HOST: ${{ secrets.COOLIFY_SSH_HOST }}
+          COOLIFY_SSH_PRIVATE_KEY: ${{ secrets.COOLIFY_SSH_PRIVATE_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$COOLIFY_SSH_PRIVATE_KEY" > ~/.ssh/coolify_deploy
+          chmod 600 ~/.ssh/coolify_deploy
+          ssh-keyscan -H "$COOLIFY_SSH_HOST" >> ~/.ssh/known_hosts
+
+      - name: Pre-pull the image on the Coolify host
+        # THE STEP THAT KEEPS THE BUILD OFF PRODUCTION.
+        #
+        # Coolify checks the host's LOCAL image store for `<image>:<git sha>`. If it is not
+        # there it does not pull first - it builds on the VPS. Pulling here, outside
+        # Coolify's window, means its check finds the image and skips the build.
+        #
+        # Verified 2026-09-14 on this app: without this step the deploy logged
+        # `Image not found (...). Building new image.` and `Building docker image started.`
+        # and failed; with it, both counts are 0 and the rollout completes.
+        env:
+          COOLIFY_SSH_HOST: ${{ secrets.COOLIFY_SSH_HOST }}
+          COOLIFY_SSH_USER: ${{ secrets.COOLIFY_SSH_USER }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/coolify_deploy \
+            -o IdentitiesOnly=yes \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=3 \
+            "$COOLIFY_SSH_USER@$COOLIFY_SSH_HOST" \
+            "sudo docker pull '${IMAGE_NAME}:${IMAGE_TAG}'"
+
       - name: Trigger Coolify deploy over SSH
         env:
           COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
@@ -43,10 +88,6 @@ jobs:
           COOLIFY_SSH_USER: ${{ secrets.COOLIFY_SSH_USER }}
           COOLIFY_SSH_PRIVATE_KEY: ${{ secrets.COOLIFY_SSH_PRIVATE_KEY }}
         run: |
-          install -m 700 -d ~/.ssh
-          printf '%s\n' "$COOLIFY_SSH_PRIVATE_KEY" > ~/.ssh/coolify_deploy
-          chmod 600 ~/.ssh/coolify_deploy
-          ssh-keyscan -H "$COOLIFY_SSH_HOST" >> ~/.ssh/known_hosts
           deploy_json="$(ssh -i ~/.ssh/coolify_deploy "$COOLIFY_SSH_USER@$COOLIFY_SSH_HOST" \
             "curl -fsS -X PATCH 'http://127.0.0.1:8000/api/v1/applications/$COOLIFY_APP_UUID' -H 'Authorization: Bearer $COOLIFY_TOKEN' -H 'Content-Type: application/json' --data '{\"docker_registry_image_name\":\"${IMAGE_NAME}\",\"docker_registry_image_tag\":\"${IMAGE_TAG}\"}' >/dev/null && curl -fsS -X POST 'http://127.0.0.1:8000/api/v1/deploy?uuid=$COOLIFY_APP_UUID&force=false' -H 'Authorization: Bearer $COOLIFY_TOKEN'")"
           deployment_uuid="$(printf '%s' "$deploy_json" | node -e "let input=''; process.stdin.on('data', c => input += c); process.stdin.on('end', () => { const data = JSON.parse(input); const uuid = data.deployments?.[0]?.deployment_uuid; if (!uuid) throw new Error('Coolify deploy response did not include deployment_uuid'); console.log(uuid); });")"

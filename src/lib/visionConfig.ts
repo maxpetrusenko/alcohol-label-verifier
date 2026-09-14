@@ -2,10 +2,22 @@ export function visionProvider() {
   return process.env.VISION_PROVIDER === "openai" ? "openai" : "gemini";
 }
 
-export function hasConfiguredVisionProvider() {
-  return visionProvider() === "gemini"
+export function fallbackVisionProvider() {
+  return visionProvider() === "gemini" ? "openai" : "gemini";
+}
+
+function hasProviderKey(provider: "gemini" | "openai") {
+  return provider === "gemini"
     ? Boolean(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY_MAX || process.env.GEMINI_API_KEY_TURKEY)
     : Boolean(process.env.OPENAI_API_KEY);
+}
+
+export function hasConfiguredVisionProvider() {
+  return hasProviderKey(visionProvider());
+}
+
+export function hasConfiguredFallbackVisionProvider() {
+  return hasProviderKey(fallbackVisionProvider());
 }
 
 export function visionMode(mode: "guidance" | "rules") {
@@ -14,11 +26,19 @@ export function visionMode(mode: "guidance" | "rules") {
 }
 
 export function visionModel() {
-  return visionProvider() === "gemini" ? process.env.GEMINI_VISION_MODEL || "gemini-3.1-flash-lite" : process.env.OPENAI_VISION_MODEL || "gpt-4.1-nano";
+  return visionProvider() === "gemini" ? process.env.GEMINI_VISION_MODEL || "gemini-3.1-flash-lite" : process.env.OPENAI_VISION_MODEL || "gpt-5.4-mini";
+}
+
+export function fallbackVisionModel() {
+  return fallbackVisionProvider() === "gemini" ? process.env.GEMINI_VISION_MODEL || "gemini-3.1-flash-lite" : process.env.OPENAI_VISION_MODEL || "gpt-5.4-mini";
 }
 
 export function visionEndpoint() {
-  return visionProvider() === "gemini" ? "generateContent" : process.env.OPENAI_VISION_ENDPOINT || "chat_completions";
+  return visionProvider() === "gemini" ? "generateContent" : process.env.OPENAI_VISION_ENDPOINT || "responses";
+}
+
+export function fallbackVisionEndpoint() {
+  return fallbackVisionProvider() === "gemini" ? "generateContent" : process.env.OPENAI_VISION_ENDPOINT || "responses";
 }
 
 function parsePositiveInt(value: string | undefined, fallback: number) {

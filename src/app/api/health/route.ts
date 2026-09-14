@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { braintrustProject, isBraintrustConfigured, isBraintrustTracingEnabled } from "../../../lib/braintrust";
 import {
+  fallbackVisionEndpoint,
+  fallbackVisionModel,
+  fallbackVisionProvider,
+  hasConfiguredFallbackVisionProvider,
   hasConfiguredVisionProvider,
   visionEndpoint,
   visionFallbackTimeoutMs,
@@ -23,6 +27,12 @@ export function GET() {
       imageDetail: process.env.OPENAI_IMAGE_DETAIL || "low",
       timeoutMs: visionTimeoutMs(),
       fallbackTimeoutMs: visionFallbackTimeoutMs(),
+      fallback: {
+        configured: hasConfiguredFallbackVisionProvider(),
+        provider: fallbackVisionProvider(),
+        model: fallbackVisionModel(),
+        endpoint: fallbackVisionEndpoint(),
+      },
     },
     braintrust: {
       configured: isBraintrustConfigured(),
