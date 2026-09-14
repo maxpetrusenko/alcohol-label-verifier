@@ -88,8 +88,20 @@ jobs:
           COOLIFY_SSH_USER: ${{ secrets.COOLIFY_SSH_USER }}
           COOLIFY_SSH_PRIVATE_KEY: ${{ secrets.COOLIFY_SSH_PRIVATE_KEY }}
         run: |
+          # NO PATCH HERE, DELIBERATELY.
+          #
+          # Coolify's own skip line is: "No configuration changed & image found (<image>:<sha>)
+          # with the same Git Commit SHA. Build step skipped." The condition is BOTH halves.
+          # This step used to PATCH docker_registry_image_name/tag first, which *is* a
+          # configuration change, so Coolify rebuilt on the VPS even though the pre-pulled
+          # image was sitting right there - observed 2026-09-14: pre-pull green, then
+          # "Importing ... to /artifacts/", "Building docker image started", 4 minutes.
+          #
+          # For a `dockerfile` app Coolify derives the image tag from the app's git commit
+          # anyway, so the PATCH was never what selected the image. Removing it makes the
+          # pre-pull above sufficient and the deploy a real pull.
           deploy_json="$(ssh -i ~/.ssh/coolify_deploy "$COOLIFY_SSH_USER@$COOLIFY_SSH_HOST" \
-            "curl -fsS -X PATCH 'http://127.0.0.1:8000/api/v1/applications/$COOLIFY_APP_UUID' -H 'Authorization: Bearer $COOLIFY_TOKEN' -H 'Content-Type: application/json' --data '{\"docker_registry_image_name\":\"${IMAGE_NAME}\",\"docker_registry_image_tag\":\"${IMAGE_TAG}\"}' >/dev/null && curl -fsS -X POST 'http://127.0.0.1:8000/api/v1/deploy?uuid=$COOLIFY_APP_UUID&force=false' -H 'Authorization: Bearer $COOLIFY_TOKEN'")"
+            "curl -fsS -X POST 'http://127.0.0.1:8000/api/v1/deploy?uuid=$COOLIFY_APP_UUID&force=false' -H 'Authorization: Bearer $COOLIFY_TOKEN'")"
           deployment_uuid="$(printf '%s' "$deploy_json" | node -e "let input=''; process.stdin.on('data', c => input += c); process.stdin.on('end', () => { const data = JSON.parse(input); const uuid = data.deployments?.[0]?.deployment_uuid; if (!uuid) throw new Error('Coolify deploy response did not include deployment_uuid'); console.log(uuid); });")"
 
           for _ in $(seq 1 80); do
